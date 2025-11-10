@@ -18,7 +18,6 @@ export function Header() {
   return (
     <header className={cn("sticky top-0 z-50 bg-white", isScrolled && "shadow-md")}>
       <Navbar />
-      <HeroSearch />
     </header>
   );
 }
