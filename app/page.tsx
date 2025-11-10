@@ -1,15 +1,19 @@
-
-import ExamplePage from ".";
+import { Header } from "@/components/layout/Header";
+import { Footer } from "@/components/layout/Footer";
 
 export default function Home() {
   return (
-    <div className="flex w-full min-h-screen items-center justify-center bg-zinc-50 font-sans">
-      <main className="flex max-w-3xl w-full flex-col items-center justify-between py-32 px-16 bg-white sm:items-start text-black-500">
-        <button>Home</button>
-        <div className="w-full">
-          <ExamplePage />
-        </div>
+    <div>
+      <Header />
+      <main className="flex-1 bg-gray-50">
+        {/* <TopCompaniesSection />
+        <HotJobsSection />
+        <HotIndustriesSection />
+        <FeaturedJobsSection />
+        <PartnersSection />
+        <UniversitySupportSection /> */}
       </main>
+      <Footer />
     </div>
   );
 }
