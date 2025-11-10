@@ -16,17 +16,17 @@ interface ButtonProps {
 }
 
 const Button: React.FC<ButtonProps> = ({
-  type = 'button',
+  type,
   value = '',
-  onClick = () => { },
-  backgroundColor = '',
-  iconLeft = <></>,
-  iconRight = <></>,
+  onClick,
+  backgroundColor,
+  iconLeft,
+  iconRight,
   height = "40px",
   color,
   border,
   disable = false,
-  flex = 1,
+  flex,
 }) => {
   const buttonRef = useRef<HTMLButtonElement>(null);
 
@@ -47,15 +47,15 @@ const Button: React.FC<ButtonProps> = ({
         border: border || '2px solid rgba(255, 255, 255, 1)',
         outline: 'none',
         cursor: disable ? 'not-allowed' : 'pointer',
-        borderRadius: '5px',
+        borderRadius: '10px',
         color: color || 'rgba(255, 255, 255, 1)',
         fontSize: '13px',
         fontWeight: 510,
         padding: '5px 10px',
-        display: 'inline-flex',
+        display: 'flex',
         alignItems: 'center',
         gap: '3px',
-        flex: flex,
+        flex: flex || "none",
         justifyContent: 'center',
       }}
     >
