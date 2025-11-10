@@ -1,0 +1,66 @@
+.select-box-ui-career {
+    option {
+        background-color: rgb(254, 254, 254);
+    }
+}
+
+.btn-ui-carrer:hover {
+    opacity: 0.8 !important;
+}
+
+
+.searchbar-dropdown.show {
+    display: block;
+}
+
+.searchbar-dropdown.hide {
+    display: none;
+}
+
+.searchbar-dropdown {
+    background-color: white;
+    width: 390px;
+    max-height: 260px;
+    position: absolute;
+    box-shadow: 8px 8px 8px rgba(0, 0, 0, 0.105);
+    border: 1px solid rgb(212, 212, 212);
+    box-sizing: border-box;
+    overflow-y: auto;
+    right: 0;
+    border-radius: 5px;
+    z-index: 10;
+
+    &>.searchbar-item {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        border-bottom: 1px solid #e8e8e8;
+        color: rgb(65, 64, 64);
+        cursor: pointer;
+        padding: 8px;
+        box-sizing: border-box;
+        font-size: 14px;
+
+        &:hover {
+            background-color: #f0f0f0;
+        }
+    }
+}
+
+.search-result-title {
+    font-size: 13px;
+    color: #888888;
+    margin: 10px 10px;
+}
+
+.searchbar-new-header {
+    font-size: 13px;
+    color: #6f6f6f;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #f6f6f6;
+    height: 30px;
+}
