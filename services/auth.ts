@@ -1,0 +1,57 @@
+import api from "@/cores/api";
+
+export const authAPI = {
+    login: (email: string, password: string) => api.post(`/user/login`, { email: email, password: password }),
+    getByEmail: (email: string) => api.get(`/user/get-by-email/${email}`)
+};
+
+export const isEmail = (email: string) => {
+    return String(email)
+        .toLowerCase()
+        .match(
+            /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|.(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
+        );
+};
+export const logout = () => {
+    deleteTokenCookie();
+    window.localStorage.removeItem('account_email');
+    window.localStorage.removeItem('account_username');
+    window.localStorage.removeItem('account_id');
+    setTimeout(() => {
+        window.open('/travelv-landingpage/', '_parent')
+    }, 200);
+}
+
+export const getUserStorage = () => {
+    const email = window.localStorage.getItem('account_email');
+    const username = window.localStorage.getItem('account_username');
+    const user_id = window.localStorage.getItem('account_id');
+    return {
+        email, username, user_id
+    }
+}
+
+
+export function setTokenCookie(token: string, days = 1) {
+    const date = new Date();
+    date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000);
+    const expires = "expires=" + date.toUTCString();
+    document.cookie = `access_token=${token}; ${expires}; path=/; Secure; SameSite=Strict`;
+}
+
+export function deleteTokenCookie() {
+    document.cookie = "access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; Secure; SameSite=Strict";
+}
+
+export function getTokenCookie() {
+    const name = "access_token=";
+    const decodedCookie = decodeURIComponent(document.cookie);
+    const cookies = decodedCookie.split(';');
+    for (let c of cookies) {
+        c = c.trim();
+        if (c.indexOf(name) === 0) {
+            return c.substring(name.length, c.length);
+        }
+    }
+    return null;
+}

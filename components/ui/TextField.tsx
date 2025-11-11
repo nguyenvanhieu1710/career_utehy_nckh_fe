@@ -26,6 +26,7 @@ type TextFieldProps = {
   min?: number | string;
   onFocus?: (e: React.FocusEvent<HTMLInputElement>) => void;
   onBlur?: (e: React.FocusEvent<HTMLInputElement>) => void;
+  labelSize?: number[]
 };
 
 const TextField = forwardRef<HTMLDivElement, TextFieldProps>(({
@@ -53,13 +54,14 @@ const TextField = forwardRef<HTMLDivElement, TextFieldProps>(({
   max,
   min,
   onFocus,
-  onBlur
+  onBlur,
+  labelSize = [12, 12],
 }, ref) => {
   return (
     <div style={{ width: width || "100%" }}>
       {label !== "none" && (
         <label
-
+          style={{ fontSize: labelSize?.[0] }}
         >
           {label}
         </label>
@@ -148,7 +150,10 @@ const TextField = forwardRef<HTMLDivElement, TextFieldProps>(({
         {iconRight}
       </div>
       {labelError !== "none" && (
-        <label style={{ color: "red" }}>{error ? labelError : ""}</label>
+        <label style={{
+          color: "red",
+          fontSize: labelSize?.[1]
+        }}>{error == true ? labelError : ""}</label>
       )}
     </div>
   );
