@@ -16,8 +16,8 @@ const studentAvatars = [
 
 export function HeroSearch() {
   return (
-    <section className="bg-white py-12">
-      <div className="container mx-auto px-4 text-center">
+    <section className="flex gap-3 h-screen bg-white py-12 p-3">
+      <div className="flex-1 container mx-auto px-4">
         {/* Title */}
         <h1 className="text-5xl font-bold text-gray-900 mb-2">
           Có <span className="text-green-600">24.558+</span> Công ty
@@ -28,7 +28,7 @@ export function HeroSearch() {
         </p>
 
         {/* Avatars */}
-        <div className="flex justify-center items-center flex-wrap gap-2 mb-10">
+        <div className="flex items-center flex-wrap gap-2 mb-10">
           {studentAvatars.map((_, i) => (
             <div
               key={i}
@@ -46,7 +46,7 @@ export function HeroSearch() {
         <div className="max-w-4xl mx-auto">
           <div className="flex flex-col md:flex-row gap-4 mb-4">
             {/* Input */}
-            <div className="flex-1 relative">
+            <div className="flex-2 relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5" />
               <input
                 type="text"
@@ -57,36 +57,39 @@ export function HeroSearch() {
 
             {/* Button Tìm việc */}
             <Button
+              flex={1}
               value="Tìm việc"
-              backgroundColor="#0C6A4E"
               color="white"
               height="56px"
-              // className="px-10 font-semibold rounded-lg"
+            // className="px-10 font-semibold rounded-lg"
             />
           </div>
 
           {/* Filters - GIỐNG HỆT ẢNH */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-            <select className="px-4 py-3 rounded-lg border border-gray-300 text-gray-600 text-sm bg-white">
+          <div className="grid grid-cols-2 gap-3">
+            <select className="bg-[#ECECEC] px-4 py-3 rounded-lg border border-gray-300 text-gray-600 text-sm">
               <option>Tất cả địa điểm</option>
             </select>
-            <select className="px-4 py-3 rounded-lg border border-gray-300 text-gray-600 text-sm bg-white">
+            <select className="bg-[#ECECEC] px-4 py-3 rounded-lg border border-gray-300 text-gray-600 text-sm">
               <option>Tất cả ngành nghề</option>
             </select>
-            <select className="px-4 py-3 rounded-lg border border-gray-300 text-gray-600 text-sm bg-white">
+            <select className="bg-[#ECECEC] px-4 py-3 rounded-lg border border-gray-300 text-gray-600 text-sm">
               <option>Tất cả loại hình</option>
             </select>
-            <select className="px-4 py-3 rounded-lg border border-gray-300 text-gray-600 text-sm bg-white">
+            <select className="bg-[#ECECEC] px-4 py-3 rounded-lg border border-gray-300 text-gray-600 text-sm">
               <option>Tất cả mức lương</option>
             </select>
-            <select className="px-4 py-3 rounded-lg border border-gray-300 text-gray-600 text-sm bg-white">
+            <select className="bg-[#ECECEC] px-4 py-3 rounded-lg border border-gray-300 text-gray-600 text-sm">
               <option>Tất cả cấp bậc</option>
             </select>
-            <select className="px-4 py-3 rounded-lg border border-gray-300 text-gray-600 text-sm bg-white">
+            <select className="bg-[#ECECEC] px-4 py-3 rounded-lg border border-gray-300 text-gray-600 text-sm">
               <option>Tất cả mức lương</option>
             </select>
           </div>
         </div>
+      </div>
+      <div className="flex-1">
+        <img src={'./peoplescareer.jpg'} className="w-full object-contain h-full rounded-lg" />
       </div>
     </section>
   );
