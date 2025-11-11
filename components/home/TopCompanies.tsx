@@ -24,7 +24,7 @@ const companies = [
 export default function TopCompanies() {
   return (
     <section className="py-16 bg-white">
-      <div className="container mx-auto px-4">
+      <div className="w-full px-6">
         <div className="flex justify-between items-center">
           <SectionTitle title="DOANH NGHIỆP HÀNG ĐẦU" />
           <PaginationArrows />

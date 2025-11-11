@@ -1,8 +1,6 @@
-// components/layout/Header.tsx
 "use client";
 
 import { Navbar } from "./Navbar";
-import { HeroSearch } from "@/components/sections/HeroSearch";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
 
