@@ -28,8 +28,8 @@ export function Navbar() {
 
           {/* Right Actions */}
           <div className="flex items-center gap-3">
-            <Button type="button" value="Đăng nhập" border="10px" />
-            <Button type="button" value="Đăng ký" border="10px" />
+            <Link href='/auth/signin'><Button type="button" value="Đăng nhập" border="10px" /></Link>
+            <Link href='/auth/signup'><Button type="button" value="Đăng ký" border="10px" /></Link>
             <div className="text-[#0C6A4E] font-bold flex gap-1"><Star/> Dành cho Nhà tuyển dụng</div>
           </div>
         </div>
