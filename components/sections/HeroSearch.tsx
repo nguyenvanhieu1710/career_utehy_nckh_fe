@@ -81,7 +81,7 @@ export function HeroSearch() {
             >
               {currentTitle.data.amount.replace(
                 "{amount}",
-                titleAmountData[currentTitle.id]?.toLocaleString()
+                titleAmountData[currentTitle.id]?.toLocaleString("vi-VN")
               )}
             </motion.span>
           </AnimatePresence>
