@@ -8,7 +8,8 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
           <div className="space-y-8">
             <div>
-              <h2 className="text-4xl font-black font-bold text-black">CAREER</h2>
+              <img src={'./logo/logo.jpg'}
+                className="object-cover h-36" />
             </div>
 
             <div className="space-y-6">

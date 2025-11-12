@@ -1,7 +1,8 @@
 import api from "@/cores/api";
 
 export const authAPI = {
-    login: (email: string, password: string) => api.post(`/user/login`, { email: email, password: password }),
+    login: (email: string, password: string) => api.post(`/auth/login`, { email: email, password: password }),
+    verify: () => api.get("/auth/verify"),
     getByEmail: (email: string) => api.get(`/user/get-by-email/${email}`)
 };
 
@@ -17,9 +18,13 @@ export const logout = () => {
     window.localStorage.removeItem('account_email');
     window.localStorage.removeItem('account_username');
     window.localStorage.removeItem('account_id');
-    setTimeout(() => {
-        window.open('/travelv-landingpage/', '_parent')
-    }, 200);
+}
+
+export const setUserStorage = (email: string, username: string, id: string, fullname: string) => {
+    window.localStorage.setItem('account_email', email);
+    window.localStorage.setItem('account_username', username);
+    window.localStorage.setItem('account_id', id);
+    window.localStorage.setItem('fullname', fullname);
 }
 
 export const getUserStorage = () => {
@@ -31,27 +36,28 @@ export const getUserStorage = () => {
     }
 }
 
-
 export function setTokenCookie(token: string, days = 1) {
     const date = new Date();
     date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000);
     const expires = "expires=" + date.toUTCString();
-    document.cookie = `access_token=${token}; ${expires}; path=/; Secure; SameSite=Strict`;
+    window.document.cookie = `access_token=${token}; ${expires}; path=/; Secure; SameSite=Strict`;
 }
 
 export function deleteTokenCookie() {
-    document.cookie = "access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; Secure; SameSite=Strict";
+    window.document.cookie = "access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; Secure; SameSite=Strict";
 }
 
 export function getTokenCookie() {
-    const name = "access_token=";
-    const decodedCookie = decodeURIComponent(document.cookie);
-    const cookies = decodedCookie.split(';');
-    for (let c of cookies) {
-        c = c.trim();
-        if (c.indexOf(name) === 0) {
-            return c.substring(name.length, c.length);
-        }
+  if (typeof window === "undefined") return null;
+
+  const name = "access_token=";
+  const decodedCookie = decodeURIComponent(document.cookie);
+  const cookies = decodedCookie.split(';');
+  for (let c of cookies) {
+    c = c.trim();
+    if (c.startsWith(name)) {
+      return c.substring(name.length);
     }
-    return null;
+  }
+  return null;
 }
