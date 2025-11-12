@@ -1,12 +1,33 @@
-'use client';
+"use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Button from "@/components/ui/Button";
-import { Star } from "lucide-react";
+import { Star, Menu, X } from "lucide-react";
+import { MobileNavLink } from "./MobileNavLink";
 
 export function Navbar() {
+  const [isOpen, setIsOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const isScrolled = window.scrollY > 10;
+      if (isScrolled !== scrolled) {
+        setScrolled(isScrolled);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [scrolled]);
+
   return (
-    <nav className="border-b bg-white">
+    <nav
+      className={`sticky top-0 z-50 bg-white transition-shadow ${
+        scrolled ? "shadow-md" : "border-b"
+      }`}
+    >
       <div className="w-full px-6">
         <div className="flex h-16 items-center justify-between">
           <div className="flex items-center gap-6">
@@ -38,10 +59,60 @@ export function Navbar() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <Link href='/auth/signin'><Button type="button" value="Đăng nhập" border="10px" /></Link>
-            <Link href='/auth/signup'><Button type="button" value="Đăng ký" border="10px" /></Link>
-            <div className="text-[#0C6A4E] font-bold flex gap-1"><Star/> Dành cho Nhà tuyển dụng</div>
+          <div className="hidden md:flex items-center gap-3">
+            <Link href="/auth/signin">
+              <Button type="button" value="Đăng nhập" border="10px" />
+            </Link>
+            <Link href="/auth/signup">
+              <Button type="button" value="Đăng ký" border="10px" />
+            </Link>
+            <div className="text-[#0C6A4E] font-bold flex gap-1">
+              <Star /> Dành cho Nhà tuyển dụng
+            </div>
+          </div>
+
+          <div className="md:hidden">
+            <button
+              onClick={() => setIsOpen(!isOpen)}
+              className="inline-flex items-center justify-center p-2 rounded-md text-gray-700 hover:text-gray-900 focus:outline-none"
+              aria-label="Toggle menu"
+            >
+              {isOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile Menu */}
+        <div
+          className={`md:hidden transition-all duration-300 ease-in-out ${
+            isOpen
+              ? "max-h-96 opacity-100"
+              : "max-h-0 opacity-0 overflow-hidden"
+          }`}
+        >
+          <div className="pt-2 pb-4 px-4 space-y-2 bg-white border-t">
+            <MobileNavLink href="/" onClick={() => setIsOpen(false)}>
+              Việc làm
+            </MobileNavLink>
+            <MobileNavLink href="/cv" onClick={() => setIsOpen(false)}>
+              Tạo CV
+            </MobileNavLink>
+            <MobileNavLink href="/about" onClick={() => setIsOpen(false)}>
+              Về chúng tôi
+            </MobileNavLink>
+            <div className="border-t my-2"></div>
+            <MobileNavLink href="/auth/signin" onClick={() => setIsOpen(false)}>
+              Đăng nhập
+            </MobileNavLink>
+            <MobileNavLink href="/auth/signup" onClick={() => setIsOpen(false)}>
+              Đăng ký
+            </MobileNavLink>
+            <MobileNavLink
+              href="/"
+              onClick={() => setIsOpen(false)}
+            >
+              Dành cho Nhà tuyển dụng
+            </MobileNavLink>
           </div>
         </div>
       </div>
