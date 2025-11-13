@@ -7,6 +7,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import axios from "axios";
+import { authAPI, setTokenCookie, setUserStorage } from "@/services/auth";
 
 export default function LoginPage() {
   const [authForm, setAuthForm] = useState({
@@ -87,11 +88,11 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validate form
     const emailError = validateEmail(authForm.email);
     const passwordError = validatePassword(authForm.password);
-    
+
     if (emailError || passwordError) {
       setErrors({
         email: emailError,
@@ -99,26 +100,22 @@ export default function LoginPage() {
       });
       return;
     }
-    
-    try {
-      setIsLoading(true);
-      
-      const response = await axios.post('/api/auth/login', {
-        email: authForm.email,
-        password: authForm.password
-      });
-      
+
+    setIsLoading(true);
+
+    authAPI.login(authForm.email, authForm.password).then(res => {
+
+      setTokenCookie(res.data.access_token);
+      setUserStorage(res.data.email, res.data.user_name, res.data.user_id, res.data.fullname)
       toast.success('Đăng nhập thành công!');
-      
       router.push('/');
-      
-    } catch (error: any) {
+    }).catch(err => {
       let errorMessage = 'Đã có lỗi xảy ra khi đăng nhập';
-      
-      if (axios.isAxiosError(error)) {
-        const status = error.response?.status;
-        const data = error.response?.data;
-        
+
+      if (axios.isAxiosError(err)) {
+        const status = err.response?.status;
+        const data = err.response?.data;
+
         if (status === 401) {
           errorMessage = data?.message || 'Email hoặc mật khẩu không chính xác';
         } else if (status === 403) {
@@ -131,11 +128,12 @@ export default function LoginPage() {
           errorMessage = 'Máy chủ đang gặp sự cố. Vui lòng thử lại sau';
         }
       }
-      
+
       toast.error(errorMessage);
-    } finally {
+    }).finally(() => {
       setIsLoading(false);
-    }
+
+    })
   };
 
   return (
@@ -211,8 +209,8 @@ export default function LoginPage() {
               )}
             </div>
 
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               value={isLoading ? 'Đang xử lý...' : 'Đăng nhập'}
               disable={isLoading}
             />
