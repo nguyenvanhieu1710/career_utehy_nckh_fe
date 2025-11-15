@@ -3,10 +3,11 @@
 import * as Avatar from "@radix-ui/react-avatar";
 import { Switch } from "@/components/ui/switch";
 import { useState } from "react";
-import { Edit, Lock, UserRound } from "lucide-react";
+import { Edit, Lock, LogOut, UserRound } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { Label } from "@/components/ui/label";
 import { motion } from "framer-motion";
+import { logout } from "@/services/auth";
 
 // Animation variants with proper TypeScript types
 const containerVariants = {
@@ -103,6 +104,7 @@ export default function ProfileSidebar() {
         <Button iconLeft={<UserRound size={16} />} value="Thông tin cơ bản" />
         <Button iconLeft={<Edit size={16} />} value="Mong muốn của bạn" />
         <Button iconLeft={<Lock size={16} />} value="Đổi mật khẩu" />
+        <Button iconLeft={<LogOut size={16} />} value="Đăng xuất" backgroundColor="#d50000ff" onClick={logout}/>
       </motion.div>
 
       <motion.div 

@@ -225,10 +225,6 @@ export default function SignUpPage() {
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50 relative">
             {isSubmitting ? <Loader/> : <></>}
-            {/* Sonner Toaster */}
-            <div className="fixed top-4 right-4 z-50">
-                <Toaster richColors position="top-right" />
-            </div>
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}

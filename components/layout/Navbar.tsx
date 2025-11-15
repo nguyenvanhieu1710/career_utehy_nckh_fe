@@ -19,7 +19,6 @@ export function Navbar() {
       setCheckToken(true)
     }).catch(err => {
       setCheckToken(false)
-      logout();
     })
   }, [])
 
@@ -44,7 +43,7 @@ export function Navbar() {
         <div className="flex h-16 items-center justify-between">
           <div className="flex items-center gap-6">
             <Link href="/" className="flex items-center gap-1">
-              <img src={'./logo/header_logo.jpg'}
+              <img src={'/logo/header_logo.jpg'}
                 className="object-cover h-13" />
             </Link>
 
@@ -72,7 +71,8 @@ export function Navbar() {
 
           {
             checkToken ? <>
-              <div className="flex gap-2 items-center">
+              <Link href={"/profile"}>
+                <div className="flex gap-2 items-center">
                 <div className="flex-col gap-1 text-gray-600">
                   <div className="font-bold">{localStorage.getItem("fullname")}</div>
                   <div className="text-[13px]">{localStorage.getItem("account_username")}</div>
@@ -81,6 +81,7 @@ export function Navbar() {
                   <img src={'./avatars/avatar-1.jpeg'} className="object-cover w-13 h-13 bg-gray-100 rounded-full" />
                 </div>
               </div>
+              </Link>
             </> :
               <div className="hidden md:flex items-center gap-3">
                 <Link href="/auth/signin">

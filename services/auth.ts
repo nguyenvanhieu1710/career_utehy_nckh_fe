@@ -18,6 +18,7 @@ export const logout = () => {
     window.localStorage.removeItem('account_email');
     window.localStorage.removeItem('account_username');
     window.localStorage.removeItem('account_id');
+    window.location.href = "/";
 }
 
 export const setUserStorage = (email: string, username: string, id: string, fullname: string) => {
