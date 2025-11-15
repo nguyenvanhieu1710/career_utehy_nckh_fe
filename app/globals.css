@@ -160,6 +160,7 @@
     scroll-behavior: smooth;
   }
   body {
+    background-color: white !important;
     @apply bg-background text-foreground;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;

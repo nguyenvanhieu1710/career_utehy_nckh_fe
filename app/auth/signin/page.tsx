@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { toast, Toaster } from "sonner";
 import axios from "axios";
 import { authAPI, setTokenCookie, setUserStorage } from "@/services/auth";
 
@@ -66,23 +66,9 @@ export default function LoginPage() {
       return "Vui lòng nhập mật khẩu";
     }
 
-    if (password.length < 6) {
-      return "Mật khẩu phải có ít nhất 6 ký tự";
-    }
-
     if (password.length > 100) {
       return "Mật khẩu không được vượt quá 100 ký tự";
     }
-
-    const hasUpperCase = /[A-Z]/.test(password);
-    const hasLowerCase = /[a-z]/.test(password);
-    const hasNumbers = /\d/.test(password);
-    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-
-    if (!hasUpperCase || !hasLowerCase || !hasNumbers || !hasSpecialChar) {
-      return "Mật khẩu phải chứa ít nhất một chữ hoa, một chữ thường, một số và một ký tự đặc biệt";
-    }
-
     return "";
   };
 
@@ -102,30 +88,30 @@ export default function LoginPage() {
     }
 
     setIsLoading(true);
-
     authAPI.login(authForm.email, authForm.password).then(res => {
-
       setTokenCookie(res.data.access_token);
       setUserStorage(res.data.email, res.data.user_name, res.data.user_id, res.data.fullname)
       toast.success('Đăng nhập thành công!');
-      router.push('/');
+      window.location.href = "/"
     }).catch(err => {
       let errorMessage = 'Đã có lỗi xảy ra khi đăng nhập';
-
       if (axios.isAxiosError(err)) {
         const status = err.response?.status;
         const data = err.response?.data;
-
-        if (status === 401) {
-          errorMessage = data?.message || 'Email hoặc mật khẩu không chính xác';
-        } else if (status === 403) {
-          errorMessage = 'Tài khoản của bạn đã bị khóa hoặc vô hiệu hóa';
-        } else if (status === 400) {
-          errorMessage = 'Dữ liệu không hợp lệ';
-        } else if (status === 429) {
-          errorMessage = 'Quá nhiều lần thử đăng nhập. Vui lòng thử lại sau ít phút';
-        } else if (status === 500) {
-          errorMessage = 'Máy chủ đang gặp sự cố. Vui lòng thử lại sau';
+        if (data?.detail) {
+          errorMessage = data?.detail
+        } else {
+          if (status === 401) {
+            errorMessage = data?.detail || 'Email hoặc mật khẩu không chính xác';
+          } else if (status === 403) {
+            errorMessage = 'Tài khoản của bạn đã bị khóa hoặc vô hiệu hóa';
+          } else if (status === 400) {
+            errorMessage = 'Dữ liệu không hợp lệ';
+          } else if (status === 429) {
+            errorMessage = 'Quá nhiều lần thử đăng nhập. Vui lòng thử lại sau ít phút';
+          } else if (status === 500) {
+            errorMessage = 'Máy chủ đang gặp sự cố. Vui lòng thử lại sau';
+          }
         }
       }
 
@@ -208,12 +194,14 @@ export default function LoginPage() {
                 <p className="mt-1 text-sm text-red-600">{errors.password}</p>
               )}
             </div>
-
             <Button
               type="submit"
               value={isLoading ? 'Đang xử lý...' : 'Đăng nhập'}
               disable={isLoading}
             />
+            <Link href={"/forgot-password"}>
+              <span className="text-blue-400">Quên mật khẩu</span>
+            </Link>
           </form>
 
           <div className="flex items-center justify-center m-4 text-gray-500">

@@ -159,7 +159,7 @@ export function HeroSearch() {
         {/* Search Bar */}
         <div className="max-w-4xl mx-auto">
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-4">
-            <div className="relative flex-1">
+            <div className="relative flex-2">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5" />
               <input
                 type="text"

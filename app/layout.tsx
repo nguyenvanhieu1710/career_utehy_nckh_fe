@@ -4,6 +4,7 @@ import { Providers } from "./_providers/providers";
 import { Inter } from "next/font/google";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import { Toaster } from "sonner";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -27,6 +28,9 @@ export default function RootLayout({
       >
         <Providers>
           <Header />
+          <div className="fixed top-4 right-4 z-50">
+            <Toaster richColors position="top-right" />
+          </div>
           {children}
           <Footer />
         </Providers>

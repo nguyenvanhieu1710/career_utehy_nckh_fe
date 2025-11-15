@@ -50,7 +50,7 @@ export default function HotJobs() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
             {hotJobs.map((job, index) => (
-                <JobCard key={index} {...job} />
+                <JobCard key={index} {...job} job_id="job_id"/>
             ))}
             </div>
 
