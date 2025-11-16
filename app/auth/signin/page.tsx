@@ -190,18 +190,23 @@ export default function LoginPage() {
                   {showPassword ? "👁️" : "👁️‍🗨️"}
                 </button>
               </div>
-              {errors.password && (
-                <p className="mt-1 text-sm text-red-600">{errors.password}</p>
-              )}
+              <div className="flex justify-between items-start mt-1">
+                {errors.password ? (
+                  <p className="text-sm text-red-600">{errors.password}</p>
+                ) : <div />}
+                <Link 
+                  href={"/auth/forgot-password"}
+                  className="inline-flex items-center text-sm text-blue-500 hover:text-blue-600 hover:underline transition-colors"
+                >                  
+                  Quên mật khẩu?
+                </Link>
+              </div>
             </div>
             <Button
               type="submit"
               value={isLoading ? 'Đang xử lý...' : 'Đăng nhập'}
               disable={isLoading}
-            />
-            <Link href={"/forgot-password"}>
-              <span className="text-blue-400">Quên mật khẩu</span>
-            </Link>
+            />            
           </form>
 
           <div className="flex items-center justify-center m-4 text-gray-500">

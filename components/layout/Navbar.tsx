@@ -5,22 +5,37 @@ import Link from "next/link";
 import Button from "@/components/ui/Button";
 import { Star, Menu, X } from "lucide-react";
 import { MobileNavLink } from "./MobileNavLink";
-import { authAPI, logout, setTokenCookie, setUserStorage } from "@/services/auth";
+import {
+  authAPI,
+  logout,
+  setTokenCookie,
+  setUserStorage,
+} from "@/services/auth";
+import { ProfileDropdown } from "./ProfileDropdown";
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [checkToken, setCheckToken] = useState(false);
 
   useEffect(() => {
-    authAPI.verify().then(res => {
-      setTokenCookie(res.data.access_token);
-      setUserStorage(res.data.email, res.data.user_name, res.data.user_id, res.data.fullname)
-      setCheckToken(true)
-    }).catch(err => {
-      setCheckToken(false)
-    })
-  }, [])
+    authAPI
+      .verify()
+      .then((res) => {
+        setTokenCookie(res.data.access_token);
+        setUserStorage(
+          res.data.email,
+          res.data.user_name,
+          res.data.user_id,
+          res.data.fullname
+        );
+        setCheckToken(true);
+      })
+      .catch((err) => {
+        setCheckToken(false);
+      });
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -36,15 +51,18 @@ export function Navbar() {
 
   return (
     <nav
-      className={`sticky top-0 z-50 bg-white transition-shadow ${scrolled ? "shadow-md" : "border-b"
-        }`}
+      className={`sticky top-0 z-50 bg-white transition-shadow ${
+        scrolled ? "shadow-md" : "border-b"
+      }`}
     >
       <div className="w-full px-6">
         <div className="flex h-16 items-center justify-between">
           <div className="flex items-center gap-6">
             <Link href="/" className="flex items-center gap-1">
-              <img src={'/logo/header_logo.jpg'}
-                className="object-cover h-13" />
+              <img
+                src={"/logo/header_logo.jpg"}
+                className="object-cover h-13"
+              />
             </Link>
 
             <div className="hidden md:flex items-center gap-6 text-sm font-medium">
@@ -69,32 +87,44 @@ export function Navbar() {
             </div>
           </div>
 
-          {
-            checkToken ? <>
-              <Link href={"/profile"}>
-                <div className="flex gap-2 items-center">
-                <div className="flex-col gap-1 text-gray-600">
-                  <div className="font-bold">{localStorage.getItem("fullname")}</div>
-                  <div className="text-[13px]">{localStorage.getItem("account_username")}</div>
+          {checkToken ? (
+            <div className="relative">
+              <button
+                onClick={() => setIsProfileOpen(!isProfileOpen)}
+                className="flex gap-2 items-center cursor-pointer p-2 transition"
+              >
+                <div className="flex flex-col gap-0 text-left">
+                  <div className="font-bold text-sm">
+                    {localStorage.getItem("fullname")}
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    @{localStorage.getItem("account_username")}
+                  </div>
                 </div>
-                <div>
-                  <img src={'./avatars/avatar-1.jpeg'} className="object-cover w-13 h-13 bg-gray-100 rounded-full" />
-                </div>
-              </div>
+                <img
+                  src="/avatars/avatar-1.jpeg"
+                  alt="Avatar"
+                  className="w-10 h-10 rounded-full object-cover border"
+                />
+              </button>
+
+              {isProfileOpen && (
+                <ProfileDropdown onClose={() => setIsProfileOpen(false)} />
+              )}
+            </div>
+          ) : (
+            <div className="hidden md:flex items-center gap-3">
+              <Link href="/auth/signin">
+                <Button type="button" value="Đăng nhập" border="10px" />
               </Link>
-            </> :
-              <div className="hidden md:flex items-center gap-3">
-                <Link href="/auth/signin">
-                  <Button type="button" value="Đăng nhập" border="10px" />
-                </Link>
-                <Link href="/auth/signup">
-                  <Button type="button" value="Đăng ký" border="10px" />
-                </Link>
-                <div className="text-[#0C6A4E] font-bold flex gap-1">
-                  <Star /> Dành cho Nhà tuyển dụng
-                </div>
+              <Link href="/auth/signup">
+                <Button type="button" value="Đăng ký" border="10px" />
+              </Link>
+              <div className="text-[#0C6A4E] font-bold flex gap-1">
+                <Star /> Dành cho Nhà tuyển dụng
               </div>
-          }
+            </div>
+          )}
 
           <div className="md:hidden">
             <button
@@ -109,10 +139,11 @@ export function Navbar() {
 
         {/* Mobile Menu */}
         <div
-          className={`md:hidden transition-all duration-300 ease-in-out ${isOpen
-            ? "max-h-96 opacity-100"
-            : "max-h-0 opacity-0 overflow-hidden"
-            }`}
+          className={`md:hidden transition-all duration-300 ease-in-out ${
+            isOpen
+              ? "max-h-96 opacity-100"
+              : "max-h-0 opacity-0 overflow-hidden"
+          }`}
         >
           <div className="pt-2 pb-4 px-4 space-y-2 bg-white border-t">
             <MobileNavLink href="/" onClick={() => setIsOpen(false)}>
@@ -131,10 +162,7 @@ export function Navbar() {
             <MobileNavLink href="/auth/signup" onClick={() => setIsOpen(false)}>
               Đăng ký
             </MobileNavLink>
-            <MobileNavLink
-              href="/"
-              onClick={() => setIsOpen(false)}
-            >
+            <MobileNavLink href="/" onClick={() => setIsOpen(false)}>
               Dành cho Nhà tuyển dụng
             </MobileNavLink>
           </div>
