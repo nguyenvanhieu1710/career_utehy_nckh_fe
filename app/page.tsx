@@ -1,4 +1,4 @@
-import { HeroSearch } from "@/components/sections/HeroSearch";
+import { HeroSearch } from "@/components/home/HeroSearch";
 import TopCompanies from "@/components/home/TopCompanies";
 import HotJobs from "@/components/home/HotJobs";
 import TrendingIndustries from "@/components/home/TrendingIndustries";
