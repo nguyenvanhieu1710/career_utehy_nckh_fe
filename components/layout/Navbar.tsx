@@ -94,7 +94,7 @@ export function Navbar() {
                 className="flex gap-2 items-center cursor-pointer p-2 transition"
               >
                 <div className="flex flex-col gap-0 text-left">
-                  <div className="font-bold text-sm">
+                  <div className="font-bold text-sm text-gray-700">
                     {localStorage.getItem("fullname")}
                   </div>
                   <div className="text-xs text-gray-500">
@@ -146,13 +146,13 @@ export function Navbar() {
           }`}
         >
           <div className="pt-2 pb-4 px-4 space-y-2 bg-white border-t">
-            <MobileNavLink href="/" onClick={() => setIsOpen(false)}>
+            <MobileNavLink href="/career/" onClick={() => setIsOpen(false)}>
               Việc làm
             </MobileNavLink>
-            <MobileNavLink href="/cv" onClick={() => setIsOpen(false)}>
+            <MobileNavLink href="/career/cv" onClick={() => setIsOpen(false)}>
               Tạo CV
             </MobileNavLink>
-            <MobileNavLink href="/about" onClick={() => setIsOpen(false)}>
+            <MobileNavLink href="/career/about" onClick={() => setIsOpen(false)}>
               Về chúng tôi
             </MobileNavLink>
             <div className="border-t my-2"></div>

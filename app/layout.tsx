@@ -27,12 +27,10 @@ export default function RootLayout({
         className={`${inter.variable} antialiased`}
       >
         <Providers>
-          <Header />
           <div className="fixed top-4 right-4 z-50">
             <Toaster richColors position="top-right" />
           </div>
           {children}
-          <Footer />
         </Providers>
       </body>
     </html>

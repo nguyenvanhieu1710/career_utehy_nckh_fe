@@ -141,7 +141,7 @@ const TextField = forwardRef<HTMLDivElement, TextFieldProps>(({
                   "0px 0px 5px rgba(228, 0, 0, 0.39)";
               } else {
                 e.target.parentElement!.style.border =
-                  border || "1px solid rgba(206, 206, 206, 1)";
+                  border || "1px solid rgba(236, 236, 236, 1)";
                 e.target.parentElement!.style.boxShadow = "none";
               }
             }}

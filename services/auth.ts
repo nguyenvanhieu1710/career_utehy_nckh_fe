@@ -3,7 +3,8 @@ import api from "@/cores/api";
 export const authAPI = {
     login: (email: string, password: string) => api.post(`/auth/login`, { email: email, password: password }),
     verify: () => api.get("/auth/verify"),
-    getByEmail: (email: string) => api.get(`/user/get-by-email/${email}`)
+    getByEmail: (email: string) => api.get(`/user/get-by-email/${email}`),
+    updatePassword: (token: string, new_password: string)=> api.patch(`/auth/update-password?token=${token}`, {password: new_password})
 };
 
 export const isEmail = (email: string) => {
