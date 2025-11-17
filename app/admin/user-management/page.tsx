@@ -5,6 +5,9 @@ import { Filters } from '@/components/admin/Filters';
 import { AddButton } from '@/components/admin/AddButton';
 import { Table } from '@/components/admin/Table';
 import { Pagination } from '@/components/admin/Pagination';
+import Button from '@/components/ui/Button';
+import { Ban, Edit } from 'lucide-react';
+import { ActionButtons } from '@/components/admin/ActionButtons';
 
 interface User {
   id: number;
@@ -13,6 +16,32 @@ interface User {
   role: 'Sinh viên' | 'Nhà tuyển dụng' | 'Admin';
   status: 'active' | 'inactive';
 }
+
+const columns: Column<User>[] = [
+  { label: "#", render: (_, i) => i + 1 },
+  { label: "Avatar", render: user => <img /> },
+  { label: "Name", field: "name" },
+  { label: "Email", field: "email" },
+  { label: "Role", field: "role" },
+  {
+    label: "Status",
+    render: user => (
+      <span className={user.status === "active" ? "text-green-600" : "text-red-600"}>
+        {user.status}
+      </span>
+    )
+  },
+  {
+    label: "Action",
+    render: user => (
+      <div className='flex gap-2'>
+        <ActionButtons type='edit'/>
+        <ActionButtons type='delete'/>
+      </div>
+    )
+  }
+  
+] as Column<User>[]; // ép kiểu
 
 const mockData: User[] = [
   { id: 1, name: 'Phan Văn Giang', email: 'pvgttbqp@gmail.com', role: 'Sinh viên', status: 'active' },
@@ -46,7 +75,7 @@ export default function UserManagementPage() {
       {/* Table */}
       <div className="bg-white rounded-lg shadow-sm border">
         <div className="p-4">
-          <Table data={users} loading={loading} />
+          <Table columns={columns} data={users} loading={loading} />
         </div>
       </div>
 

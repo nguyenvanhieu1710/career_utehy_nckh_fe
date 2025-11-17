@@ -5,6 +5,6 @@ import Button from '@/components/ui/Button';
 
 export function AddButton() {
   return (
-    <Button type='button' iconLeft={<Plus size={18} className="mr-2" />} />
+    <Button type='button' iconLeft={<Plus size={18} className="mr-2" />} value='ADD'/>
   );
 }
