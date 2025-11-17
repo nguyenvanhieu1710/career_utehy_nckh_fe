@@ -8,7 +8,7 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
           <div className="space-y-8">
             <div>
-              <img src={'./logo/logo.jpg'}
+              <img src={'/logo/logo.jpg'}
                 className="object-cover h-36" />
             </div>
 

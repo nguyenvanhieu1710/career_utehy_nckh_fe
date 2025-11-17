@@ -31,10 +31,10 @@ export function ProfileDropdown({
   };
 
   const menuItems = [
-    { label: "Cập nhật tài khoản", href: "/profile", icon: User },
-    { label: "Công việc yêu thích", href: "/favorite-jobs", icon: Heart },
-    { label: "Công việc đã ứng tuyển", href: "/applied-jobs", icon: Briefcase },
-    { label: "Quản lý CV", href: "/cv/manage", icon: FileText },
+    { label: "Cập nhật tài khoản", href: "/career/profile", icon: User },
+    { label: "Công việc yêu thích", href: "/career/favorite-jobs", icon: Heart },
+    { label: "Công việc đã ứng tuyển", href: "/career/applied-jobs", icon: Briefcase },
+    { label: "Quản lý CV", href: "/career/cv/manage", icon: FileText },
   ];
 
   return (

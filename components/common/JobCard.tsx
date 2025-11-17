@@ -36,7 +36,7 @@ export default function JobCard({
         </div>
 
         <div className="flex-1 flex flex-col">
-          <Link href={`/job-detail?id=${job_id}`}>
+          <Link href={`/career/job-detail?id=${job_id}`}>
             <div className="flex-1">
               <h3 className="font-bold text-lg text-[#852121] line-clamp-2 leading-tight break-words">
                 {title}

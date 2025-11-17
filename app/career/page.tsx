@@ -5,14 +5,11 @@ import TrendingIndustries from "@/components/home/TrendingIndustries";
 import FeaturedJobs from "@/components/home/FeaturedJobs";
 import TrustedSources from "@/components/home/TrustedSources";
 import SystemIntro from "@/components/home/SystemIntro";
-import { Header } from "@/components/layout/Header";
-import { Footer } from "@/components/layout/Footer";
 
-export default function Home() {
+export default function HomePage() {
   return (
     <div>
       <main className="flex-1 bg-gray-50">
-        <Header/>
         <HeroSearch/>
         <TopCompanies/>
         <HotJobs/>
@@ -20,7 +17,6 @@ export default function Home() {
         <FeaturedJobs/>
         <TrustedSources/>
         <SystemIntro/>
-        <Footer/>
       </main>
     </div>
   );
