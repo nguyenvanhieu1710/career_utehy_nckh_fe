@@ -102,8 +102,7 @@ export default function ProfileSidebar() {
         }}
       >
         <Button iconLeft={<UserRound size={16} />} value="Thông tin cơ bản" />
-        <Button iconLeft={<Edit size={16} />} value="Mong muốn của bạn" />
-        <Button iconLeft={<Lock size={16} />} value="Đổi mật khẩu" />
+        <Button iconLeft={<Lock size={16} />} value="Đổi mật khẩu" onClick={ () => window.location.href = '/auth/change-password'} />
         <Button iconLeft={<LogOut size={16} />} value="Đăng xuất" backgroundColor="#d50000ff" onClick={logout}/>
       </motion.div>
 
