@@ -217,7 +217,7 @@ export default function ProfileForm() {
       <motion.div className="space-y-6 max-w-3xl mx-auto">
         <div className="grid grid-cols-12 items-center gap-4">
           <label className="col-span-3 text-right font-medium text-gray-700">
-            Họ tên <span className="text-red-500">*</span>
+            Họ tên
           </label>
           <div className="col-span-9">
             <div className="w-full">
@@ -227,6 +227,7 @@ export default function ProfileForm() {
                 onChange={handleChange}
                 onBlur={handleBlur}
                 required
+                placeholder="VD: Nguyễn Văn A"
               />
               {errors.name && (
                 <motion.p 
@@ -243,7 +244,7 @@ export default function ProfileForm() {
 
         <div className="grid grid-cols-12 items-center gap-4">
           <label className="col-span-3 text-right font-medium text-gray-700">
-            Email <span className="text-red-500">*</span>
+            Email
           </label>
           <div className="col-span-9">
             <Input
@@ -252,13 +253,14 @@ export default function ProfileForm() {
               value={form.email}
               onChange={handleChange}
               required
+              placeholder="VD: abc@gmail.com"
             />
           </div>
         </div>
 
         <div className="grid grid-cols-12 items-center gap-4">
           <label className="col-span-3 text-right font-medium text-gray-700">
-            Điện thoại <span className="text-red-500">*</span>
+            Điện thoại
           </label>
           <div className="col-span-9">
             <div className="w-full">
@@ -286,7 +288,7 @@ export default function ProfileForm() {
 
         <div className="grid grid-cols-12 items-center gap-4">
           <label className="col-span-3 text-right font-medium text-gray-700">
-            Địa chỉ <span className="text-red-500">*</span>
+            Địa chỉ
           </label>
           <div className="col-span-9">
             <div className="w-full">
@@ -313,7 +315,7 @@ export default function ProfileForm() {
 
         <div className="grid grid-cols-12 items-center gap-4">
           <label className="col-span-3 text-right font-medium text-gray-700">
-            Ngày sinh <span className="text-red-500">*</span>
+            Ngày sinh
           </label>
           <div className="col-span-9">
             <Input
@@ -327,7 +329,7 @@ export default function ProfileForm() {
 
         <div className="grid grid-cols-12 items-center gap-4">
           <label className="col-span-3 text-right font-medium text-gray-700">
-            Giới tính <span className="text-red-500">*</span>
+            Giới tính
           </label>
           <div className="col-span-9">
             <motion.select
@@ -452,6 +454,7 @@ function Input({
           onChange={onChange}
           required={required}
           className="w-full border-2 border-gray-300 bg-white rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-[#0C6A4E] focus:border-[#0C6A4E] transition-all duration-200"
+          placeholder={placeholder}
         />
         <AnimatePresence>
           {required && value === "" && (
