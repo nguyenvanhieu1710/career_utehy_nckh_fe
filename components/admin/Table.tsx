@@ -1,32 +1,49 @@
-import { TableHeader } from "./TableHeader";
-import { TableRow } from "./TableRow";
-
-interface User {
-  id: number;
-  avatar?: string;
-  name: string;
-  email: string;
-  role: string;
-  status: "active" | "inactive";
+// Table.tsx
+export interface Column<T> {
+  label: string;                     // tên cột
+  field?: keyof T;                   // field trong object
+  render?: (item: T, index: number) => React.ReactNode; // custom render
+  className?: string;                // optional style
 }
 
-interface TableProps {
-  data: User[];
+export interface TableProps<T> {
+  columns: Column<T>[];
+  data: T[];
   loading?: boolean;
 }
 
-export function Table({ data, loading }: TableProps) {
+export function Table<T>({ columns, data, loading }: TableProps<T>) {
   if (loading) return <div>Loading...</div>;
+
   return (
-    <div className="bg-white rounded-lg shadow-sm border">
-      <div className="p-4">
-        <TableHeader />
-        <div className="mt-2">
-          {data.map((user, idx) => (
-            <TableRow key={user.id} user={user} index={idx + 1} />
+    <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
+      <table className="w-full text-left border-collapse">
+        {/* Header */}
+        <thead className="bg-gray-100 border-b">
+          <tr>
+            {columns.map((col, idx) => (
+              <th key={idx} className={`p-3 font-medium ${col.className || ""}`}>
+                {col.label}
+              </th>
+            ))}
+          </tr>
+        </thead>
+
+        {/* Body */}
+        <tbody>
+          {data.map((item, rowIndex) => (
+            <tr key={rowIndex} className="border-b hover:bg-gray-50">
+              {columns.map((col, colIndex) => (
+                <td key={colIndex} className="p-3">
+                  {col.render
+                    ? col.render(item, rowIndex) // custom cell
+                    : (col.field ? (item[col.field] as any) : null)}
+                </td>
+              ))}
+            </tr>
           ))}
-        </div>
-      </div>
+        </tbody>
+      </table>
     </div>
   );
 }

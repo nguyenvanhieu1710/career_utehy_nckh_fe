@@ -2,9 +2,11 @@
 
 import { Plus } from 'lucide-react';
 import Button from '@/components/ui/Button';
-
-export function AddButton() {
+interface AddButtonProps {
+  onClick: () => void
+}
+export function AddButton({ onClick }: AddButtonProps) {
   return (
-    <Button type='button' iconLeft={<Plus size={18} className="mr-2" />} />
+    <Button type='button' onClick={onClick} iconLeft={<Plus size={18} className="mr-2" />} value='ADD' />
   );
 }

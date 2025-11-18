@@ -4,7 +4,8 @@ export const authAPI = {
     login: (email: string, password: string) => api.post(`/auth/login`, { email: email, password: password }),
     verify: () => api.get("/auth/verify"),
     getByEmail: (email: string) => api.get(`/user/get-by-email/${email}`),
-    updatePassword: (token: string, new_password: string)=> api.patch(`/auth/update-password?token=${token}`, {password: new_password})
+    updatePassword: (token: string, new_password: string)=> api.patch(`/auth/update-password?token=${token}`, {password: new_password}),
+    getPerms: ()=> api.get("/permission/get-perms")
 };
 
 export const isEmail = (email: string) => {

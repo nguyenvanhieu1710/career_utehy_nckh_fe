@@ -1,6 +1,6 @@
 'use client';
 
-import { Home, Users, Database, Briefcase, FileText, Menu, Settings, LogOut, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Home, Users, Database, Briefcase, FileText, Menu, Settings, LogOut, ChevronLeft, ChevronRight, Key } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -13,6 +13,7 @@ const menuItems = [
   { href: '/admin/data-management', label: 'Quản lý nguồn dữ liệu', icon: Database },
   { href: '/admin/crawl-management', label: 'Quản lý crawl tin', icon: Briefcase },
   { href: '/admin/job-management', label: 'Quản lý tin tuyển dụng', icon: FileText },
+  { href: '/admin/permission-management', label: 'Quyền / Vai trò', icon: Key },
   { href: '/admin/category-management', label: 'Quản lý danh mục', icon: Menu },
 ];
 

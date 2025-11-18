@@ -3,11 +3,12 @@
 import { useState, useEffect } from "react";
 import { Filters } from "@/components/admin/Filters";
 import { AddButton } from "@/components/admin/AddButton";
-import { Table } from "@/components/admin/Table";
+import { Column, Table } from "@/components/admin/Table";
 import { Pagination } from "@/components/admin/Pagination";
 import { AddAccountDialog } from "@/components/admin/AddAccountDialog";
 import { DeleteConfirmationDialog } from "@/components/admin/DeleteConfirmationDialog";
 import { SuccessDialog } from "@/components/admin/SuccessDialog";
+import { ActionButtons } from "@/components/admin/ActionButtons";
 
 interface User {
   id: number;
@@ -16,6 +17,7 @@ interface User {
   role: "Sinh viên" | "Nhà tuyển dụng" | "Admin";
   status: "active" | "inactive";
 }
+
 
 const mockData: User[] = [
   {
@@ -112,6 +114,7 @@ export default function UserManagementPage() {
   };
 
   const handleDeleteUser = () => {
+
     if (!selectedUser) return;
 
     const updatedUsers = users.filter((user) => user.id !== selectedUser.id);
@@ -132,6 +135,34 @@ export default function UserManagementPage() {
     setIsDeleteDialogOpen(true);
   };
 
+
+  
+const columns: Column<User>[] = [
+  { label: "#", render: (_, i) => i + 1 },
+  { label: "Avatar", render: user => <img /> },
+  { label: "Name", field: "name" },
+  { label: "Email", field: "email" },
+  { label: "Role", field: "role" },
+  {
+    label: "Status",
+    render: user => (
+      <span className={user.status === "active" ? "text-green-600" : "text-red-600"}>
+        {user.status}
+      </span>
+    )
+  },
+  {
+    label: "Action",
+    render: user => (
+      <div className='flex gap-2'>
+        <ActionButtons type='edit' onClick={()=>handleEdit(user)}/>
+        <ActionButtons type='delete' onClick={() => handleDelete(user)}/>
+      </div>
+    )
+  }
+  
+] as Column<User>[];
+
   return (
     <div className="max-w-7xl mx-auto">
       {/* Header */}
@@ -151,17 +182,12 @@ export default function UserManagementPage() {
       {/* Table */}
       <div className="bg-white rounded-lg shadow-sm border">
         <div className="p-4">
-          <Table
-            data={users}
-            loading={loading}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-          />
+          <Table columns={columns} data={users} loading={loading} />
         </div>
       </div>
 
       {/* Pagination */}
-      <Pagination />
+      <Pagination amountOfRecord={users?.length || 0}/>
 
       {/* Add/Edit User Dialog */}
       <AddAccountDialog
