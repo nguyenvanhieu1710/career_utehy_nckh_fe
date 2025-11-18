@@ -35,3 +35,15 @@ export interface RemovePermissionFromGroupRequest {
   group_id: string;
   perm: string;
 }
+
+export interface Role {
+  id?: number;
+  name?: string;
+  description?: string;
+  created_at?: DateTime;
+  permissions?: {
+    id: string,
+    group_id: string,
+    perm: string
+  }[]
+}

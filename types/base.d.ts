@@ -19,3 +19,10 @@ export interface PaginatedResponse<T> {
   size: number;
   total_pages: number;
 }
+
+export interface GetSchema{
+  id: string,
+  searchKeyword: string,
+  page: number,
+  row: number
+}

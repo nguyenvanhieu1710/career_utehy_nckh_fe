@@ -13,6 +13,7 @@ interface ChipTagProps {
   width?: string;
   iconFill?: string;
   iconColor?: string;
+  textOverflow?: "ellipsis" | "unset" ;
 }
 
 const ChipTag: React.FC<ChipTagProps> = ({
@@ -27,13 +28,14 @@ const ChipTag: React.FC<ChipTagProps> = ({
   width = "auto",
   iconFill = "#737373ff",
   iconColor = "white",
+  textOverflow = "unset"
 }) => {
   return (
     <div
       className="chiptag"
       onClick={onClick}
       style={{
-        maxWidth: "49%",
+        maxWidth: "70%",
         display: "inline-flex",
         alignItems: "center",
         padding: "4px 8px",
@@ -53,8 +55,7 @@ const ChipTag: React.FC<ChipTagProps> = ({
         style={{
           width: "90%",
           whiteSpace: "nowrap",
-          overflow: "hidden",
-          textOverflow: "ellipsis",
+          textOverflow: textOverflow,
         }}
       >
         {title}
