@@ -5,7 +5,6 @@ export const authAPI = {
     verify: () => api.get("/auth/verify"),
     getByEmail: (email: string) => api.get(`/user/get-by-email/${email}`),
     updatePassword: (token: string, new_password: string)=> api.patch(`/auth/update-password?token=${token}`, {password: new_password}),
-    getPerms: ()=> api.get("/permission/get-perms")
 };
 
 export const isEmail = (email: string) => {
@@ -34,8 +33,9 @@ export const getUserStorage = () => {
     const email = window.localStorage.getItem('account_email');
     const username = window.localStorage.getItem('account_username');
     const user_id = window.localStorage.getItem('account_id');
+    const fullname = window.localStorage.getItem('fullname');
     return {
-        email, username, user_id
+        email, username, user_id, fullname
     }
 }
 

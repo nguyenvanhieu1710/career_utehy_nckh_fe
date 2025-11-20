@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { getUserStorage } from "@/services/auth";
 
 export default function ProfileForm() {
   const [form, setForm] = useState({
-    name: "",
-    email: "",
+    name: getUserStorage().fullname,
+    email: getUserStorage().email,
     phone: "",
     address: "",
     birthday: "",

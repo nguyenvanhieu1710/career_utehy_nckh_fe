@@ -15,6 +15,8 @@ import { authAPI } from "@/services/auth";
 import { permAPI } from "@/services/perm";
 import { toast } from "sonner";
 import { Role } from "@/types/permission";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/Select";
+import { Input } from "@/components/ui/input";
 
 
 
@@ -26,14 +28,15 @@ export default function RoleManagementPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isSuccessDialogOpen, setIsSuccessDialogOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const [filters, setFilters] = useState({ id: "", searchKeyword: "", page: 1, row: 100 });
   const [perms, setPerms] = useState<string[]>();
   // Giả lập loading
   useEffect(() => {
-    authAPI.getPerms().then(res => {
+    permAPI.getPerms().then(res => {
       setPerms(res.data);
     })
     setLoading(true);
-    permAPI.getRoles({ id: "", searchKeyword: "", page: 1, row: 100 }).then(res => {
+    permAPI.getRoles(filters).then(res => {
       setRoles(res.data?.data)
     }).catch(err => { }).finally(() => setLoading(false))
   }, []);
@@ -118,7 +121,7 @@ export default function RoleManagementPage() {
     <div className="max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Quản lý tài khoản</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Quản lý vai trò</h1>
         <AddButton
           onClick={() => {
             setSelectedRole(null);
@@ -127,8 +130,20 @@ export default function RoleManagementPage() {
         />
       </div>
 
-      {/* Filters */}
-      <Filters />
+       <div className="flex flex-wrap gap-3 mb-4">
+        
+
+        <div className="flex-1 min-w-64">
+          <Input
+            placeholder="Nhập tên vai trò để tìm kiếm..."
+            className="w-full"
+            value={filters.searchKeyword}
+            onChange={(e) => {
+              setFilters(prev => ({ ...prev, searchKeyword: e.target.value }))
+            }}
+          />
+        </div>
+      </div>
 
       {/* Table */}
       <div className="bg-white rounded-lg shadow-sm border">
