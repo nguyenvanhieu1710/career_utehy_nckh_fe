@@ -2,7 +2,7 @@ import React, { forwardRef } from "react";
 
 type TextFieldProps = {
   value: any;
-  onChange?: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+  onChange?: (e: React.ChangeEvent<any>) => void;
   onClick?: (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => void;
   backgroundColor?: string;
   iconLeft?: React.ReactNode;

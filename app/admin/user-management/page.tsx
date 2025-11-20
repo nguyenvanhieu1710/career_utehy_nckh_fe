@@ -9,6 +9,10 @@ import { AddAccountDialog } from "@/components/admin/AddAccountDialog";
 import { DeleteConfirmationDialog } from "@/components/admin/DeleteConfirmationDialog";
 import { SuccessDialog } from "@/components/admin/SuccessDialog";
 import { ActionButtons } from "@/components/admin/ActionButtons";
+import { userAPI } from "@/services/user";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/Select";
+import { Input } from "@/components/ui/input";
+import { GetSchema } from "@/types/base";
 
 interface User {
   id: number;
@@ -19,58 +23,28 @@ interface User {
 }
 
 
-const mockData: User[] = [
-  {
-    id: 1,
-    name: "Phan Văn Giang",
-    email: "pvgttbqp@gmail.com",
-    role: "Sinh viên",
-    status: "active",
-  },
-  {
-    id: 2,
-    name: "Nguyễn Tấn Cường",
-    email: "ntc66@gmail.com",
-    role: "Nhà tuyển dụng",
-    status: "inactive",
-  },
-  {
-    id: 3,
-    name: "Nguyễn Trường Thắng",
-    email: "trthangnq@gmail.com",
-    role: "Admin",
-    status: "active",
-  },
-  {
-    id: 4,
-    name: "Đoàn Xuân Bường",
-    email: "trthangnq@gmail.com",
-    role: "Sinh viên",
-    status: "inactive",
-  },
-  {
-    id: 5,
-    name: "Lương Hoàng Giang",
-    email: "giangphutho@gmail.com",
-    role: "Nhà tuyển dụng",
-    status: "active",
-  },
-];
-
 export default function UserManagementPage() {
   const [loading, setLoading] = useState(true);
-  const [users, setUsers] = useState<User[]>(mockData);
+  const [users, setUsers] = useState<User[]>([]);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isSuccessDialogOpen, setIsSuccessDialogOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const [filters, setFilter] = useState<GetSchema>({
+    id: "",
+    searchKeyword: "",
+    page: 1,
+    row: 100
+  })
 
-  // Giả lập loading
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 800);
-    return () => clearTimeout(timer);
-  }, []);
+    setLoading(true)
+    userAPI.getUsers(filters).then(res => {
+      setUsers(res.data?.data)
+    }).catch(err => { })
+      .finally(() => setLoading(false))
+  }, [filters]);
 
   const handleAddUser = (data: {
     name: string;
@@ -98,11 +72,11 @@ export default function UserManagementPage() {
     const updatedUsers = users.map((user) =>
       user.id === selectedUser.id
         ? {
-            ...user,
-            name: data.name,
-            status: data.status,
-            role: data.role,
-          }
+          ...user,
+          name: data.name,
+          status: data.status,
+          role: data.role,
+        }
         : user
     );
 
@@ -136,32 +110,32 @@ export default function UserManagementPage() {
   };
 
 
-  
-const columns: Column<User>[] = [
-  { label: "#", render: (_, i) => i + 1 },
-  { label: "Avatar", render: user => <img /> },
-  { label: "Name", field: "name" },
-  { label: "Email", field: "email" },
-  { label: "Role", field: "role" },
-  {
-    label: "Status",
-    render: user => (
-      <span className={user.status === "active" ? "text-green-600" : "text-red-600"}>
-        {user.status}
-      </span>
-    )
-  },
-  {
-    label: "Action",
-    render: user => (
-      <div className='flex gap-2'>
-        <ActionButtons type='edit' onClick={()=>handleEdit(user)}/>
-        <ActionButtons type='delete' onClick={() => handleDelete(user)}/>
-      </div>
-    )
-  }
-  
-] as Column<User>[];
+
+  const columns: Column<User>[] = [
+    { label: "#", render: (_, i) => i + 1 },
+    { label: "Avatar", render: user => <img /> },
+    { label: "Name", field: "name" },
+    { label: "Email", field: "email" },
+    { label: "Role", field: "role" },
+    {
+      label: "Status",
+      render: user => (
+        <span className={user.status === "active" ? "text-green-600" : "text-red-600"}>
+          {user.status}
+        </span>
+      )
+    },
+    {
+      label: "Action",
+      render: user => (
+        <div className='flex gap-2'>
+          <ActionButtons type='edit' onClick={() => handleEdit(user)} />
+          <ActionButtons type='ban' onClick={() => handleDelete(user)} />
+        </div>
+      )
+    }
+
+  ] as Column<User>[];
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -176,8 +150,41 @@ const columns: Column<User>[] = [
         />
       </div>
 
-      {/* Filters */}
-      <Filters />
+      <div className="flex flex-wrap gap-3 mb-4">
+        <Select defaultValue="all">
+          <SelectTrigger className="w-48">
+            <SelectValue placeholder="Lọc theo vai trò" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tất cả vai trò</SelectItem>
+            <SelectItem value="sinh-vien">Sinh viên</SelectItem>
+            <SelectItem value="nha-tuyen-dung">Nhà tuyển dụng</SelectItem>
+            <SelectItem value="admin">Admin</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select defaultValue="all">
+          <SelectTrigger className="w-48">
+            <SelectValue placeholder="Lọc theo trạng thái" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tất cả trạng thái</SelectItem>
+            <SelectItem value="active">Còn hoạt động</SelectItem>
+            <SelectItem value="inactive">Ngừng hoạt động</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <div className="flex-1 min-w-64">
+          <Input
+            placeholder="Nhập tên người dùng để tìm kiếm..."
+            className="w-full"
+            value={filters.searchKeyword}
+            onChange={(e) => {
+              setFilter(prev => ({ ...prev, searchKeyword: e.target.value }))
+            }}
+          />
+        </div>
+      </div>
 
       {/* Table */}
       <div className="bg-white rounded-lg shadow-sm border">
@@ -187,7 +194,7 @@ const columns: Column<User>[] = [
       </div>
 
       {/* Pagination */}
-      <Pagination amountOfRecord={users?.length || 0}/>
+      <Pagination amountOfRecord={users?.length || 0} />
 
       {/* Add/Edit User Dialog */}
       <AddAccountDialog

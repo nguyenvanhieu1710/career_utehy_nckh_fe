@@ -21,8 +21,8 @@ export interface PaginatedResponse<T> {
 }
 
 export interface GetSchema{
-  id: string,
-  searchKeyword: string,
-  page: number,
-  row: number
+  id?: string,
+  searchKeyword?: string,
+  page?: number,
+  row?: number
 }

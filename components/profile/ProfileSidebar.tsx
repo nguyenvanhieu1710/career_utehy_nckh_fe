@@ -7,7 +7,7 @@ import { Edit, Lock, LogOut, UserRound } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { Label } from "@/components/ui/label";
 import { motion } from "framer-motion";
-import { logout } from "@/services/auth";
+import { getUserStorage, logout } from "@/services/auth";
 
 // Animation variants with proper TypeScript types
 const containerVariants = {
@@ -84,7 +84,7 @@ export default function ProfileSidebar() {
 
       <motion.div variants={itemVariants} className="text-center">
         <p className="text-black-600">Chào bạn trở lại,</p>
-        <h3 className="font-semibold text-lg mb-5">Ariana Greenblatt</h3>
+        <h3 className="font-semibold text-lg mb-5">{getUserStorage().fullname}</h3>
       </motion.div>
 
       <motion.div 
