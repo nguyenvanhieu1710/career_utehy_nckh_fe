@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Dispatch, SetStateAction, useEffect, useRef, useState } from "react";
 import { ZoomIn, ZoomOut, Maximize2, Move, Maximize } from "lucide-react";
-import { Section, SectionSize } from "../page";
+import { Section, SectionSize } from "../[cv_id]/page";
+import jsPDF from "jspdf";
 
 export interface TextStyle {
     bold: boolean;
@@ -28,6 +29,16 @@ interface SectionLayout {
     id: string;
 }
 
+export interface CVState {
+    cvTitle: string;
+    cvSubTitle: string;
+    primaryColor: string;
+    imageURL?: string;
+    imageState: ImageState;
+    sections: Section[];
+    projectName: string;
+}
+
 export interface ImageState {
     x: number;
     y: number;
@@ -44,10 +55,14 @@ interface CVCanvasProps {
     cvTitle?: string;
     cvSubTitle?: string;
     sections?: Section[];
-    onSectionDrag: (data: { id: string, x: number, y: number }) => void;
+    onSectionDrag?: (data: { id: string, x: number, y: number }) => void;
     primaryColor?: string;
     isIcon?: boolean;
-    defaultZoom?: number
+    defaultZoom?: number;
+    canvasRef?: React.RefObject<HTMLCanvasElement | null>;
+    onSectionResize?: (data: { id: string, width: number, height: number }) => void;
+    imageState: ImageState,
+    setImageState: Dispatch<SetStateAction<ImageState>>;
 }
 
 type ResizeHandle = 'nw' | 'ne' | 'sw' | 'se' | 'n' | 's' | 'e' | 'w' | null;
@@ -72,6 +87,29 @@ interface ImageResizeState {
     startY: number;
     startState: ImageState;
 }
+export const getFullCVState = (
+    cvTitle: string,
+    cvSubTitle: string,
+    primaryColor: string,
+    imageURL: string | undefined,
+    imageState: ImageState,
+    sections: Section[],
+    projectName: string
+): CVState => {
+    return {
+        cvTitle,
+        cvSubTitle,
+        primaryColor,
+        imageURL,
+        imageState,
+        sections: sections.map(section => ({
+            ...section,
+            items: JSON.parse(JSON.stringify(section.items))
+        })),
+        projectName
+    };
+};
+
 
 const INITIAL_IMAGE_STATE: ImageState = {
     x: 40,
@@ -84,6 +122,221 @@ const INITIAL_IMAGE_STATE: ImageState = {
     offsetY: 0
 };
 
+export const generatePDFFromState = (state: CVState): void => {
+    console.log(state.imageState)
+    const A4_WIDTH = 794;
+    const A4_HEIGHT = 1123;
+    const PADDING = 60;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = A4_WIDTH;
+    canvas.height = A4_HEIGHT;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const applyTextStyle = (style: TextStyle, fontSize: number) => {
+        const weight = style.bold ? "bold" : "normal";
+        const fontStyle = style.italic ? "italic" : "normal";
+        ctx.font = `${fontStyle} ${weight} ${fontSize}px Arial`;
+        ctx.fillStyle = style.color;
+    };
+
+    const drawTextWithUnderline = (text: string, x: number, y: number, underline: boolean) => {
+        ctx.fillText(text, x, y);
+        if (underline) {
+            const textWidth = ctx.measureText(text).width;
+            ctx.beginPath();
+            ctx.strokeStyle = ctx.fillStyle;
+            ctx.lineWidth = 1;
+            ctx.moveTo(x, y + 2);
+            ctx.lineTo(x + textWidth, y + 2);
+            ctx.stroke();
+        }
+    };
+
+    const drawItem = (item: SectionItem, x: number, y: number, maxWidth: number, depth: number = 0): number => {
+        const indent = depth * 20;
+        const bulletX = x + indent;
+
+        if (bulletX + 10 > x + maxWidth) return y + 25;
+
+        ctx.fillStyle = state.primaryColor;
+        ctx.beginPath();
+        ctx.arc(bulletX, y - 3, 2, 0, Math.PI * 2);
+        ctx.fill();
+
+        applyTextStyle(item.style, 14);
+
+        const textX = bulletX + 10;
+        const availableWidth = maxWidth - indent - 10;
+        const words = item.text.split(' ');
+        let line = '';
+        let lineY = y;
+
+        for (let i = 0; i < words.length; i++) {
+            const testLine = line + words[i] + ' ';
+            const metrics = ctx.measureText(testLine);
+
+            if (metrics.width > availableWidth && i > 0) {
+                drawTextWithUnderline(line.trim(), textX, lineY, item.style.underline);
+                line = words[i] + ' ';
+                lineY += 20;
+            } else {
+                line = testLine;
+            }
+        }
+        drawTextWithUnderline(line.trim(), textX, lineY, item.style.underline);
+
+        let currentY = lineY + 25;
+
+        if (item.children && item.children.length > 0) {
+            item.children.forEach((child) => {
+                currentY = drawItem(child, x, currentY, maxWidth, depth + 1);
+            });
+        }
+
+        return currentY;
+    };
+
+    const drawRoundedImageWithState = (img: HTMLImageElement) => {
+        const imgState = state.imageState;
+        const x = imgState.x;
+        const y = imgState.y;
+
+        ctx.save();
+
+        // Create circular clipping path
+        ctx.beginPath();
+        ctx.arc(x + imgState.width / 2, y + imgState.height / 2, Math.min(imgState.width, imgState.height) / 2, 0, Math.PI * 2);
+        ctx.clip();
+
+        // Draw image with transformations
+        if (img && img.complete) {
+            ctx.save();
+
+            const centerX = x + imgState.width / 2;
+            const centerY = y + imgState.height / 2;
+            ctx.translate(centerX, centerY);
+            ctx.rotate((imgState.rotation * Math.PI) / 180);
+
+            const scaledWidth = imgState.width * imgState.scale;
+            const scaledHeight = imgState.height * imgState.scale;
+
+            ctx.drawImage(
+                img,
+                -scaledWidth / 2 + imgState.offsetX,
+                -scaledHeight / 2 + imgState.offsetY,
+                scaledWidth,
+                scaledHeight
+            );
+
+            ctx.restore();
+        } else {
+            ctx.fillStyle = "#E5E7EB";
+            ctx.fillRect(x, y, imgState.width, imgState.height);
+        }
+
+        ctx.restore();
+
+        // Draw border
+        ctx.beginPath();
+        ctx.arc(x + imgState.width / 2, y + imgState.height / 2, Math.min(imgState.width, imgState.height) / 2, 0, Math.PI * 2);
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = state.primaryColor;
+        ctx.stroke();
+    };
+
+    // Vẽ nền trắng
+    ctx.fillStyle = "#FFFFFF";
+    ctx.fillRect(0, 0, A4_WIDTH, A4_HEIGHT);
+
+    // Vẽ pattern (header màu)
+    ctx.fillStyle = state.primaryColor;
+    ctx.fillRect(0, 0, A4_WIDTH, 130);
+
+    ctx.fillStyle = state.primaryColor;
+    ctx.fillRect(245, 135, 2, A4_HEIGHT - 140);
+
+    // Vẽ title
+    ctx.fillStyle = "#ffffffff";
+    ctx.font = "bold 32px Arial";
+    ctx.fillText(state.cvTitle || "Tiêu đề CV", PADDING, PADDING);
+
+    ctx.fillStyle = "#ffffffff";
+    ctx.font = "18px Arial";
+    ctx.fillText(state.cvSubTitle || "Tiêu đề phụ", PADDING, PADDING + 27);
+
+    // Vẽ ảnh (nếu có)
+    if (state.imageURL) {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+
+        img.onload = () => {
+            drawRoundedImageWithState(img);
+            drawSectionsContent();
+        };
+
+        img.onerror = () => {
+            // Placeholder
+            const imgState = state.imageState;
+            ctx.fillStyle = "#E5E7EB";
+            ctx.beginPath();
+            ctx.arc(imgState.x + imgState.width / 2, imgState.y + imgState.height / 2, Math.min(imgState.width, imgState.height) / 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            drawSectionsContent();
+        };
+
+        img.src = state.imageURL;
+    } else {
+        drawSectionsContent();
+    }
+
+    function drawSectionsContent() {
+        if (!ctx) return;
+
+        // Vẽ sections với đủ thông tin width, height
+        state.sections.forEach((section) => {
+            const sectionX = section.x;
+            const sectionY = section.y;
+            const sectionWidth = section.size.width;
+            const sectionHeight = section.size.height;
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(sectionX, sectionY, sectionWidth, sectionHeight);
+            ctx.clip();
+
+            // Vẽ title
+            ctx.fillStyle = state.primaryColor;
+            ctx.font = "bold 20px Arial";
+            ctx.fillText(section.title, sectionX + 5, sectionY + 25);
+
+            // Vẽ items
+            let itemY = sectionY + 45;
+            section.items.forEach((item) => {
+                itemY = drawItem(item, sectionX + 10, itemY, sectionWidth - 20, 0);
+            });
+
+            ctx.restore();
+        });
+
+        // Lưu PDF
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF({
+            orientation: "portrait",
+            unit: "pt",
+            format: "a4",
+        });
+
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+
+        pdf.addImage(imgData, "PNG", 0, 0, pageWidth, pageHeight);
+        pdf.save(`${state.projectName}.pdf`);
+    }
+};
 export default function CVCanvas({
     primaryColor = "#1d7057ff",
     imageURL,
@@ -91,10 +344,14 @@ export default function CVCanvas({
     cvSubTitle = "",
     sections = [],
     onSectionDrag,
+    onSectionResize,
     isIcon = false,
-    defaultZoom = 1
+    defaultZoom = 1,
+    canvasRef,
+    imageState,
+    setImageState,
 }: CVCanvasProps) {
-    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const iconRef = useRef<HTMLCanvasElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const [zoom, setZoom] = useState<number>(defaultZoom);
     const [pan, setPan] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -106,16 +363,11 @@ export default function CVCanvas({
     const [hoveredHandle, setHoveredHandle] = useState<ResizeHandle>(null);
     const [sectionLayouts, setSectionLayouts] = useState<Map<number, SectionLayout>>(new Map());
     const [guideLines, setGuideLines] = useState<{ x: number | null, y: number | null }>({ x: null, y: null });
-
-    // Image states
-    const [imageState, setImageState] = useState<ImageState>(INITIAL_IMAGE_STATE);
     const [hoveredImage, setHoveredImage] = useState(false);
     const [hoveredImageHandle, setHoveredImageHandle] = useState<ResizeHandle>(null);
     const [imageDragState, setImageDragState] = useState<DragState | null>(null);
     const [imageResizeState, setImageResizeState] = useState<ImageResizeState | null>(null);
     const [loadedImage, setLoadedImage] = useState<HTMLImageElement | null>(null);
-    const [imageDragging, setImageDragging] = useState(false);
-    const [imageLastPos, setImageLastPos] = useState({ x: 0, y: 0 });
     const [imageInternalDragState, setImageInternalDragState] = useState<{ startX: number; startY: number } | null>(null);
     const [isEditingImageInside, setIsEditingImageInside] = useState(false);
 
@@ -139,7 +391,12 @@ export default function CVCanvas({
     const SNAP_THRESHOLD = 8;
 
     useEffect(() => {
-        const canvas = canvasRef.current;
+        let canvas;
+        if (isIcon) {
+            canvas = iconRef.current;
+        } else {
+            canvas = canvasRef?.current;
+        }
         if (!canvas) return;
 
         const ctx = canvas.getContext("2d");
@@ -164,24 +421,19 @@ export default function CVCanvas({
         let yOffset = PADDING + 80;
 
         sections.forEach((section, index) => {
-            if (!sectionLayouts.has(index)) {
-                const height = calculateSectionHeight(section);
-                newLayouts.set(index, {
-                    id: section.id,
-                    x: section.x,
-                    y: section.y,
-                    width: section.size.width,
-                    height: section.size.height
-                });
-                yOffset += height + 20;
-            } else {
-                newLayouts.set(index, sectionLayouts.get(index)!);
-            }
+            const height = calculateSectionHeight(section);
+            newLayouts.set(index, {
+                id: section.id,
+                x: section.x,
+                y: section.y,
+                width: section.size.width,
+                height: section.size.height
+            });
+            yOffset += height + 20;
         });
 
-        if (newLayouts.size > 0 && sectionLayouts.size === 0) {
-            setSectionLayouts(newLayouts);
-        }
+
+        setSectionLayouts(newLayouts);
     }, [sections]);
 
     const getA4Bounds = () => {
@@ -310,12 +562,20 @@ export default function CVCanvas({
         ctx.fillRect(centerX + 245, centerY + 135, 2, A4_HEIGHT - 140);
     }
 
-    const drawItem = (ctx: CanvasRenderingContext2D, item: SectionItem, x: number, y: number, maxWidth: number, depth: number = 0): number => {
+    const drawItem = (
+        ctx: CanvasRenderingContext2D,
+        item: SectionItem,
+        x: number,
+        y: number,
+        maxWidth: number,
+        depth: number = 0
+    ): number => {
         const indent = depth * 20;
         const bulletX = x + indent;
 
         if (bulletX + 10 > x + maxWidth) return y + 25;
 
+        // Draw bullet
         ctx.fillStyle = primaryColor;
         ctx.beginPath();
         ctx.arc(bulletX, y - 3, 2, 0, Math.PI * 2);
@@ -325,25 +585,61 @@ export default function CVCanvas({
 
         const textX = bulletX + 10;
         const availableWidth = maxWidth - indent - 10;
-        const words = item.text.split(' ');
-        let line = '';
+
+        const words = item.text.split(" ");
+        let line = "";
         let lineY = y;
+        const lines: string[] = [];
 
+        // --- WRAP TEXT ---
         for (let i = 0; i < words.length; i++) {
-            const testLine = line + words[i] + ' ';
-            const metrics = ctx.measureText(testLine);
+            const testLine = line + words[i] + " ";
+            const testWidth = ctx.measureText(testLine).width;
 
-            if (metrics.width > availableWidth && i > 0) {
-                drawTextWithUnderline(ctx, line.trim(), textX, lineY, item.style.underline);
-                line = words[i] + ' ';
+            if (testWidth > availableWidth && i > 0) {
+                lines.push(line.trim());
+                line = words[i] + " ";
                 lineY += 20;
             } else {
                 line = testLine;
             }
         }
-        drawTextWithUnderline(ctx, line.trim(), textX, lineY, item.style.underline);
+        lines.push(line.trim());
 
-        let currentY = lineY + 25;
+        // --- DRAW WITH JUSTIFY ---
+        const spaceWidth = ctx.measureText(" ").width;
+
+        lines.forEach((ln, index) => {
+            const isLast = index === lines.length - 1;
+            const drawY = y + index * 20;
+
+            if (isLast) {
+                // Last line: normal left align
+                drawTextWithUnderline(ctx, ln, textX, drawY, item.style.underline);
+                return;
+            }
+
+            const wordsInLine = ln.split(" ");
+            const wordCount = wordsInLine.length;
+            if (wordCount <= 1) {
+                drawTextWithUnderline(ctx, ln, textX, drawY, item.style.underline);
+                return;
+            }
+
+            const lineWidth = ctx.measureText(ln).width;
+            const extraSpace = (availableWidth - lineWidth) / (wordCount - 1);
+
+            let xx = textX;
+
+            wordsInLine.forEach((w) => {
+                drawTextWithUnderline(ctx, w, xx, drawY, item.style.underline);
+
+                xx += ctx.measureText(w).width + spaceWidth + extraSpace;
+            });
+        });
+
+        // Next Y
+        let currentY = y + lines.length * 20 + 5;
 
         if (item.children && item.children.length > 0) {
             item.children.forEach((child) => {
@@ -353,6 +649,7 @@ export default function CVCanvas({
 
         return currentY;
     };
+
 
     const drawResizeHandles = (ctx: CanvasRenderingContext2D, layout: SectionLayout, a4OffsetX: number, a4OffsetY: number, isHovered: boolean) => {
         if (!isHovered && !resizeState) return;
@@ -559,7 +856,7 @@ export default function CVCanvas({
     };
 
     const getMousePos = (e: React.MouseEvent<HTMLCanvasElement>): { x: number; y: number } => {
-        const canvas = canvasRef.current;
+        const canvas = canvasRef?.current;
         if (!canvas) return { x: 0, y: 0 };
 
         const rect = canvas.getBoundingClientRect();
@@ -915,7 +1212,13 @@ export default function CVCanvas({
             const newLayouts = new Map(sectionLayouts);
             newLayouts.set(resizeState.sectionIndex, newLayout);
             setSectionLayouts(newLayouts);
-
+            if (onSectionResize) {
+                onSectionResize({
+                    id: newLayout.id,
+                    width: newLayout.width,
+                    height: newLayout.height
+                })
+            }
             setGuideLines({
                 x: snapped.guideX,
                 y: snapped.guideY
@@ -936,11 +1239,13 @@ export default function CVCanvas({
                     y: snapped.y
                 });
                 setSectionLayouts(newLayouts);
-                onSectionDrag({
-                    id: layout.id,
-                    x: snapped.x,
-                    y: snapped.y
-                })
+                if (onSectionDrag) {
+                    onSectionDrag({
+                        id: layout.id,
+                        x: snapped.x,
+                        y: snapped.y
+                    })
+                }
                 setGuideLines({ x: snapped.guideX, y: snapped.guideY });
             }
         } else if (isPanning) {
@@ -1170,10 +1475,12 @@ export default function CVCanvas({
         };
     };
 
+
+
     return (
         <div className={`${isIcon ? "" : "flex-1"} relative bg-[#F9FAFB]`} ref={containerRef}>
             <canvas
-                ref={canvasRef}
+                ref={isIcon ? iconRef : canvasRef}
                 style={{ cursor: getCursorStyle() }}
                 onMouseDown={handleMouseDown}
                 onMouseMove={handleMouseMove}

@@ -1,13 +1,15 @@
 "use client";
 
 import { useState, Dispatch, SetStateAction } from "react";
-import { ChevronDown, ChevronRight, Plus, Edit2, Trash2, Check, X, Download, Eye, PanelLeftClose, PanelLeftOpen, Bold, Italic, Underline, Palette, ImageUp, PaintBucket } from "lucide-react";
+import { ChevronDown, ChevronRight, Plus, Edit2, Trash2, Check, X, Download, Eye, PanelLeftClose, PanelLeftOpen, Bold, Italic, Underline, Palette, ImageUp, PaintBucket, Save } from "lucide-react";
 import Button from "@/components/ui/Button";
-import { SectionSize } from "../page";
+import { SectionSize } from "../[cv_id]/page";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import TextField from "@/components/ui/TextField";
-
+import { jsPDF } from 'jspdf'
+import { generatePDFFromState, getFullCVState, ImageState } from "./Canvas";
+import { cvAPI } from "@/services/cv";
 export interface TextStyle {
     bold: boolean;
     italic: boolean;
@@ -41,6 +43,8 @@ interface CVToolBoxProps {
     cvSubTitle: string;
     onImageSelected: (url: string) => void;
     onCVColorChange: (color: string) => void;
+    cvColor: string,
+    imageURL?: string,
     onSectionLocationChange: (data: { id: string, field: string, value: number }) => void;
     setCvTitle: Dispatch<SetStateAction<string>>;
     setCvSubTitle: Dispatch<SetStateAction<string>>;
@@ -48,10 +52,14 @@ interface CVToolBoxProps {
     setProjectName: Dispatch<SetStateAction<string>>;
     sections: Section[];
     setSections: Dispatch<SetStateAction<Section[]>>;
+    cvCanvasRef: React.RefObject<HTMLCanvasElement | null>;
+    imageState: ImageState
 }
 
 export default function CVToolBox({
     cvTitle,
+    cvColor,
+    imageURL,
     onImageSelected,
     onCVColorChange,
     cvSubTitle,
@@ -61,7 +69,9 @@ export default function CVToolBox({
     setProjectName,
     sections,
     setSections,
-    onSectionLocationChange
+    onSectionLocationChange,
+    cvCanvasRef,
+    imageState,
 }: CVToolBoxProps) {
     const [editingName, setEditingName] = useState<boolean>(false);
     const [tempProjectName, setTempProjectName] = useState<string>("");
@@ -233,11 +243,33 @@ export default function CVToolBox({
     };
 
     const handleDownload = (): void => {
-        alert("Tải về CV");
+        const cvState = getFullCVState(
+            cvTitle,
+            cvSubTitle,
+            cvColor,
+            imageURL,
+            imageState,
+            sections,
+            projectName
+        );
+        generatePDFFromState(cvState);
     };
+    const handleSave = (): void => {
+        const cvState = getFullCVState(
+            cvTitle,
+            cvSubTitle,
+            cvColor,
+            imageURL,
+            imageState,
+            sections,
+            projectName
+        );
 
-    const handlePreview = (): void => {
-        alert("Xem trước CV");
+        cvAPI.save({
+
+        }).then(res => {
+
+        }).catch(err => { })
     };
 
     const renderItem = (item: SectionItem, sectionIndex: number, itemPath: number[], depth: number = 0) => {
@@ -510,9 +542,9 @@ export default function CVToolBox({
                 <div className="flex gap-3">
                     <Button
                         flex={2}
-                        onClick={handlePreview}
-                        value="Xem trước"
-                        iconLeft={<Eye size={18} />}
+                        onClick={handleSave}
+                        value="Lưu"
+                        iconLeft={<Save size={18} />}
                         border="2px solid #0C6A4E"
                         backgroundColor="white"
                         color="#0C6A4E"
