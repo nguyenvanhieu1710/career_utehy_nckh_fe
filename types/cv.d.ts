@@ -25,16 +25,13 @@ export interface LanguageProficiency {
 
 export interface CVProfile extends BaseModel {
   user_id: string;
-  title: string;
-  summary: string | null;
-  projects: Project[] | null;
-  certifications: Certification[] | null;
-  languages: LanguageProficiency[] | null;
-  file_url: string | null;
-  
-  // Relationships
-  user?: User;
+  name: string;
+  title?: string | null;
+  subtitle?: string | null;
+  primary_color?: string | null;
+  sections: string;
 }
+
 
 export interface CVProfileCreate {
   title: string;
@@ -45,4 +42,4 @@ export interface CVProfileCreate {
   file_url?: string;
 }
 
-export interface CVProfileUpdate extends Partial<CVProfileCreate> {}
+export interface CVProfileUpdate extends Partial<CVProfileCreate> { }
