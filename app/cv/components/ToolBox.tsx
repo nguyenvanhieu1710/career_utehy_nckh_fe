@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Dispatch, SetStateAction } from "react";
+import { useState, Dispatch, SetStateAction, useEffect } from "react";
 import { ChevronDown, ChevronRight, Plus, Edit2, Trash2, Check, X, Download, Eye, PanelLeftClose, PanelLeftOpen, Bold, Italic, Underline, Palette, ImageUp, PaintBucket, Save } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { SectionSize } from "../[cv_id]/page";
@@ -88,6 +88,8 @@ export default function CVToolBox({
         color: "#374151"
     };
 
+
+
     const handleStartEditName = (): void => {
         setTempProjectName(projectName);
         setEditingName(true);
@@ -98,6 +100,7 @@ export default function CVToolBox({
             setProjectName(tempProjectName);
         }
         setEditingName(false);
+        handleSave();
     };
 
     const handleCancelEditName = (): void => {
@@ -148,6 +151,8 @@ export default function CVToolBox({
         sections[index].items.push(newItem);
         sections[index].adding = false;
         setSections([...sections]);
+        handleSave();
+
     };
 
     const getItemByPath = (sectionIndex: number, itemPath: number[]) => {
@@ -187,6 +192,7 @@ export default function CVToolBox({
         item.editing = false;
         item.tempText = "";
         setSections(newSections);
+        handleSave();
     };
 
     const handleCancelEditLine = (sectionIndex: number, itemPath: number[]): void => {
@@ -269,8 +275,8 @@ export default function CVToolBox({
         );
 
         cvAPI.update({
-            id:cv_id,
-            primary_color:cvState.primaryColor,
+            id: cv_id,
+            primary_color: cvState.primaryColor,
             sections: JSON.stringify(cvState.sections),
             title: cvState.cvTitle,
             subtitle: cvState.cvSubTitle,
@@ -290,11 +296,10 @@ export default function CVToolBox({
         };
 
         return (
-            <div key={itemPath.join('-')} className="group" style={{ marginLeft: `${depth * 16}px` }}>
+            <div key={itemPath.join('-')} className="group">
                 {item.editing ? (
                     <div className="flex flex-col gap-2 pl-2">
-                        <input
-                            type="text"
+                        <textarea
                             className="flex-1 bg-white border border-gray-300 px-3 py-1.5 text-sm rounded-md text-gray-800 placeholder-gray-400 focus:border-[#0C6A4E] focus:ring-2 focus:ring-[#0C6A4E]/20 outline-none transition-all"
                             value={item.tempText}
                             onChange={(e) => {
@@ -329,7 +334,7 @@ export default function CVToolBox({
                         </div>
                     </div>
                 ) : (
-                    <div className="flex flex-col justify-between pl-2 py-1.5 rounded hover:bg-white transition-all">
+                    <div className="flex flex-col justify-between pl-2 py-1.5 hover:bg-white transition-all group-hover:[border-left:2px_dashed_#777777ff]">
                         <div className="flex items-center gap-2 flex-1">
                             <div className="text-sm flex-1" style={textStyle}>
                                 <span className="text-[#0C6A4E] mr-2">•</span>
@@ -422,7 +427,7 @@ export default function CVToolBox({
 
                 {/* Render children */}
                 {hasChildren && item.expanded && (
-                    <div className="ml-2">
+                    <div className="ml-1">
                         {item.children.map((child, childIndex) =>
                             renderItem(child, sectionIndex, [...itemPath, childIndex], depth + 1)
                         )}
@@ -435,7 +440,7 @@ export default function CVToolBox({
     return (
         <div className={`${extend ? "flex-3" : "w-20"} border-r border-gray-200 p-6 flex flex-col gap-6 ${extend ? "bg-white" : "bg-[#0C6A4E]"} h-screen text-gray-800 overflow-y-auto transition-all`}>
 
-            <div className="flex border items-center justify-between">
+            <div className="flex items-center justify-between">
                 {extend ? <div>
                     <img className="w-[70%]" src={"/logo/header_logo.jpg"} alt="Logo" />
                 </div> : <></>}
@@ -454,26 +459,26 @@ export default function CVToolBox({
                 <div className="flex bg-gray-50 border border-gray-200 p-3 rounded-lg items-center shadow-sm hover:shadow-md transition-all">
                     <div className="flex-1">
                         {editingName ? (
-                            <div className="flex items-center gap-2">
+                            <div className="relative flex items-center gap-2">
                                 <input
                                     className="flex-1 bg-white border border-gray-300 outline-none px-3 py-2 rounded-md text-gray-800 placeholder-gray-400 focus:border-[#0C6A4E] focus:ring-2 focus:ring-[#0C6A4E]/20 transition-all"
                                     value={tempProjectName}
-                                    onChange={(e) => setTempProjectName(e.target.value)}
+                                    onChange={(e) => { setTempProjectName(e.target.value); }}
                                     autoFocus
                                     onKeyDown={(e) => {
-                                        if (e.key === "Enter") handleSaveProjectName();
-                                        if (e.key === "Escape") handleCancelEditName();
+                                        if (e.key === "Enter") { handleSaveProjectName(); handleSave() };
+                                        if (e.key === "Escape") { handleCancelEditName(); handleSave() };
                                     }}
                                 />
                                 <button
                                     onClick={handleSaveProjectName}
-                                    className="p-1.5 text-green-600 hover:bg-green-50 rounded transition-all"
+                                    className="absolute right-1 p-1.5 text-green-600 hover:bg-green-50 rounded transition-all"
                                 >
                                     <Check size={16} />
                                 </button>
                                 <button
                                     onClick={handleCancelEditName}
-                                    className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-all"
+                                    className="absolute right-6 p-1.5 text-red-600 hover:bg-red-50 rounded transition-all"
                                 >
                                     <X size={16} />
                                 </button>
@@ -575,8 +580,6 @@ export default function CVToolBox({
                     </div>
                 </div>
 
-                <div className="h-px bg-gray-200"></div>
-
                 {/* ----- SECTIONS LIST ----- */}
                 <div className="flex flex-col gap-4">
                     {sections.map((section, index) => (
@@ -620,8 +623,7 @@ export default function CVToolBox({
                                         </button>
                                     ) : (
                                         <div className="pl-2">
-                                            <input
-                                                type="text"
+                                            <textarea
                                                 className="w-full bg-white border border-gray-300 px-3 py-1.5 text-sm rounded-md text-gray-800 placeholder-gray-400 focus:border-[#0C6A4E] focus:ring-2 focus:ring-[#0C6A4E]/20 outline-none transition-all"
                                                 placeholder="Enter content..."
                                                 autoFocus
