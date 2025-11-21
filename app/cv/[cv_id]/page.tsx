@@ -5,6 +5,10 @@ import CVCanvas, { ImageState } from "../components/Canvas";
 import CVToolBox from "../components/ToolBox";
 import Button from "@/components/ui/Button";
 import { PanelRightClose, PanelRightOpen } from "lucide-react";
+import { useParams } from "next/navigation";
+import { cvAPI } from "@/services/cv";
+import { CVProfile } from "@/types/cv";
+import { DEFAULT_SECTIONS } from "../page";
 
 export interface TextStyle {
   bold: boolean;
@@ -37,7 +41,8 @@ export interface SectionSize {
   width: number,
   height: number,
 }
-const defaultSections: { id: string, title: string, x: number, y: number, size: SectionSize }[] = [
+
+export const defaultSections: { id: string, title: string, x: number, y: number, size: SectionSize }[] = [
   {
     id: "about",
     title: "About Me",
@@ -114,6 +119,7 @@ export default function CVDesktop() {
   const imgRef = useRef<HTMLImageElement | null>(null);
   const cvCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const [imageState, setImageState] = useState<ImageState>(INITIAL_IMAGE_STATE);
+  const { cv_id } = useParams()
 
   const [sections, setSections] = useState<Section[]>(
     defaultSections.map((sec) => ({
@@ -130,9 +136,29 @@ export default function CVDesktop() {
   );
   const [imageURL, setImageURL] = useState<string | null>(null);
 
+  useEffect(() => {
+    cvAPI.getForUser({ id: cv_id as string }).then(res => {
+      const cv = res.data?.data?.[0] as CVProfile;
+      setCvTitle(cv.title || "");
+      setSubCvTitle(cv.subtitle || "");
+      setCVColorPrimary(cv.primary_color || "#1d7057ff")
+      setProjectName(cv.name);
+      let secs = [];
+      if (cv.sections == "NONE") {
+        secs = DEFAULT_SECTIONS;
+      } else {
+        secs = JSON.parse(cv.sections);
+      }
+      setSections(secs)
+    }).catch(err => {
+
+    })
+  }, [cv_id])
+
   return (
     <div className="flex text-gray-600 bg-white h-screen relative">
       <CVToolBox
+        cv_id={cv_id as string}
         imageState={imageState}
         cvColor={cvColorPrimary}
         imageURL={imageURL as string}

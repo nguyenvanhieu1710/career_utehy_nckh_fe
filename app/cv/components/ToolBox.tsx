@@ -10,6 +10,7 @@ import TextField from "@/components/ui/TextField";
 import { jsPDF } from 'jspdf'
 import { generatePDFFromState, getFullCVState, ImageState } from "./Canvas";
 import { cvAPI } from "@/services/cv";
+import { toast } from "sonner";
 export interface TextStyle {
     bold: boolean;
     italic: boolean;
@@ -39,6 +40,7 @@ export interface Section {
 }
 
 interface CVToolBoxProps {
+    cv_id: string;
     cvTitle: string;
     cvSubTitle: string;
     onImageSelected: (url: string) => void;
@@ -57,6 +59,7 @@ interface CVToolBoxProps {
 }
 
 export default function CVToolBox({
+    cv_id,
     cvTitle,
     cvColor,
     imageURL,
@@ -265,10 +268,15 @@ export default function CVToolBox({
             projectName
         );
 
-        cvAPI.save({
-
+        cvAPI.update({
+            id:cv_id,
+            primary_color:cvState.primaryColor,
+            sections: JSON.stringify(cvState.sections),
+            title: cvState.cvTitle,
+            subtitle: cvState.cvSubTitle,
+            name: cvState.projectName
         }).then(res => {
-
+            toast.success('Saved!')
         }).catch(err => { })
     };
 
