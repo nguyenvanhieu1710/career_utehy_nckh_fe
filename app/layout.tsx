@@ -26,12 +26,15 @@ export default function RootLayout({
       <body
         className={`${inter.variable} antialiased`}
       >
-        <Providers>
-          <div className="fixed top-4 right-4 z-50">
-            <Toaster richColors position="top-right" />
-          </div>
-          {children}
-        </Providers>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" />
+        <link href="https://fonts.googleapis.com/css2?family=Sora:wght@100..800&family=Stack+Sans+Headline:wght@200..700&display=swap" rel="stylesheet"/>
+          <Providers>
+            <div className="fixed top-4 right-4 z-50">
+              <Toaster richColors position="top-right" />
+            </div>
+            {children}
+          </Providers>
       </body>
     </html>
   );

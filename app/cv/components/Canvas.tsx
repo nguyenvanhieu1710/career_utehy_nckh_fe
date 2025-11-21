@@ -4,6 +4,9 @@ import { Dispatch, SetStateAction, useEffect, useRef, useState } from "react";
 import { ZoomIn, ZoomOut, Maximize2, Move, Maximize } from "lucide-react";
 import { Section, SectionSize } from "../[cv_id]/page";
 import jsPDF from "jspdf";
+import { cvAPI } from "@/services/cv";
+import { toast } from "sonner";
+import { title } from "process";
 
 export interface TextStyle {
     bold: boolean;
@@ -51,6 +54,7 @@ export interface ImageState {
 }
 
 interface CVCanvasProps {
+    cv_id?: string;
     imageURL?: string;
     cvTitle?: string;
     cvSubTitle?: string;
@@ -63,6 +67,8 @@ interface CVCanvasProps {
     onSectionResize?: (data: { id: string, width: number, height: number }) => void;
     imageState: ImageState,
     setImageState: Dispatch<SetStateAction<ImageState>>;
+    isSavable: boolean;
+    projectName: string
 }
 
 type ResizeHandle = 'nw' | 'ne' | 'sw' | 'se' | 'n' | 's' | 'e' | 'w' | null;
@@ -350,6 +356,9 @@ export default function CVCanvas({
     canvasRef,
     imageState,
     setImageState,
+    isSavable,
+    cv_id,
+    projectName
 }: CVCanvasProps) {
     const iconRef = useRef<HTMLCanvasElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -390,6 +399,7 @@ export default function CVCanvas({
     const HANDLE_SIZE = 8;
     const SNAP_THRESHOLD = 8;
 
+
     useEffect(() => {
         let canvas;
         if (isIcon) {
@@ -408,6 +418,18 @@ export default function CVCanvas({
             canvas.height = container.clientHeight;
         }
         drawCanvas(ctx, canvas.width, canvas.height);
+
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (!isSavable) return;
+            if (e.ctrlKey && e.key === "s") {
+                e.preventDefault();
+                handleSave();
+            }
+        };
+        window.addEventListener("keydown", handleKeyDown);
+        return () => {
+            window.removeEventListener("keydown", handleKeyDown);
+        };
     }, [primaryColor, zoom, pan, cvTitle, cvSubTitle, sections, hoveredSection, sectionLayouts, hoveredHandle, imageState, loadedImage, hoveredImage, hoveredImageHandle]);
 
     // Initialize default layouts
@@ -431,10 +453,22 @@ export default function CVCanvas({
             });
             yOffset += height + 20;
         });
-
-
         setSectionLayouts(newLayouts);
     }, [sections]);
+
+
+    const handleSave = () => {
+        cvAPI.update({
+            id: cv_id,
+            primary_color: primaryColor,
+            sections: JSON.stringify(sections),
+            title: cvTitle,
+            subtitle: cvSubTitle,
+            name: projectName
+        }).then(res => {
+            toast.success('Saved!')
+        }).catch(err => { })
+    };
 
     const getA4Bounds = () => {
         const container = containerRef.current;

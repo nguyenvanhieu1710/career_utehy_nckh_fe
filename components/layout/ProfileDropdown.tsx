@@ -34,7 +34,7 @@ export function ProfileDropdown({
     { label: "Cập nhật tài khoản", href: "/career/profile", icon: User },
     { label: "Công việc yêu thích", href: "/career/favorite-jobs", icon: Heart },
     { label: "Công việc đã ứng tuyển", href: "/career/applied-jobs", icon: Briefcase },
-    { label: "Quản lý CV", href: "/career/cv/manage", icon: FileText },
+    { label: "Quản lý CV", href: "/cv", icon: FileText },
   ];
 
   return (

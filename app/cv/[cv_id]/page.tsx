@@ -8,7 +8,7 @@ import { PanelRightClose, PanelRightOpen } from "lucide-react";
 import { useParams } from "next/navigation";
 import { cvAPI } from "@/services/cv";
 import { CVProfile } from "@/types/cv";
-import { DEFAULT_SECTIONS } from "../page";
+import { DEFAULT_SECTIONS, DEFAULT_SECTIONS_VI } from "../page";
 
 export interface TextStyle {
   bold: boolean;
@@ -145,7 +145,7 @@ export default function CVDesktop() {
       setProjectName(cv.name);
       let secs = [];
       if (cv.sections == "NONE") {
-        secs = DEFAULT_SECTIONS;
+        secs = DEFAULT_SECTIONS_VI;
       } else {
         secs = JSON.parse(cv.sections);
       }
@@ -190,6 +190,8 @@ export default function CVDesktop() {
             } as SectionSize
             setSections(prev => prev.map(sec => sec.id === data.id ? { ...sec, size: newSize } : sec))
           }}
+          cv_id={cv_id as string}
+          projectName={projectName}
           setImageState={setImageState}
           imageState={imageState}
           canvasRef={cvCanvasRef}
@@ -201,6 +203,8 @@ export default function CVDesktop() {
           onSectionDrag={(data) => {
             setSections(prev => prev.map(sec => sec.id === data.id ? { ...sec, x: data.x, y: data.y } : sec))
           }}
+          isSavable
+
         />
       </div>
       <div className="absolute top-2 right-4 zindex-10">
@@ -218,6 +222,7 @@ export default function CVDesktop() {
           </div>
         </div>
         <CVCanvas
+          isSavable={false}
           isIcon
           defaultZoom={0.21}
           primaryColor={cvColorPrimary}
@@ -231,6 +236,7 @@ export default function CVDesktop() {
         />
         <CVCanvas
           isIcon
+          isSavable={false}
           defaultZoom={0.21}
           primaryColor={"#9c3232ff"}
           imageURL={imageURL || ""}
