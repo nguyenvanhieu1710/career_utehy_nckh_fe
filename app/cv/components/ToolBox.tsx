@@ -11,6 +11,7 @@ import { jsPDF } from 'jspdf'
 import { generatePDFFromState, getFullCVState, ImageState } from "./Canvas";
 import { cvAPI } from "@/services/cv";
 import { toast } from "sonner";
+import Link from "next/link";
 export interface TextStyle {
     bold: boolean;
     italic: boolean;
@@ -442,7 +443,9 @@ export default function CVToolBox({
 
             <div className="flex items-center justify-between">
                 {extend ? <div>
-                    <img className="w-[70%]" src={"/logo/header_logo.jpg"} alt="Logo" />
+                    <Link href={"/"}>
+                        <img className="w-[70%]" src={"/logo/header_logo.jpg"} alt="Logo" />
+                    </Link>
                 </div> : <></>}
                 <div>
                     <Button

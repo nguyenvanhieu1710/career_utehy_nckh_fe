@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Button from "@/components/ui/Button";
-import { Star, Menu, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { MobileNavLink } from "./MobileNavLink";
 import {
   authAPI,
@@ -120,9 +120,6 @@ export function Navbar() {
               <Link href="/auth/signup">
                 <Button type="button" value="Đăng ký" border="10px" />
               </Link>
-              <div className="text-[#0C6A4E] font-bold flex gap-1">
-                <Star /> Dành cho Nhà tuyển dụng
-              </div>
             </div>
           )}
 
@@ -161,9 +158,6 @@ export function Navbar() {
             </MobileNavLink>
             <MobileNavLink href="/auth/signup" onClick={() => setIsOpen(false)}>
               Đăng ký
-            </MobileNavLink>
-            <MobileNavLink href="/" onClick={() => setIsOpen(false)}>
-              Dành cho Nhà tuyển dụng
             </MobileNavLink>
           </div>
         </div>
