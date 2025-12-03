@@ -2,8 +2,6 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Providers } from "./_providers/providers";
 import { Inter } from "next/font/google";
-import { Header } from "@/components/layout/Header";
-import { Footer } from "@/components/layout/Footer";
 import { Toaster } from "sonner";
 
 const inter = Inter({
@@ -12,8 +10,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Career UTEHY NCKH",
-  description: "Career UTEHY NCKH",
+  title: "Career UTEHY",
+  description: "Career UTEHY",
 };
 
 export default function RootLayout({
@@ -23,18 +21,19 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body
-        className={`${inter.variable} antialiased`}
-      >
+      <body className={`${inter.variable} antialiased`}>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" />
-        <link href="https://fonts.googleapis.com/css2?family=Sora:wght@100..800&family=Stack+Sans+Headline:wght@200..700&display=swap" rel="stylesheet"/>
-          <Providers>
-            <div className="fixed top-4 right-4 z-50">
-              <Toaster richColors position="top-right" />
-            </div>
-            {children}
-          </Providers>
+        <link
+          href="https://fonts.googleapis.com/css2?family=Sora:wght@100..800&family=Stack+Sans+Headline:wght@200..700&display=swap"
+          rel="stylesheet"
+        />
+        <Providers>
+          <div className="fixed top-4 right-4 z-50">
+            <Toaster richColors position="top-right" />
+          </div>
+          {children}
+        </Providers>
       </body>
     </html>
   );
