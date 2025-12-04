@@ -314,13 +314,20 @@ export const generatePDFFromState = (state: CVState): void => {
             ctx.rect(sectionX, sectionY, sectionWidth, sectionHeight);
             ctx.clip();
 
-            // Vẽ title
+             ctx.fillStyle = state.primaryColor;
+            ctx.fillRect(sectionX, sectionY + 30, sectionWidth, 1);
             ctx.fillStyle = state.primaryColor;
-            ctx.font = "bold 20px Arial";
-            ctx.fillText(section.title, sectionX + 5, sectionY + 25);
+            ctx.fillRect(sectionX, sectionY, 1, 30);
+            ctx.fillStyle = state.primaryColor;
+            ctx.fillRect(sectionX, sectionY, sectionWidth / 5, 1);
+
+            ctx.fillStyle = state.primaryColor;
+            ctx.font = "17px Arial";
+            ctx.fillText(section.title, sectionX + 10, sectionY + 21);
+            let itemY = sectionY + 55;
+
 
             // Vẽ items
-            let itemY = sectionY + 45;
             section.items.forEach((item) => {
                 itemY = drawItem(item, sectionX + 10, itemY, sectionWidth - 20, 0);
             });
@@ -593,7 +600,13 @@ export default function CVCanvas({
         ctx.fillRect(centerX, centerY, A4_WIDTH, 130);
 
         ctx.fillStyle = primaryColor;
-        ctx.fillRect(centerX + 245, centerY + 135, 2, A4_HEIGHT - 140);
+        ctx.fillRect(centerX + 245, centerY + 143, 2, A4_HEIGHT - 150);
+
+        ctx.fillStyle = primaryColor;
+        ctx.beginPath();
+        ctx.arc(centerX + 246, centerY + 143, 5, 0, Math.PI * 2);
+        ctx.arc(centerX + 246, A4_HEIGHT + 40, 5, 0, Math.PI * 2);
+        ctx.fill();
     }
 
     const drawItem = (
@@ -854,10 +867,16 @@ export default function CVCanvas({
             ctx.clip();
 
             ctx.fillStyle = primaryColor;
-            ctx.font = "bold 20px Arial";
-            ctx.fillText(section.title, sectionX + 5, sectionY + 25);
+            ctx.fillRect(sectionX, sectionY + 30, layout.width, 1);
+            ctx.fillStyle = primaryColor;
+            ctx.fillRect(sectionX, sectionY, 1, 30);
+            ctx.fillStyle = primaryColor;
+            ctx.fillRect(sectionX, sectionY, layout.width / 5, 1);
 
-            let itemY = sectionY + 45;
+            ctx.fillStyle = primaryColor;
+            ctx.font = "17px Arial";
+            ctx.fillText(section.title, sectionX + 10, sectionY + 21);
+            let itemY = sectionY + 55;
 
             section.items.forEach((item) => {
                 itemY = drawItem(ctx, item, sectionX + 10, itemY, layout.width - 20, 0);
