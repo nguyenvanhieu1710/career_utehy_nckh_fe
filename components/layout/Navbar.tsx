@@ -79,7 +79,7 @@ export function Navbar() {
                 Tạo CV
               </Link>
               <Link
-                href="/about"
+                href="/career/about-us"
                 className="hover:text-green-600 transition font-bold text-[#000000]"
               >
                 Về chúng tôi
@@ -149,7 +149,10 @@ export function Navbar() {
             <MobileNavLink href="/career/cv" onClick={() => setIsOpen(false)}>
               Tạo CV
             </MobileNavLink>
-            <MobileNavLink href="/career/about" onClick={() => setIsOpen(false)}>
+            <MobileNavLink
+              href="/career/about"
+              onClick={() => setIsOpen(false)}
+            >
               Về chúng tôi
             </MobileNavLink>
             <div className="border-t my-2"></div>
