@@ -1,24 +1,17 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Filters } from "@/components/admin/Filters";
 import { AddButton } from "@/components/admin/AddButton";
 import { Column, Table } from "@/components/admin/Table";
 import { Pagination } from "@/components/admin/Pagination";
-import { AddAccountDialog } from "@/components/admin/AddAccountDialog";
 import { DeleteConfirmationDialog } from "@/components/admin/DeleteConfirmationDialog";
-import { SuccessDialog } from "@/components/admin/SuccessDialog";
+import { NotificationDialog } from "@/components/admin/NotificationDialog";
 import { ActionButtons } from "@/components/admin/ActionButtons";
-import { DateTime } from "@/types/base";
 import { RoleDialog } from "@/components/admin/RoleDialog";
-import { authAPI } from "@/services/auth";
 import { permAPI } from "@/services/perm";
 import { toast } from "sonner";
 import { Role } from "@/types/permission";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/Select";
 import { Input } from "@/components/ui/input";
-
-
 
 export default function RoleManagementPage() {
   const [loading, setLoading] = useState(true);
@@ -28,29 +21,34 @@ export default function RoleManagementPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isSuccessDialogOpen, setIsSuccessDialogOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
-  const [filters, setFilters] = useState({ id: "", searchKeyword: "", page: 1, row: 100 });
+  const [filters, setFilters] = useState({
+    id: "",
+    searchKeyword: "",
+    page: 1,
+    row: 100,
+  });
   const [perms, setPerms] = useState<string[]>();
   // Giả lập loading
   useEffect(() => {
-    permAPI.getPerms().then(res => {
+    permAPI.getPerms().then((res) => {
       setPerms(res.data);
-    })
-    setLoading(true);
-    permAPI.getRoles(filters).then(res => {
-      setRoles(res.data?.data)
-    }).catch(err => { }).finally(() => setLoading(false))
+    });
+    permAPI
+      .getRoles(filters)
+      .then((res) => {
+        setRoles(res.data?.data);
+      })
+      .catch((err) => {})
+      .finally(() => setLoading(false));
   }, []);
 
-  const handleAddRole = (data: {
-    name: string;
-    description: string;
-  }) => {
+  const handleAddRole = (data: { name: string; description: string }) => {
     const newRole: Role = {
       name: data.name,
       description: data.description,
     };
 
-    setRoles([...roles || [], newRole]);
+    setRoles([...(roles || []), newRole]);
     setSuccessMessage("Thêm người dùng thành công!");
     setIsAddDialogOpen(false);
     setIsSuccessDialogOpen(true);
@@ -62,11 +60,11 @@ export default function RoleManagementPage() {
     const updatedRoles = roles?.map((role) =>
       role.id === selectedRole.id
         ? {
-          ...role,
-          name: data.name,
-          description: data.description,
-          created_at: data.created_at
-        }
+            ...role,
+            name: data.name,
+            description: data.description,
+            created_at: data.created_at,
+          }
         : role
     );
 
@@ -78,7 +76,6 @@ export default function RoleManagementPage() {
   };
 
   const handleDeleteRole = () => {
-
     if (!selectedRole) return;
 
     const updatedRoles = roles?.filter((role) => role.id !== selectedRole.id);
@@ -99,22 +96,19 @@ export default function RoleManagementPage() {
     setIsDeleteDialogOpen(true);
   };
 
-
-
   const columns: Column<Role>[] = [
     { label: "#", render: (_, i) => i + 1 },
     { label: "Name", field: "name" },
     { label: "Description", field: "description" },
     {
       label: "Action",
-      render: role => (
-        <div className='flex gap-2'>
-          <ActionButtons type='edit' onClick={() => handleEdit(role)} />
-          <ActionButtons type='delete' onClick={() => handleDelete(role)} />
+      render: (role) => (
+        <div className="flex gap-2">
+          <ActionButtons type="edit" onClick={() => handleEdit(role)} />
+          <ActionButtons type="delete" onClick={() => handleDelete(role)} />
         </div>
-      )
-    }
-
+      ),
+    },
   ] as Column<Role>[];
 
   return (
@@ -130,16 +124,17 @@ export default function RoleManagementPage() {
         />
       </div>
 
-       <div className="flex flex-wrap gap-3 mb-4">
-        
-
+      <div className="flex flex-wrap gap-3 mb-4">
         <div className="flex-1 min-w-64">
           <Input
             placeholder="Nhập tên vai trò để tìm kiếm..."
             className="w-full"
             value={filters.searchKeyword}
             onChange={(e) => {
-              setFilters(prev => ({ ...prev, searchKeyword: e.target.value }))
+              setFilters((prev) => ({
+                ...prev,
+                searchKeyword: e.target.value,
+              }));
             }}
           />
         </div>
@@ -163,11 +158,12 @@ export default function RoleManagementPage() {
         initialData={selectedRole || undefined}
         mode={selectedRole ? "edit" : "add"}
         onSubmit={(data) => {
-          permAPI.createRole(data).then(res => {
-            toast.success("Thêm vai trò mới thành công!")
-          }).catch(err => {
-
-          })
+          permAPI
+            .createRole(data)
+            .then((res) => {
+              toast.success("Thêm vai trò mới thành công!");
+            })
+            .catch((err) => {});
         }}
       />
 
@@ -181,7 +177,7 @@ export default function RoleManagementPage() {
       />
 
       {/* Success Dialog */}
-      <SuccessDialog
+      <NotificationDialog
         open={isSuccessDialogOpen}
         onOpenChange={setIsSuccessDialogOpen}
       />

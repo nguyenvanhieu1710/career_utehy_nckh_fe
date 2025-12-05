@@ -1,9 +1,9 @@
 // Table.tsx
 export interface Column<T> {
-  label: string;                     // tên cột
-  field?: keyof T;                   // field trong object
+  label: string; // tên cột
+  field?: keyof T; // field trong object
   render?: (item: T, index: number) => React.ReactNode; // custom render
-  className?: string;                // optional style
+  className?: string; // optional style
 }
 
 export interface TableProps<T> {
@@ -19,10 +19,15 @@ export function Table<T>({ columns, data, loading }: TableProps<T>) {
     <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
       <table className="w-full text-left border-collapse">
         {/* Header */}
-        <thead className="bg-gray-100 border-b">
+        <thead className="bg-green-50 border-b">
           <tr>
             {columns.map((col, idx) => (
-              <th key={idx} className={`p-3 font-medium ${col.className || ""}`}>
+              <th
+                key={idx}
+                className={`p-3 font-medium text-green-900 ${
+                  col.className || ""
+                }`}
+              >
                 {col.label}
               </th>
             ))}
@@ -32,12 +37,14 @@ export function Table<T>({ columns, data, loading }: TableProps<T>) {
         {/* Body */}
         <tbody>
           {data.map((item, rowIndex) => (
-            <tr key={rowIndex} className="border-b hover:bg-gray-50">
+            <tr key={rowIndex} className="border-b hover:bg-green-50">
               {columns.map((col, colIndex) => (
                 <td key={colIndex} className="p-3">
                   {col.render
                     ? col.render(item, rowIndex) // custom cell
-                    : (col.field ? (item[col.field] as any) : null)}
+                    : col.field
+                    ? String(item[col.field])
+                    : null}
                 </td>
               ))}
             </tr>

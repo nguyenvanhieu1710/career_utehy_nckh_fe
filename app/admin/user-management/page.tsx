@@ -7,11 +7,9 @@ import { Column, Table } from "@/components/admin/Table";
 import { Pagination } from "@/components/admin/Pagination";
 import { AddAccountDialog } from "@/components/admin/AddAccountDialog";
 import { DeleteConfirmationDialog } from "@/components/admin/DeleteConfirmationDialog";
-import { SuccessDialog } from "@/components/admin/SuccessDialog";
+import { NotificationDialog } from "@/components/admin/NotificationDialog";
 import { ActionButtons } from "@/components/admin/ActionButtons";
 import { userAPI } from "@/services/user";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/Select";
-import { Input } from "@/components/ui/input";
 import { GetSchema } from "@/types/base";
 
 interface User {
@@ -22,6 +20,12 @@ interface User {
   status: "active" | "inactive";
 }
 
+interface DialogState {
+  isOpen: boolean;
+  title: string;
+  message: string;
+  type: "success" | "error" | "warning" | "info";
+}
 
 export default function UserManagementPage() {
   const [loading, setLoading] = useState(true);
@@ -29,21 +33,27 @@ export default function UserManagementPage() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [isSuccessDialogOpen, setIsSuccessDialogOpen] = useState(false);
-  const [successMessage, setSuccessMessage] = useState("");
+  const [dialogState, setDialogState] = useState<DialogState>({
+    isOpen: false,
+    title: "",
+    message: "",
+    type: "success",
+  });
   const [filters, setFilter] = useState<GetSchema>({
     id: "",
     searchKeyword: "",
     page: 1,
-    row: 100
-  })
+    row: 100,
+  });
 
   useEffect(() => {
-    setLoading(true)
-    userAPI.getUsers(filters).then(res => {
-      setUsers(res.data?.data)
-    }).catch(err => { })
-      .finally(() => setLoading(false))
+    userAPI
+      .getUsers(filters)
+      .then((res) => {
+        setUsers(res.data?.data);
+      })
+      .catch((err) => {})
+      .finally(() => setLoading(false));
   }, [filters]);
 
   const handleAddUser = (data: {
@@ -53,7 +63,7 @@ export default function UserManagementPage() {
     status: "active" | "inactive";
   }) => {
     const newUser: User = {
-      id: Math.max(0, ...users.map((u) => u.id)) + 1, // Generate new ID
+      id: Math.max(0, ...users.map((u) => u.id)) + 1,
       name: data.name,
       email: data.email,
       role: data.role as User["role"],
@@ -61,41 +71,58 @@ export default function UserManagementPage() {
     };
 
     setUsers([...users, newUser]);
-    setSuccessMessage("Thêm người dùng thành công!");
+    setDialogState({
+      isOpen: true,
+      title: "Thêm người dùng thành công",
+      message: "Người dùng mới đã được tạo thành công!",
+      type: "success",
+    });
     setIsAddDialogOpen(false);
-    setIsSuccessDialogOpen(true);
   };
 
-  const handleUpdateUser = (data: Omit<User, "id" | "email">) => {
+  const handleUpdateUser = (data: {
+    name: string;
+    email: string;
+    role: string;
+    status: "active" | "inactive";
+    avatarFile?: File;
+  }) => {
     if (!selectedUser) return;
 
     const updatedUsers = users.map((user) =>
       user.id === selectedUser.id
         ? {
-          ...user,
-          name: data.name,
-          status: data.status,
-          role: data.role,
-        }
+            ...user,
+            name: data.name,
+            status: data.status,
+            role: data.role as User["role"],
+          }
         : user
     );
 
     setUsers(updatedUsers);
-    setSuccessMessage("Cập nhật thông tin thành công!");
+    setDialogState({
+      isOpen: true,
+      title: "Cập nhật thành công",
+      message: "Thông tin người dùng đã được cập nhật!",
+      type: "success",
+    });
     setIsAddDialogOpen(false);
-    setIsSuccessDialogOpen(true);
     setSelectedUser(null);
   };
 
   const handleDeleteUser = () => {
-
     if (!selectedUser) return;
 
     const updatedUsers = users.filter((user) => user.id !== selectedUser.id);
     setUsers(updatedUsers);
     setIsDeleteDialogOpen(false);
-    setSuccessMessage("Đã xóa người dùng thành công!");
-    setIsSuccessDialogOpen(true);
+    setDialogState({
+      isOpen: true,
+      title: "Xóa người dùng thành công",
+      message: `Người dùng ${selectedUser.name} đã được xóa!`,
+      type: "success",
+    });
     setSelectedUser(null);
   };
 
@@ -109,32 +136,33 @@ export default function UserManagementPage() {
     setIsDeleteDialogOpen(true);
   };
 
-
-
   const columns: Column<User>[] = [
     { label: "#", render: (_, i) => i + 1 },
-    { label: "Avatar", render: user => <img /> },
+    { label: "Avatar", render: (user) => <img /> },
     { label: "Name", field: "name" },
     { label: "Email", field: "email" },
     { label: "Role", field: "role" },
     {
       label: "Status",
-      render: user => (
-        <span className={user.status === "active" ? "text-green-600" : "text-red-600"}>
+      render: (user) => (
+        <span
+          className={
+            user.status === "active" ? "text-green-600" : "text-red-600"
+          }
+        >
           {user.status}
         </span>
-      )
+      ),
     },
     {
       label: "Action",
-      render: user => (
-        <div className='flex gap-2'>
-          <ActionButtons type='edit' onClick={() => handleEdit(user)} />
-          <ActionButtons type='ban' onClick={() => handleDelete(user)} />
+      render: (user) => (
+        <div className="flex gap-2">
+          <ActionButtons type="edit" onClick={() => handleEdit(user)} />
+          <ActionButtons type="ban" onClick={() => handleDelete(user)} />
         </div>
-      )
-    }
-
+      ),
+    },
   ] as Column<User>[];
 
   return (
@@ -150,41 +178,8 @@ export default function UserManagementPage() {
         />
       </div>
 
-      <div className="flex flex-wrap gap-3 mb-4">
-        <Select defaultValue="all">
-          <SelectTrigger className="w-48">
-            <SelectValue placeholder="Lọc theo vai trò" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tất cả vai trò</SelectItem>
-            <SelectItem value="sinh-vien">Sinh viên</SelectItem>
-            <SelectItem value="nha-tuyen-dung">Nhà tuyển dụng</SelectItem>
-            <SelectItem value="admin">Admin</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Select defaultValue="all">
-          <SelectTrigger className="w-48">
-            <SelectValue placeholder="Lọc theo trạng thái" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tất cả trạng thái</SelectItem>
-            <SelectItem value="active">Còn hoạt động</SelectItem>
-            <SelectItem value="inactive">Ngừng hoạt động</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <div className="flex-1 min-w-64">
-          <Input
-            placeholder="Nhập tên người dùng để tìm kiếm..."
-            className="w-full"
-            value={filters.searchKeyword}
-            onChange={(e) => {
-              setFilter(prev => ({ ...prev, searchKeyword: e.target.value }))
-            }}
-          />
-        </div>
-      </div>
+      {/* Filter */}
+      <Filters />
 
       {/* Table */}
       <div className="bg-white rounded-lg shadow-sm border">
@@ -202,7 +197,7 @@ export default function UserManagementPage() {
         onOpenChange={setIsAddDialogOpen}
         initialData={selectedUser || undefined}
         mode={selectedUser ? "edit" : "add"}
-        onSubmit={undefined}
+        onSubmit={selectedUser ? handleUpdateUser : handleAddUser}
       />
 
       {/* Delete Confirmation Dialog */}
@@ -215,9 +210,14 @@ export default function UserManagementPage() {
       />
 
       {/* Success Dialog */}
-      <SuccessDialog
-        open={isSuccessDialogOpen}
-        onOpenChange={setIsSuccessDialogOpen}
+      <NotificationDialog
+        open={dialogState.isOpen}
+        onOpenChange={(open) =>
+          setDialogState({ ...dialogState, isOpen: open })
+        }
+        title={dialogState.title}
+        message={dialogState.message}
+        type={dialogState.type}
       />
     </div>
   );

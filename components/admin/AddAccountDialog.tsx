@@ -80,9 +80,9 @@ export const AddAccountDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg bg-white border-2 border-green-200">
         <DialogHeader>
-          <DialogTitle>
+          <DialogTitle className="text-green-900">
             {mode === "add" ? "Thêm tài khoản" : "Chỉnh sửa tài khoản"}
           </DialogTitle>
         </DialogHeader>
@@ -90,7 +90,9 @@ export const AddAccountDialog = ({
         <div className="grid gap-6 py-4">
           {/* Avatar */}
           <div className="flex items-center gap-6">
-            <Label className="text-right w-32 shrink-0">Ảnh đại diện</Label>
+            <Label className="text-right w-32 shrink-0 text-green-900">
+              Ảnh đại diện
+            </Label>
             <div className="flex flex-col items-center gap-3">
               <Avatar className="h-24 w-24">
                 <AvatarImage src={avatarPreview ?? ""} />
@@ -98,32 +100,31 @@ export const AddAccountDialog = ({
                   {name.slice(0, 2).toUpperCase() || "AD"}
                 </AvatarFallback>
               </Avatar>
-              <Label htmlFor="avatar-upload" className="cursor-pointer">
-                <button>
-                  <label className="cursor-pointer">
-                    <Upload className="mr-2 h-4 w-4" />
-                    Chọn ảnh
-                    <input
-                      id="avatar-upload"
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleFileChange}
-                    />
-                  </label>
-                </button>
-              </Label>
+              <label
+                htmlFor="avatar-upload"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg cursor-pointer hover:bg-green-700 transition-colors duration-200"
+              >
+                <Upload className="h-4 w-4" />
+                <span>Chọn ảnh</span>
+                <input
+                  id="avatar-upload"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleFileChange}
+                />
+              </label>
             </div>
           </div>
 
           {/* Tên người dùng */}
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="name" className="text-right">
+            <Label htmlFor="name" className="text-right text-green-900">
               Tên người dùng
             </Label>
             <Input
               id="name"
-              className="col-span-3"
+              className="col-span-3 border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900 placeholder:text-gray-300"
               placeholder="Nhập tên người dùng"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -132,13 +133,13 @@ export const AddAccountDialog = ({
 
           {/* Email */}
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="email" className="text-right">
+            <Label htmlFor="email" className="text-right text-green-900">
               Email
             </Label>
             <Input
               id="email"
               type="email"
-              className="col-span-3"
+              className="col-span-3 border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900 placeholder:text-gray-300"
               placeholder="Nhập email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -147,9 +148,9 @@ export const AddAccountDialog = ({
 
           {/* Vai trò */}
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label className="text-right">Vai trò</Label>
+            <Label className="text-right text-green-900">Vai trò</Label>
             <Select value={role} onValueChange={setRole}>
-              <SelectTrigger className="col-span-3">
+              <SelectTrigger className="col-span-3 border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900">
                 <SelectValue placeholder="Lựa chọn vai trò" />
               </SelectTrigger>
               <SelectContent>
@@ -162,25 +163,35 @@ export const AddAccountDialog = ({
             </Select>
           </div>
 
-          {/* Trạng thái - giống hệt thiết kế của bạn (2 ô vuông) */}
           <div className="grid grid-cols-4 items-start gap-4">
-            <Label className="text-right pt-2">Trạng thái</Label>
+            <Label className="text-right pt-2 text-green-900">Trạng thái</Label>
             <RadioGroup
               value={status}
               onValueChange={(value: "active" | "inactive") => setStatus(value)}
               className="col-span-3 flex flex-col space-y-3"
             >
               <div className="flex items-center space-x-2">
-                <RadioGroupItem value="active" id="active" />
-                <Label htmlFor="active" className="font-normal cursor-pointer">
+                <RadioGroupItem
+                  value="active"
+                  id="active"
+                  className="border-green-600 text-green-600"
+                />
+                <Label
+                  htmlFor="active"
+                  className="font-normal cursor-pointer text-green-900"
+                >
                   Còn hoạt động
                 </Label>
               </div>
               <div className="flex items-center space-x-2">
-                <RadioGroupItem value="inactive" id="inactive" />
+                <RadioGroupItem
+                  value="inactive"
+                  id="inactive"
+                  className="border-green-600 text-green-600"
+                />
                 <Label
                   htmlFor="inactive"
-                  className="font-normal cursor-pointer"
+                  className="font-normal cursor-pointer text-green-900"
                 >
                   Ngừng hoạt động
                 </Label>
