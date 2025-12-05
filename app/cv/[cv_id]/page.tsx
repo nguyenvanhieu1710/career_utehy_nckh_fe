@@ -120,7 +120,13 @@ export default function CVDesktop() {
   const cvCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const [imageState, setImageState] = useState<ImageState>(INITIAL_IMAGE_STATE);
   const { cv_id } = useParams()
+  const [cvs, setCvs] = useState<CVProfile[]>([]);
 
+  useEffect(() => {
+    cvAPI.getForUser({}).then(res => {
+      setCvs(res.data?.data)
+    }).catch(err => { })
+  }, [])
   const [sections, setSections] = useState<Section[]>(
     defaultSections.map((sec) => ({
       id: sec.id,
@@ -215,37 +221,44 @@ export default function CVDesktop() {
           border="none"
         />
       </div>
-      <div className={` ${patternSideExtend ? "flex-3" : "flex-0"} h-screen flex flex-col gap-5 items-center overflow-y-auto overflow-hidden transition-all`}>
-        <div className="flex gap-2 items-center p-1">
-          <div>
-            Một số mẫu nổi bật
-          </div>
+      <div className={` ${patternSideExtend ? "flex-3" : "flex-0"} p-2 h-screen flex flex-col gap-5 items-center overflow-y-auto overflow-hidden transition-all border-l border-gray-200`}>
+        <div className="w-full flex gap-2 items-center p-1 bg-[#0C6A4E] text-white p-2 rounded-md">
+          Các CV của bạn
         </div>
-        <CVCanvas
-          isSavable={false}
-          isIcon
-          defaultZoom={0.21}
-          primaryColor={cvColorPrimary}
-          imageURL={imageURL || ""}
-          cvTitle={cvTitle}
-          cvSubTitle={cvSubTitle}
-          sections={sections}
-          imageState={imageState}
-          setImageState={setImageState}
+        {cvs?.filter(c => c.id != cv_id).map(cv => {
+          let sections = [];
+          if (cv.sections == 'NONE') {
+        sections = DEFAULT_SECTIONS_VI;
+          } else {
+        sections = JSON.parse(cv.sections);
+          }
+          return (
+        <div
+          key={cv.id}
+          className="relative bg-white rounded-xl cursor-pointer"
+          onClick={() => location.href = `/cv/${cv.id}`}
+        >
+          <CVCanvas
+            projectName={cv.name}
+            isSavable={false}
+            isIcon
+            imageState={INITIAL_IMAGE_STATE}
+            setImageState={() => { }}
+            defaultZoom={0.21}
+            cvTitle={cv.title || ""}
+            key={cv.id}
+            primaryColor={cv.primary_color || "#0C6A4E"}
+            sections={sections}
+          />
 
-        />
-        <CVCanvas
-          isIcon
-          isSavable={false}
-          defaultZoom={0.21}
-          primaryColor={"#9c3232ff"}
-          imageURL={imageURL || ""}
-          cvTitle={cvTitle}
-          cvSubTitle={cvSubTitle}
-          sections={sections}
-          imageState={imageState}
-          setImageState={setImageState}
-        />
+          <h3 className="font-medium text-gray-500 text-sm text-ellipsis w-40">
+            {cv.name}
+          </h3>
+          <span className="text-[10px] font-light text-gray-500"> Cập nhật cuối: {new Date(cv?.updated_at).toLocaleString()}</span>
+
+        </div>
+          )
+        })}
       </div>
     </div>
   );

@@ -40,13 +40,13 @@ const stats = [
 ];
 
 const chartData = [
-  { name: "Tháng 1", công_ty: 4000, công_việc: 2400, sinh_viên: 2400 },
-  { name: "Tháng 2", công_ty: 3000, công_việc: 1398, sinh_viên: 2210 },
-  { name: "Tháng 3", công_ty: 2000, công_việc: 9800, sinh_viên: 2290 },
-  { name: "Tháng 4", công_ty: 2780, công_việc: 3908, sinh_viên: 2000 },
-  { name: "Tháng 5", công_ty: 1890, công_việc: 4800, sinh_viên: 2181 },
-  { name: "Tháng 6", công_ty: 2390, công_việc: 3800, sinh_viên: 2500 },
-  { name: "Tháng 7", công_ty: 3490, công_việc: 4300, sinh_viên: 2100 },
+  { name: "Tháng 1", visited_jobs: 4000, jobs_crawed: 2400, registered_students: 2400 },
+  { name: "Tháng 2", visited_jobs: 3000, jobs_crawed: 1398, registered_students: 2210 },
+  { name: "Tháng 3", visited_jobs: 2000, jobs_crawed: 9800, registered_students: 2290 },
+  { name: "Tháng 4", visited_jobs: 2780, jobs_crawed: 3908, registered_students: 2000 },
+  { name: "Tháng 5", visited_jobs: 1890, jobs_crawed: 4800, registered_students: 2181 },
+  { name: "Tháng 6", visited_jobs: 2390, jobs_crawed: 3800, registered_students: 2500 },
+  { name: "Tháng 7", visited_jobs: 3490, jobs_crawed: 4300, registered_students: 2100 },
 ];
 
 export default function DashboardPage() {
@@ -150,30 +150,30 @@ export default function DashboardPage() {
               <Legend />
               <Line
                 type="monotone"
-                dataKey="công_ty"
+                dataKey="visited_jobs"
                 stroke="#3b82f6"
                 strokeWidth={2}
                 dot={{ r: 4 }}
                 activeDot={{ r: 6 }}
-                name="Công ty"
+                name="Lượng truy cập"
               />
               <Line
                 type="monotone"
-                dataKey="công_việc"
+                dataKey="jobs_crawed"
                 stroke="#10b981"
                 strokeWidth={2}
                 dot={{ r: 4 }}
                 activeDot={{ r: 6 }}
-                name="Công việc"
+                name="Lượng công việc thu thập"
               />
               <Line
                 type="monotone"
-                dataKey="sinh_viên"
+                dataKey="registered_students"
                 stroke="#8b5cf6"
                 strokeWidth={2}
                 dot={{ r: 4 }}
                 activeDot={{ r: 6 }}
-                name="Sinh viên"
+                name="Lượng sinh viên đăng ký"
               />
             </LineChart>
           </ResponsiveContainer>
