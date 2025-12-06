@@ -26,7 +26,7 @@ export function ActionButtons({ type, onClick }: ActionTypeProps) {
     <button
       type="button"
       onClick={onClick}
-      className={`p-2 rounded-md text-white transition-colors ${getVariant()}`}
+      className={`p-2 rounded-md text-white cursor-pointer transition-colors ${getVariant()}`}
     >
       {type === "edit" ? (
         <Edit size={16} />

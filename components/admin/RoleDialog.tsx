@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -52,15 +52,22 @@ export const RoleDialog = ({
   const [description, setDescription] = useState("");
   const [selectedPerms, setSelectedPerms] = useState<string[]>([]);
   const [permsManually, setPermsManually] = useState("");
+  const prevOpenRef = useRef(open);
+  const prevInitialDataRef = useRef(initialData);
 
-  // Reset when open
+  // Reset when dialog opens or initialData changes
   useEffect(() => {
-    if (open) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+    const wasClosed = !prevOpenRef.current && open;
+    const initialDataChanged = prevInitialDataRef.current !== initialData;
+    
+    if (wasClosed || initialDataChanged) {
       setName(initialData?.name ?? "");
       setDescription(initialData?.description ?? "");
       setSelectedPerms(initialData?.permissions?.map((e) => e.perm) || []);
     }
+    
+    prevOpenRef.current = open;
+    prevInitialDataRef.current = initialData;
   }, [open, initialData]);
 
   // Toggle chọn/bỏ chọn perm
@@ -117,7 +124,7 @@ export const RoleDialog = ({
           <div className="flex flex-col items-start gap-4">
             <Label className="text-right pt-2">Mô tả</Label>
             <TextField
-              mutiline
+              multiline
               placeholder="Mô tả vai trò"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -155,7 +162,7 @@ export const RoleDialog = ({
 
               <div className="flex gap-3 relative">
                 <TextField
-                  mutiline
+                  multiline
                   placeholder={`Enter the permission name manually\n\nblog.*\nuser.update\nuser.*\n...`}
                   value={permsManually}
                   onChange={(

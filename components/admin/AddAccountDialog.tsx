@@ -1,5 +1,4 @@
-// components/admin/AddAccountDialog.tsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -58,20 +57,82 @@ export const AddAccountDialog = ({
     initialData?.avatar ?? null
   );
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [errors, setErrors] = useState<{
+    name?: string;
+    email?: string;
+    role?: string;
+  }>({});
+
+  // Cleanup object URL to prevent memory leak
+  useEffect(() => {
+    return () => {
+      if (avatarPreview && avatarPreview.startsWith('blob:')) {
+        URL.revokeObjectURL(avatarPreview);
+      }
+    };
+  }, [avatarPreview]);
+
+  // Reset when dialog closes
+  useEffect(() => {
+    if (!open) {
+      if (avatarPreview && avatarPreview.startsWith('blob:')) {
+        URL.revokeObjectURL(avatarPreview);
+      }
+      setAvatarPreview(initialData?.avatar ?? null);
+      setAvatarFile(null);
+      setErrors({});
+    }
+  }, [open, initialData?.avatar]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Revoke previous object URL if exists
+      if (avatarPreview && avatarPreview.startsWith('blob:')) {
+        URL.revokeObjectURL(avatarPreview);
+      }
       setAvatarFile(file);
       setAvatarPreview(URL.createObjectURL(file));
     }
   };
 
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const validateForm = (): boolean => {
+    const newErrors: {
+      name?: string;
+      email?: string;
+      role?: string;
+    } = {};
+
+    if (!name.trim()) {
+      newErrors.name = "Tên người dùng không được để trống";
+    } else if (name.trim().length < 2) {
+      newErrors.name = "Tên người dùng phải có ít nhất 2 ký tự";
+    }
+
+    if (!email.trim()) {
+      newErrors.email = "Email không được để trống";
+    } else if (!validateEmail(email.trim())) {
+      newErrors.email = "Email không hợp lệ";
+    }
+
+    if (!role) {
+      newErrors.role = "Vui lòng chọn vai trò";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = () => {
-    if (!name || !email || !role) return;
+    if (!validateForm()) return;
     onSubmit?.({
-      name,
-      email,
+      name: name.trim(),
+      email: email.trim(),
       role,
       status,
       avatarFile: avatarFile ?? undefined,
@@ -118,49 +179,90 @@ export const AddAccountDialog = ({
           </div>
 
           {/* Tên người dùng */}
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="name" className="text-right text-green-900">
+          <div className="grid grid-cols-4 items-start gap-4">
+            <Label htmlFor="name" className="text-right text-green-900 pt-2">
               Tên người dùng
             </Label>
-            <Input
-              id="name"
-              className="col-span-3 border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900 placeholder:text-gray-300"
-              placeholder="Nhập tên người dùng"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
+            <div className="col-span-3">
+              <Input
+                id="name"
+                className={`border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900 placeholder:text-gray-300 ${
+                  errors.name ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
+                }`}
+                placeholder="Nhập tên người dùng"
+                value={name}
+                onChange={(e) => {
+                  setName(e.target.value);
+                  if (errors.name) {
+                    setErrors({ ...errors, name: undefined });
+                  }
+                }}
+              />
+              {errors.name && (
+                <p className="text-red-500 text-sm mt-1">{errors.name}</p>
+              )}
+            </div>
           </div>
 
           {/* Email */}
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="email" className="text-right text-green-900">
+          <div className="grid grid-cols-4 items-start gap-4">
+            <Label htmlFor="email" className="text-right text-green-900 pt-2">
               Email
             </Label>
-            <Input
-              id="email"
-              type="email"
-              className="col-span-3 border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900 placeholder:text-gray-300"
-              placeholder="Nhập email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
+            <div className="col-span-3">
+              <Input
+                id="email"
+                type="email"
+                className={`border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900 placeholder:text-gray-300 ${
+                  errors.email ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
+                }`}
+                placeholder="Nhập email"
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (errors.email) {
+                    setErrors({ ...errors, email: undefined });
+                  }
+                }}
+              />
+              {errors.email && (
+                <p className="text-red-500 text-sm mt-1">{errors.email}</p>
+              )}
+            </div>
           </div>
 
           {/* Vai trò */}
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label className="text-right text-green-900">Vai trò</Label>
-            <Select value={role} onValueChange={setRole}>
-              <SelectTrigger className="col-span-3 border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900">
-                <SelectValue placeholder="Lựa chọn vai trò" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="admin">Admin</SelectItem>
-                <SelectItem value="manager">Quản trị viên</SelectItem>
-                <SelectItem value="lecturer">Giảng viên</SelectItem>
-                <SelectItem value="student">Sinh viên</SelectItem>
-                <SelectItem value="reviewer">Phản biện</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="grid grid-cols-4 items-start gap-4">
+            <Label className="text-right text-green-900 pt-2">Vai trò</Label>
+            <div className="col-span-3">
+              <Select
+                value={role}
+                onValueChange={(value) => {
+                  setRole(value);
+                  if (errors.role) {
+                    setErrors({ ...errors, role: undefined });
+                  }
+                }}
+              >
+                <SelectTrigger
+                  className={`border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900 ${
+                    errors.role ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
+                  }`}
+                >
+                  <SelectValue placeholder="Lựa chọn vai trò" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="manager">Quản trị viên</SelectItem>
+                  <SelectItem value="lecturer">Giảng viên</SelectItem>
+                  <SelectItem value="student">Sinh viên</SelectItem>
+                  <SelectItem value="reviewer">Phản biện</SelectItem>
+                </SelectContent>
+              </Select>
+              {errors.role && (
+                <p className="text-red-500 text-sm mt-1">{errors.role}</p>
+              )}
+            </div>
           </div>
 
           <div className="grid grid-cols-4 items-start gap-4">

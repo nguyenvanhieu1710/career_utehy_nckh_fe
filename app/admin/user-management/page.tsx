@@ -43,18 +43,45 @@ export default function UserManagementPage() {
     id: "",
     searchKeyword: "",
     page: 1,
-    row: 100,
+    row: 10,
   });
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [roleFilter, setRoleFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
 
   useEffect(() => {
+    setLoading(true);
     userAPI
       .getUsers(filters)
       .then((res) => {
-        setUsers(res.data?.data);
+        setUsers(res.data?.data || []);
+        setTotal(res.data?.total || 0);
+        setTotalPages(res.data?.max_page || 1);
       })
-      .catch((err) => {})
+      .catch((err) => { })
       .finally(() => setLoading(false));
   }, [filters]);
+
+  const handleRoleChange = (value: string) => {
+    setRoleFilter(value);
+    // Reset to page 1 when filter changes
+    setFilter({ ...filters, page: 1 });
+  };
+
+  const handleStatusChange = (value: string) => {
+    setStatusFilter(value);
+    // Reset to page 1 when filter changes
+    setFilter({ ...filters, page: 1 });
+  };
+
+  const handleSearchChange = (value: string) => {
+    setFilter({ ...filters, searchKeyword: value, page: 1 });
+  };
+
+  const handlePageChange = (page: number) => {
+    setFilter({ ...filters, page });
+  };
 
   const handleAddUser = (data: {
     name: string;
@@ -92,11 +119,11 @@ export default function UserManagementPage() {
     const updatedUsers = users.map((user) =>
       user.id === selectedUser.id
         ? {
-            ...user,
-            name: data.name,
-            status: data.status,
-            role: data.role as User["role"],
-          }
+          ...user,
+          name: data.name,
+          status: data.status,
+          role: data.role as User["role"],
+        }
         : user
     );
 
@@ -179,7 +206,14 @@ export default function UserManagementPage() {
       </div>
 
       {/* Filter */}
-      <Filters />
+      <Filters
+        role={roleFilter}
+        status={statusFilter}
+        searchKeyword={filters.searchKeyword || ""}
+        onRoleChange={handleRoleChange}
+        onStatusChange={handleStatusChange}
+        onSearchChange={handleSearchChange}
+      />
 
       {/* Table */}
       <div className="bg-white rounded-lg shadow-sm border">
@@ -189,9 +223,14 @@ export default function UserManagementPage() {
       </div>
 
       {/* Pagination */}
-      <Pagination amountOfRecord={users?.length || 0} />
+      <Pagination
+        amountOfRecord={total}
+        currentPage={filters.page || 1}
+        totalPages={totalPages}
+        onPageChange={handlePageChange}
+      />
 
-      {/* Add/Edit User Dialog */}
+      {/* Add/Edit Account Dialog */}
       <AddAccountDialog
         open={isAddDialogOpen}
         onOpenChange={setIsAddDialogOpen}
@@ -209,7 +248,7 @@ export default function UserManagementPage() {
         description={`Bạn có chắc chắn muốn xóa người dùng ${selectedUser?.name}?`}
       />
 
-      {/* Success Dialog */}
+      {/* Notification Dialog */}
       <NotificationDialog
         open={dialogState.isOpen}
         onOpenChange={(open) =>
