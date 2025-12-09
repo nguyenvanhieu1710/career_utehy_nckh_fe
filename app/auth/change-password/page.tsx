@@ -5,15 +5,68 @@ import { motion, easeOut } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
+import { authAPI } from "@/services/auth";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export default function ChangePasswordPage() {
+  const router = useRouter();
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Đổi mật khẩu");
+
+    // Validation
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      toast.error("Vui lòng điền đầy đủ thông tin");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast.error("Mật khẩu mới và xác nhận mật khẩu không khớp");
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      toast.error("Mật khẩu mới phải có ít nhất 6 ký tự");
+      return;
+    }
+
+    if (currentPassword === newPassword) {
+      toast.error("Mật khẩu mới phải khác mật khẩu hiện tại");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const response = await authAPI.changePassword(
+        currentPassword,
+        newPassword
+      );
+
+      if (response.data.status === "success") {
+        toast.success("Đổi mật khẩu thành công!");
+        // Reset form
+        setCurrentPassword("");
+        setNewPassword("");
+        setConfirmPassword("");
+        // Redirect to profile after 1.5s
+        setTimeout(() => {
+          router.push("/career/profile");
+        }, 1500);
+      }
+    } catch (error) {
+      const err = error as { response?: { data?: { detail?: string } } };
+      const errorMessage =
+        err?.response?.data?.detail || "Đổi mật khẩu thất bại";
+      toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Animation variants
@@ -78,7 +131,7 @@ export default function ChangePasswordPage() {
               placeholder="Nhập mật khẩu hiện tại"
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
-              className="mt-2 py-3 rounded-xl border-gray-300"
+              className="mt-2 py-3 rounded-xl border-gray-300 text-gray-900"
               required
             />
           </motion.div>
@@ -91,7 +144,7 @@ export default function ChangePasswordPage() {
               placeholder="Nhập mật khẩu mới"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
-              className="mt-2 py-3 rounded-xl border-gray-300"
+              className="mt-2 py-3 rounded-xl border-gray-300 text-gray-900"
               required
             />
           </motion.div>
@@ -106,7 +159,7 @@ export default function ChangePasswordPage() {
               placeholder="Xác nhận mật khẩu mới"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="mt-2 py-3 rounded-xl border-gray-300"
+              className="mt-2 py-3 rounded-xl border-gray-300 text-gray-900"
               required
             />
           </motion.div>
@@ -115,10 +168,11 @@ export default function ChangePasswordPage() {
             variants={itemVariants}
             className="flex items-center justify-between pt-4"
           >
-            <Link href="/profile">
+            <Link href="/career/profile">
               <button
                 type="button"
-                className="px-8 py-3 border border-green-700 text-green-700 rounded-xl font-medium hover:bg-green-50 cursor-pointer"
+                className="px-8 py-3 border border-green-700 text-green-700 rounded-xl font-medium hover:bg-green-50 cursor-pointer disabled:opacity-50"
+                disabled={isLoading}
               >
                 Hủy
               </button>
@@ -126,9 +180,10 @@ export default function ChangePasswordPage() {
 
             <button
               type="submit"
-              className="px-8 py-3 bg-green-800 text-white rounded-xl font-medium hover:bg-green-600 cursor-pointer"
+              className="px-8 py-3 bg-green-800 text-white rounded-xl font-medium hover:bg-green-600 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isLoading}
             >
-              Đổi mật khẩu
+              {isLoading ? "Đang xử lý..." : "Đổi mật khẩu"}
             </button>
           </motion.div>
         </motion.form>

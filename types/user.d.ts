@@ -7,6 +7,8 @@ export interface User extends BaseModel {
   birthday?: string;
   avatar_url?: string;
   phone?: string;
+  address?: string;
+  gender?: string;
   unversity?: string;
   major?: string;
   graduation_year?: string;
@@ -43,6 +45,11 @@ export interface UserLogin {
 export interface UserUpdate {
   email?: string;
   username?: string;
+  fullname?: string;
+  birthday?: string;
+  phone?: string;
+  address?: string;
+  gender?: string;
   password?: string;
 }
 
