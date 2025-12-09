@@ -1,13 +1,11 @@
-import { Dialog, DialogContent, DialogHeader } from "@/components/ui/dialog";
-
-interface SuccessDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  title?: string;
-  message?: string;
-  icon?: string;
-  type?: "success" | "error" | "warning" | "info";
-}
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { NotificationDialogProps } from "@/types/dialog";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 
 export const NotificationDialog = ({
   open,
@@ -16,7 +14,7 @@ export const NotificationDialog = ({
   message = "Dữ liệu đã thêm thành công!",
   icon = "😊",
   type = "success",
-}: SuccessDialogProps) => {
+}: NotificationDialogProps) => {
   const iconMap = {
     success: "😊",
     error: "😓",
@@ -29,7 +27,11 @@ export const NotificationDialog = ({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-sm bg-white border-2 border-green-200">
-        <DialogHeader className="hidden" />
+        <DialogHeader>
+          <VisuallyHidden>
+            <DialogTitle>{title}</DialogTitle>
+          </VisuallyHidden>
+        </DialogHeader>
         <div className="flex justify-end">
           <button
             onClick={() => onOpenChange(false)}

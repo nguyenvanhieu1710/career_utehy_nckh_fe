@@ -19,76 +19,71 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Upload } from "lucide-react";
+import type {
+  AccountDialogData,
+  AccountDialogSubmitData,
+} from "@/types/dialog";
 
-interface AddAccountDialogProps {
+interface AccountDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  initialData?: {
-    name?: string;
-    email?: string;
-    role?: string;
-    status?: "active" | "inactive";
-    avatar?: string;
-  };
+  initialData?: AccountDialogData;
   mode?: "add" | "edit";
-  onSubmit?: (data: {
-    name: string;
-    email: string;
-    role: string;
-    status: "active" | "inactive";
-    avatarFile?: File;
-  }) => void;
+  onSubmit?: (data: AccountDialogSubmitData) => void;
 }
 
-export const AddAccountDialog = ({
+export const AccountDialog = ({
   open,
   onOpenChange,
   initialData,
   mode = "add",
   onSubmit,
-}: AddAccountDialogProps) => {
-  const [name, setName] = useState(initialData?.name ?? "");
-  const [email, setEmail] = useState(initialData?.email ?? "");
-  const [role, setRole] = useState(initialData?.role ?? "");
-  const [status, setStatus] = useState<"active" | "inactive">(
-    initialData?.status ?? "active"
-  );
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(
-    initialData?.avatar ?? null
-  );
+}: AccountDialogProps) => {
+  const [fullname, setFullname] = useState("");
+  const [email, setEmail] = useState("");
+  const [role, setRole] = useState("");
+  const [status, setStatus] = useState<"active" | "inactive">("active");
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [errors, setErrors] = useState<{
-    name?: string;
+    fullname?: string;
     email?: string;
     role?: string;
   }>({});
 
+  // Reset form when dialog opens
+  useEffect(() => {
+    if (!open) return;
+
+    const fullnameValue = initialData?.fullname ?? "";
+    const emailValue = initialData?.email ?? "";
+    const roleValue = initialData?.role ?? "";
+    const statusValue = initialData?.status ?? "active";
+    const avatarValue = initialData?.avatar ?? null;
+
+    setFullname(fullnameValue);
+    setEmail(emailValue);
+    setRole(roleValue);
+    setStatus(statusValue);
+    setAvatarPreview(avatarValue);
+    setAvatarFile(null);
+    setErrors({});
+  }, [open, initialData]);
+
   // Cleanup object URL to prevent memory leak
   useEffect(() => {
     return () => {
-      if (avatarPreview && avatarPreview.startsWith('blob:')) {
+      if (avatarPreview && avatarPreview.startsWith("blob:")) {
         URL.revokeObjectURL(avatarPreview);
       }
     };
   }, [avatarPreview]);
 
-  // Reset when dialog closes
-  useEffect(() => {
-    if (!open) {
-      if (avatarPreview && avatarPreview.startsWith('blob:')) {
-        URL.revokeObjectURL(avatarPreview);
-      }
-      setAvatarPreview(initialData?.avatar ?? null);
-      setAvatarFile(null);
-      setErrors({});
-    }
-  }, [open, initialData?.avatar]);
-
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       // Revoke previous object URL if exists
-      if (avatarPreview && avatarPreview.startsWith('blob:')) {
+      if (avatarPreview && avatarPreview.startsWith("blob:")) {
         URL.revokeObjectURL(avatarPreview);
       }
       setAvatarFile(file);
@@ -103,15 +98,15 @@ export const AddAccountDialog = ({
 
   const validateForm = (): boolean => {
     const newErrors: {
-      name?: string;
+      fullname?: string;
       email?: string;
       role?: string;
     } = {};
 
-    if (!name.trim()) {
-      newErrors.name = "Tên người dùng không được để trống";
-    } else if (name.trim().length < 2) {
-      newErrors.name = "Tên người dùng phải có ít nhất 2 ký tự";
+    if (!fullname.trim()) {
+      newErrors.fullname = "Tên người dùng không được để trống";
+    } else if (fullname.trim().length < 2) {
+      newErrors.fullname = "Tên người dùng phải có ít nhất 2 ký tự";
     }
 
     if (!email.trim()) {
@@ -131,7 +126,7 @@ export const AddAccountDialog = ({
   const handleSubmit = () => {
     if (!validateForm()) return;
     onSubmit?.({
-      name: name.trim(),
+      fullname: fullname.trim(),
       email: email.trim(),
       role,
       status,
@@ -158,7 +153,7 @@ export const AddAccountDialog = ({
               <Avatar className="h-24 w-24">
                 <AvatarImage src={avatarPreview ?? ""} />
                 <AvatarFallback className="text-lg">
-                  {name.slice(0, 2).toUpperCase() || "AD"}
+                  {fullname.slice(0, 2).toUpperCase() || "AD"}
                 </AvatarFallback>
               </Avatar>
               <label
@@ -180,26 +175,31 @@ export const AddAccountDialog = ({
 
           {/* Tên người dùng */}
           <div className="grid grid-cols-4 items-start gap-4">
-            <Label htmlFor="name" className="text-right text-green-900 pt-2">
+            <Label
+              htmlFor="fullname"
+              className="text-right text-green-900 pt-2"
+            >
               Tên người dùng
             </Label>
             <div className="col-span-3">
               <Input
-                id="name"
+                id="fullname"
                 className={`border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900 placeholder:text-gray-300 ${
-                  errors.name ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
+                  errors.fullname
+                    ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                    : ""
                 }`}
                 placeholder="Nhập tên người dùng"
-                value={name}
+                value={fullname}
                 onChange={(e) => {
-                  setName(e.target.value);
-                  if (errors.name) {
-                    setErrors({ ...errors, name: undefined });
+                  setFullname(e.target.value);
+                  if (errors.fullname) {
+                    setErrors({ ...errors, fullname: undefined });
                   }
                 }}
               />
-              {errors.name && (
-                <p className="text-red-500 text-sm mt-1">{errors.name}</p>
+              {errors.fullname && (
+                <p className="text-red-500 text-sm mt-1">{errors.fullname}</p>
               )}
             </div>
           </div>
@@ -214,7 +214,9 @@ export const AddAccountDialog = ({
                 id="email"
                 type="email"
                 className={`border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900 placeholder:text-gray-300 ${
-                  errors.email ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
+                  errors.email
+                    ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                    : ""
                 }`}
                 placeholder="Nhập email"
                 value={email}
@@ -246,7 +248,9 @@ export const AddAccountDialog = ({
               >
                 <SelectTrigger
                   className={`border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900 ${
-                    errors.role ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
+                    errors.role
+                      ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                      : ""
                   }`}
                 >
                   <SelectValue placeholder="Lựa chọn vai trò" />

@@ -9,9 +9,9 @@ import { NotificationDialog } from "@/components/admin/NotificationDialog";
 import { ActionButtons } from "@/components/admin/ActionButtons";
 import { RoleDialog } from "@/components/admin/RoleDialog";
 import { permAPI } from "@/services/perm";
-import { toast } from "sonner";
 import { Role } from "@/types/permission";
 import { Input } from "@/components/ui/input";
+import { DialogState } from "@/types/dialog";
 
 export default function RoleManagementPage() {
   const [loading, setLoading] = useState(true);
@@ -19,8 +19,12 @@ export default function RoleManagementPage() {
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [isSuccessDialogOpen, setIsSuccessDialogOpen] = useState(false);
-  const [successMessage, setSuccessMessage] = useState("");
+  const [dialogState, setDialogState] = useState<DialogState>({
+    isOpen: false,
+    title: "",
+    message: "",
+    type: "success",
+  });
   const [filters, setFilters] = useState({
     id: "",
     searchKeyword: "",
@@ -28,62 +32,63 @@ export default function RoleManagementPage() {
     row: 100,
   });
   const [perms, setPerms] = useState<string[]>();
-  // Giả lập loading
+
+  // Load permissions list (chỉ 1 lần)
   useEffect(() => {
     permAPI.getPerms().then((res) => {
       setPerms(res.data);
     });
+  }, []);
+
+  // Load roles list (khi filters thay đổi)
+  useEffect(() => {
+    setLoading(true);
     permAPI
       .getRoles(filters)
       .then((res) => {
         setRoles(res.data?.data);
       })
-      .catch((err) => {})
+      .catch(() => {
+        setDialogState({
+          isOpen: true,
+          title: "Lỗi",
+          message: "Không thể tải danh sách vai trò!",
+          type: "error",
+        });
+      })
       .finally(() => setLoading(false));
-  }, []);
+  }, [filters]);
 
-  const handleAddRole = (data: { name: string; description: string }) => {
-    const newRole: Role = {
-      name: data.name,
-      description: data.description,
-    };
+  const handleDeleteRole = async () => {
+    if (!selectedRole || !selectedRole.id) return;
 
-    setRoles([...(roles || []), newRole]);
-    setSuccessMessage("Thêm người dùng thành công!");
-    setIsAddDialogOpen(false);
-    setIsSuccessDialogOpen(true);
-  };
+    try {
+      setLoading(true);
+      // TODO: Implement delete API
+      // await permAPI.deleteRole(selectedRole.id);
 
-  const handleUpdateRole = (data: Omit<Role, "id" | "email">) => {
-    if (!selectedRole) return;
+      // Refresh danh sách roles
+      const res = await permAPI.getRoles(filters);
+      setRoles(res.data?.data);
 
-    const updatedRoles = roles?.map((role) =>
-      role.id === selectedRole.id
-        ? {
-            ...role,
-            name: data.name,
-            description: data.description,
-            created_at: data.created_at,
-          }
-        : role
-    );
-
-    setRoles(updatedRoles);
-    setSuccessMessage("Cập nhật thông tin thành công!");
-    setIsAddDialogOpen(false);
-    setIsSuccessDialogOpen(true);
-    setSelectedRole(null);
-  };
-
-  const handleDeleteRole = () => {
-    if (!selectedRole) return;
-
-    const updatedRoles = roles?.filter((role) => role.id !== selectedRole.id);
-    setRoles(updatedRoles);
-    setIsDeleteDialogOpen(false);
-    setSuccessMessage("Đã xóa người dùng thành công!");
-    setIsSuccessDialogOpen(true);
-    setSelectedRole(null);
+      setIsDeleteDialogOpen(false);
+      setSelectedRole(null);
+      setDialogState({
+        isOpen: true,
+        title: "Xóa thành công",
+        message: "Đã xóa vai trò thành công!",
+        type: "success",
+      });
+    } catch {
+      setDialogState({
+        isOpen: true,
+        title: "Xóa thất bại",
+        message: "Có lỗi xảy ra khi xóa vai trò!",
+        type: "error",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleEdit = (role: Role) => {
@@ -157,13 +162,34 @@ export default function RoleManagementPage() {
         onOpenChange={setIsAddDialogOpen}
         initialData={selectedRole || undefined}
         mode={selectedRole ? "edit" : "add"}
-        onSubmit={(data) => {
-          permAPI
-            .createRole(data)
-            .then((res) => {
-              toast.success("Thêm vai trò mới thành công!");
-            })
-            .catch((err) => {});
+        onSubmit={async (data) => {
+          try {
+            setLoading(true);
+            await permAPI.createRole(data);
+
+            // Refresh danh sách roles
+            const res = await permAPI.getRoles(filters);
+            setRoles(res.data?.data);
+
+            // Đóng dialog và hiện thông báo
+            setIsAddDialogOpen(false);
+            setSelectedRole(null);
+            setDialogState({
+              isOpen: true,
+              title: "Thêm thành công",
+              message: "Thêm vai trò mới thành công!",
+              type: "success",
+            });
+          } catch {
+            setDialogState({
+              isOpen: true,
+              title: "Thêm thất bại",
+              message: "Có lỗi xảy ra khi thêm vai trò!",
+              type: "error",
+            });
+          } finally {
+            setLoading(false);
+          }
         }}
       />
 
@@ -172,14 +198,19 @@ export default function RoleManagementPage() {
         open={isDeleteDialogOpen}
         onOpenChange={setIsDeleteDialogOpen}
         onConfirm={handleDeleteRole}
-        title="Xác nhận xóa người dùng"
-        description={`Bạn có chắc chắn muốn xóa người dùng ${selectedRole?.name}?`}
+        title="Xác nhận xóa vai trò"
+        description={`Bạn có chắc chắn muốn xóa vai trò ${selectedRole?.name}?`}
       />
 
-      {/* Success Dialog */}
+      {/* Notification Dialog */}
       <NotificationDialog
-        open={isSuccessDialogOpen}
-        onOpenChange={setIsSuccessDialogOpen}
+        open={dialogState.isOpen}
+        onOpenChange={(open) =>
+          setDialogState({ ...dialogState, isOpen: open })
+        }
+        title={dialogState.title}
+        message={dialogState.message}
+        type={dialogState.type}
       />
     </div>
   );
