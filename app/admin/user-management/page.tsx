@@ -5,23 +5,14 @@ import { Filters } from "@/components/admin/Filters";
 import { AddButton } from "@/components/admin/AddButton";
 import { Column, Table } from "@/components/admin/Table";
 import { Pagination } from "@/components/admin/Pagination";
-import { AddAccountDialog } from "@/components/admin/AddAccountDialog";
+import { AccountDialog } from "@/components/admin/AccountDialog";
 import { DeleteConfirmationDialog } from "@/components/admin/DeleteConfirmationDialog";
-import { SuccessDialog } from "@/components/admin/SuccessDialog";
+import { NotificationDialog } from "@/components/admin/NotificationDialog";
 import { ActionButtons } from "@/components/admin/ActionButtons";
 import { userAPI } from "@/services/user";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/Select";
-import { Input } from "@/components/ui/input";
 import { GetSchema } from "@/types/base";
-
-interface User {
-  id: number;
-  name: string;
-  email: string;
-  role: "Sinh viên" | "Nhà tuyển dụng" | "Admin";
-  status: "active" | "inactive";
-}
-
+import { User } from "@/types/user";
+import { DialogState, AccountDialogSubmitData } from "@/types/dialog";
 
 export default function UserManagementPage() {
   const [loading, setLoading] = useState(true);
@@ -29,74 +20,171 @@ export default function UserManagementPage() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [isSuccessDialogOpen, setIsSuccessDialogOpen] = useState(false);
-  const [successMessage, setSuccessMessage] = useState("");
+  const [dialogState, setDialogState] = useState<DialogState>({
+    isOpen: false,
+    title: "",
+    message: "",
+    type: "success",
+  });
   const [filters, setFilter] = useState<GetSchema>({
     id: "",
     searchKeyword: "",
     page: 1,
-    row: 100
-  })
+    row: 10,
+  });
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [roleFilter, setRoleFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
 
   useEffect(() => {
-    setLoading(true)
-    userAPI.getUsers(filters).then(res => {
-      setUsers(res.data?.data)
-    }).catch(err => { })
-      .finally(() => setLoading(false))
+    setLoading(true);
+    userAPI
+      .getUsers(filters)
+      .then((res) => {
+        setUsers(res.data?.data || []);
+        setTotal(res.data?.total || 0);
+        setTotalPages(res.data?.max_page || 1);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, [filters]);
 
-  const handleAddUser = (data: {
-    name: string;
-    email: string;
-    role: string;
-    status: "active" | "inactive";
-  }) => {
-    const newUser: User = {
-      id: Math.max(0, ...users.map((u) => u.id)) + 1, // Generate new ID
-      name: data.name,
-      email: data.email,
-      role: data.role as User["role"],
-      status: data.status,
-    };
-
-    setUsers([...users, newUser]);
-    setSuccessMessage("Thêm người dùng thành công!");
-    setIsAddDialogOpen(false);
-    setIsSuccessDialogOpen(true);
+  const handleRoleChange = (value: string) => {
+    setRoleFilter(value);
+    // Reset to page 1 when filter changes
+    setFilter({ ...filters, page: 1 });
   };
 
-  const handleUpdateUser = (data: Omit<User, "id" | "email">) => {
-    if (!selectedUser) return;
-
-    const updatedUsers = users.map((user) =>
-      user.id === selectedUser.id
-        ? {
-          ...user,
-          name: data.name,
-          status: data.status,
-          role: data.role,
-        }
-        : user
-    );
-
-    setUsers(updatedUsers);
-    setSuccessMessage("Cập nhật thông tin thành công!");
-    setIsAddDialogOpen(false);
-    setIsSuccessDialogOpen(true);
-    setSelectedUser(null);
+  const handleStatusChange = (value: string) => {
+    setStatusFilter(value);
+    // Reset to page 1 when filter changes
+    setFilter({ ...filters, page: 1 });
   };
 
-  const handleDeleteUser = () => {
+  const handleSearchChange = (value: string) => {
+    setFilter({ ...filters, searchKeyword: value, page: 1 });
+  };
 
+  const handlePageChange = (page: number) => {
+    setFilter({ ...filters, page });
+  };
+
+  const handleAddUser = async (data: AccountDialogSubmitData) => {
+    try {
+      setLoading(true);
+
+      // Gọi API create user
+      await userAPI.createUser({
+        email: data.email,
+        username: data.email.split("@")[0], // Generate username from email
+        password: data.email.split("@")[0], // Default password
+        fullname: data.fullname,
+      });
+
+      // Refresh danh sách user sau khi create
+      const res = await userAPI.getUsers(filters);
+      setUsers(res.data?.data || []);
+      setTotal(res.data?.total || 0);
+      setTotalPages(res.data?.max_page || 1);
+
+      setDialogState({
+        isOpen: true,
+        title: "Tạo người dùng thành công",
+        message: `Người dùng ${data.fullname} đã được tạo! Mật khẩu mặc định: ${
+          data.email.split("@")[0]
+        }`,
+        type: "success",
+      });
+      setIsAddDialogOpen(false);
+    } catch (error: any) {
+      setDialogState({
+        isOpen: true,
+        title: "Tạo người dùng thất bại",
+        message:
+          error.response?.data?.detail || "Có lỗi xảy ra khi tạo người dùng!",
+        type: "error",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateUser = async (data: AccountDialogSubmitData) => {
     if (!selectedUser) return;
 
-    const updatedUsers = users.filter((user) => user.id !== selectedUser.id);
-    setUsers(updatedUsers);
-    setIsDeleteDialogOpen(false);
-    setSuccessMessage("Đã xóa người dùng thành công!");
-    setIsSuccessDialogOpen(true);
-    setSelectedUser(null);
+    try {
+      setLoading(true);
+
+      // Gọi API update user
+      await userAPI.updateUser(selectedUser.id.toString(), {
+        username: data.fullname,
+        email: data.email,
+      });
+
+      // Refresh danh sách user sau khi update
+      const res = await userAPI.getUsers(filters);
+      setUsers(res.data?.data || []);
+      setTotal(res.data?.total || 0);
+      setTotalPages(res.data?.max_page || 1);
+
+      setDialogState({
+        isOpen: true,
+        title: "Cập nhật thành công",
+        message: "Thông tin người dùng đã được cập nhật!",
+        type: "success",
+      });
+      setIsAddDialogOpen(false);
+      setSelectedUser(null);
+    } catch (error: any) {
+      setDialogState({
+        isOpen: true,
+        title: "Cập nhật thất bại",
+        message:
+          error.response?.data?.detail ||
+          "Có lỗi xảy ra khi cập nhật người dùng!",
+        type: "error",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    if (!selectedUser) return;
+
+    try {
+      setLoading(true);
+
+      // Gọi API delete user
+      await userAPI.deleteUser(selectedUser.id.toString());
+
+      // Refresh danh sách user sau khi delete
+      const res = await userAPI.getUsers(filters);
+      setUsers(res.data?.data || []);
+      setTotal(res.data?.total || 0);
+      setTotalPages(res.data?.max_page || 1);
+
+      setIsDeleteDialogOpen(false);
+      setDialogState({
+        isOpen: true,
+        title: "Xóa người dùng thành công",
+        message: `Người dùng ${selectedUser.fullname} đã được xóa!`,
+        type: "success",
+      });
+      setSelectedUser(null);
+    } catch (error: unknown) {
+      setDialogState({
+        isOpen: true,
+        title: "Xóa thất bại",
+        message:
+          error.response?.data?.detail || "Có lỗi xảy ra khi xóa người dùng!",
+        type: "error",
+      });
+      setIsDeleteDialogOpen(false);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleEdit = (user: User) => {
@@ -109,32 +197,45 @@ export default function UserManagementPage() {
     setIsDeleteDialogOpen(true);
   };
 
-
-
   const columns: Column<User>[] = [
-    { label: "#", render: (_, i) => i + 1 },
-    { label: "Avatar", render: user => <img /> },
-    { label: "Name", field: "name" },
-    { label: "Email", field: "email" },
-    { label: "Role", field: "role" },
     {
-      label: "Status",
-      render: user => (
-        <span className={user.status === "active" ? "text-green-600" : "text-red-600"}>
-          {user.status}
-        </span>
-      )
+      label: "#",
+      render: (_, i) => ((filters.page || 1) - 1) * (filters.row || 10) + i + 1,
     },
     {
-      label: "Action",
-      render: user => (
-        <div className='flex gap-2'>
-          <ActionButtons type='edit' onClick={() => handleEdit(user)} />
-          <ActionButtons type='ban' onClick={() => handleDelete(user)} />
+      label: "Avatar",
+      render: (user) => (
+        <img
+          src={user.avatar_url || "/default-avatar.jpg"}
+          alt={user.fullname}
+          className="w-10 h-10 rounded-full object-cover"
+        />
+      ),
+    },
+    { label: "Họ tên", field: "fullname" },
+    { label: "Email", field: "email" },
+    { label: "Vai trò", render: () => <span>{"Chưa xác định"}</span> },
+    {
+      label: "Trạng thái",
+      render: (user) => (
+        <span
+          className={
+            user.action_status === "active" ? "text-green-600" : "text-red-600"
+          }
+        >
+          {user.action_status || "Chưa xác định"}
+        </span>
+      ),
+    },
+    {
+      label: "Hành động",
+      render: (user) => (
+        <div className="flex gap-2">
+          <ActionButtons type="edit" onClick={() => handleEdit(user)} />
+          <ActionButtons type="ban" onClick={() => handleDelete(user)} />
         </div>
-      )
-    }
-
+      ),
+    },
   ] as Column<User>[];
 
   return (
@@ -150,41 +251,15 @@ export default function UserManagementPage() {
         />
       </div>
 
-      <div className="flex flex-wrap gap-3 mb-4">
-        <Select defaultValue="all">
-          <SelectTrigger className="w-48">
-            <SelectValue placeholder="Lọc theo vai trò" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tất cả vai trò</SelectItem>
-            <SelectItem value="sinh-vien">Sinh viên</SelectItem>
-            <SelectItem value="nha-tuyen-dung">Nhà tuyển dụng</SelectItem>
-            <SelectItem value="admin">Admin</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Select defaultValue="all">
-          <SelectTrigger className="w-48">
-            <SelectValue placeholder="Lọc theo trạng thái" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tất cả trạng thái</SelectItem>
-            <SelectItem value="active">Còn hoạt động</SelectItem>
-            <SelectItem value="inactive">Ngừng hoạt động</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <div className="flex-1 min-w-64">
-          <Input
-            placeholder="Nhập tên người dùng để tìm kiếm..."
-            className="w-full"
-            value={filters.searchKeyword}
-            onChange={(e) => {
-              setFilter(prev => ({ ...prev, searchKeyword: e.target.value }))
-            }}
-          />
-        </div>
-      </div>
+      {/* Filter */}
+      <Filters
+        role={roleFilter}
+        status={statusFilter}
+        searchKeyword={filters.searchKeyword || ""}
+        onRoleChange={handleRoleChange}
+        onStatusChange={handleStatusChange}
+        onSearchChange={handleSearchChange}
+      />
 
       {/* Table */}
       <div className="bg-white rounded-lg shadow-sm border">
@@ -194,15 +269,35 @@ export default function UserManagementPage() {
       </div>
 
       {/* Pagination */}
-      <Pagination amountOfRecord={users?.length || 0} />
+      <Pagination
+        amountOfRecord={total}
+        currentPage={filters.page || 1}
+        totalPages={totalPages}
+        onPageChange={handlePageChange}
+      />
 
-      {/* Add/Edit User Dialog */}
-      <AddAccountDialog
+      {/* Add/Edit Account Dialog */}
+      <AccountDialog
         open={isAddDialogOpen}
         onOpenChange={setIsAddDialogOpen}
-        initialData={selectedUser || undefined}
+        initialData={
+          selectedUser
+            ? {
+                fullname: selectedUser.fullname,
+                email: selectedUser.email,
+                role: "student", // TODO: Get from user roles
+                status:
+                  selectedUser.action_status === "active"
+                    ? "active"
+                    : "inactive",
+                avatar: selectedUser.avatar_url,
+              }
+            : undefined
+        }
         mode={selectedUser ? "edit" : "add"}
-        onSubmit={undefined}
+        onSubmit={(data) =>
+          selectedUser ? handleUpdateUser(data) : handleAddUser(data)
+        }
       />
 
       {/* Delete Confirmation Dialog */}
@@ -211,13 +306,18 @@ export default function UserManagementPage() {
         onOpenChange={setIsDeleteDialogOpen}
         onConfirm={handleDeleteUser}
         title="Xác nhận xóa người dùng"
-        description={`Bạn có chắc chắn muốn xóa người dùng ${selectedUser?.name}?`}
+        description={`Bạn có chắc chắn muốn xóa người dùng ${selectedUser?.fullname}?`}
       />
 
-      {/* Success Dialog */}
-      <SuccessDialog
-        open={isSuccessDialogOpen}
-        onOpenChange={setIsSuccessDialogOpen}
+      {/* Notification Dialog */}
+      <NotificationDialog
+        open={dialogState.isOpen}
+        onOpenChange={(open) =>
+          setDialogState({ ...dialogState, isOpen: open })
+        }
+        title={dialogState.title}
+        message={dialogState.message}
+        type={dialogState.type}
       />
     </div>
   );

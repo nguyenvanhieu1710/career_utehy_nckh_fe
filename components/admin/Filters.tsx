@@ -3,10 +3,26 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select';
 import { Input } from '@/components/ui/input';
 
-export function Filters() {
+interface FiltersProps {
+  role?: string;
+  status?: string;
+  searchKeyword?: string;
+  onRoleChange?: (value: string) => void;
+  onStatusChange?: (value: string) => void;
+  onSearchChange?: (value: string) => void;
+}
+
+export function Filters({
+  role = "all",
+  status = "all",
+  searchKeyword = "",
+  onRoleChange,
+  onStatusChange,
+  onSearchChange,
+}: FiltersProps) {
   return (
     <div className="flex flex-wrap gap-3 mb-4">
-      <Select defaultValue="all">
+      <Select value={role} onValueChange={onRoleChange}>
         <SelectTrigger className="w-48">
           <SelectValue placeholder="Lọc theo vai trò" />
         </SelectTrigger>
@@ -18,7 +34,7 @@ export function Filters() {
         </SelectContent>
       </Select>
 
-      <Select defaultValue="all">
+      <Select value={status} onValueChange={onStatusChange}>
         <SelectTrigger className="w-48">
           <SelectValue placeholder="Lọc theo trạng thái" />
         </SelectTrigger>
@@ -33,6 +49,8 @@ export function Filters() {
         <Input
           placeholder="Nhập tên người dùng để tìm kiếm..."
           className="w-full"
+          value={searchKeyword}
+          onChange={(e) => onSearchChange?.(e.target.value)}
         />
       </div>
     </div>

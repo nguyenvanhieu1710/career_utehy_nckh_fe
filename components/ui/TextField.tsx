@@ -13,7 +13,7 @@ type TextFieldProps = {
   border?: string;
   type?: string;
   flex?: number | string;
-  mutiline?: boolean;
+  multiline?: boolean;
   name?: string;
   textAlign?: "start" | "center" | "end" | "left" | "right";
   error?: boolean;
@@ -42,7 +42,7 @@ const TextField = forwardRef<HTMLDivElement, TextFieldProps>(({
   type = "text",
   onChange,
   flex,
-  mutiline = false,
+  multiline = false,
   name,
   textAlign = "start",
   error = false,
@@ -87,7 +87,7 @@ const TextField = forwardRef<HTMLDivElement, TextFieldProps>(({
         }}
       >
         {iconLeft}
-        {mutiline ? (
+        {multiline ? (
           <textarea
             disabled={disabled}
             id={id}

@@ -1,24 +1,17 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Filters } from "@/components/admin/Filters";
 import { AddButton } from "@/components/admin/AddButton";
 import { Column, Table } from "@/components/admin/Table";
 import { Pagination } from "@/components/admin/Pagination";
-import { AddAccountDialog } from "@/components/admin/AddAccountDialog";
 import { DeleteConfirmationDialog } from "@/components/admin/DeleteConfirmationDialog";
-import { SuccessDialog } from "@/components/admin/SuccessDialog";
+import { NotificationDialog } from "@/components/admin/NotificationDialog";
 import { ActionButtons } from "@/components/admin/ActionButtons";
-import { DateTime } from "@/types/base";
 import { RoleDialog } from "@/components/admin/RoleDialog";
-import { authAPI } from "@/services/auth";
 import { permAPI } from "@/services/perm";
-import { toast } from "sonner";
 import { Role } from "@/types/permission";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/Select";
 import { Input } from "@/components/ui/input";
-
-
+import { DialogState } from "@/types/dialog";
 
 export default function RoleManagementPage() {
   const [loading, setLoading] = useState(true);
@@ -26,67 +19,76 @@ export default function RoleManagementPage() {
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [isSuccessDialogOpen, setIsSuccessDialogOpen] = useState(false);
-  const [successMessage, setSuccessMessage] = useState("");
-  const [filters, setFilters] = useState({ id: "", searchKeyword: "", page: 1, row: 100 });
+  const [dialogState, setDialogState] = useState<DialogState>({
+    isOpen: false,
+    title: "",
+    message: "",
+    type: "success",
+  });
+  const [filters, setFilters] = useState({
+    id: "",
+    searchKeyword: "",
+    page: 1,
+    row: 100,
+  });
   const [perms, setPerms] = useState<string[]>();
-  // Giả lập loading
+
+  // Load permissions list (chỉ 1 lần)
   useEffect(() => {
-    permAPI.getPerms().then(res => {
+    permAPI.getPerms().then((res) => {
       setPerms(res.data);
-    })
-    setLoading(true);
-    permAPI.getRoles(filters).then(res => {
-      setRoles(res.data?.data)
-    }).catch(err => { }).finally(() => setLoading(false))
+    });
   }, []);
 
-  const handleAddRole = (data: {
-    name: string;
-    description: string;
-  }) => {
-    const newRole: Role = {
-      name: data.name,
-      description: data.description,
-    };
+  // Load roles list (khi filters thay đổi)
+  useEffect(() => {
+    setLoading(true);
+    permAPI
+      .getRoles(filters)
+      .then((res) => {
+        setRoles(res.data?.data);
+      })
+      .catch(() => {
+        setDialogState({
+          isOpen: true,
+          title: "Lỗi",
+          message: "Không thể tải danh sách vai trò!",
+          type: "error",
+        });
+      })
+      .finally(() => setLoading(false));
+  }, [filters]);
 
-    setRoles([...roles || [], newRole]);
-    setSuccessMessage("Thêm người dùng thành công!");
-    setIsAddDialogOpen(false);
-    setIsSuccessDialogOpen(true);
-  };
+  const handleDeleteRole = async () => {
+    if (!selectedRole || !selectedRole.id) return;
 
-  const handleUpdateRole = (data: Omit<Role, "id" | "email">) => {
-    if (!selectedRole) return;
+    try {
+      setLoading(true);
+      // TODO: Implement delete API
+      // await permAPI.deleteRole(selectedRole.id);
 
-    const updatedRoles = roles?.map((role) =>
-      role.id === selectedRole.id
-        ? {
-          ...role,
-          name: data.name,
-          description: data.description,
-          created_at: data.created_at
-        }
-        : role
-    );
+      // Refresh danh sách roles
+      const res = await permAPI.getRoles(filters);
+      setRoles(res.data?.data);
 
-    setRoles(updatedRoles);
-    setSuccessMessage("Cập nhật thông tin thành công!");
-    setIsAddDialogOpen(false);
-    setIsSuccessDialogOpen(true);
-    setSelectedRole(null);
-  };
-
-  const handleDeleteRole = () => {
-
-    if (!selectedRole) return;
-
-    const updatedRoles = roles?.filter((role) => role.id !== selectedRole.id);
-    setRoles(updatedRoles);
-    setIsDeleteDialogOpen(false);
-    setSuccessMessage("Đã xóa người dùng thành công!");
-    setIsSuccessDialogOpen(true);
-    setSelectedRole(null);
+      setIsDeleteDialogOpen(false);
+      setSelectedRole(null);
+      setDialogState({
+        isOpen: true,
+        title: "Xóa thành công",
+        message: "Đã xóa vai trò thành công!",
+        type: "success",
+      });
+    } catch {
+      setDialogState({
+        isOpen: true,
+        title: "Xóa thất bại",
+        message: "Có lỗi xảy ra khi xóa vai trò!",
+        type: "error",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleEdit = (role: Role) => {
@@ -99,22 +101,19 @@ export default function RoleManagementPage() {
     setIsDeleteDialogOpen(true);
   };
 
-
-
   const columns: Column<Role>[] = [
     { label: "#", render: (_, i) => i + 1 },
     { label: "Name", field: "name" },
     { label: "Description", field: "description" },
     {
       label: "Action",
-      render: role => (
-        <div className='flex gap-2'>
-          <ActionButtons type='edit' onClick={() => handleEdit(role)} />
-          <ActionButtons type='delete' onClick={() => handleDelete(role)} />
+      render: (role) => (
+        <div className="flex gap-2">
+          <ActionButtons type="edit" onClick={() => handleEdit(role)} />
+          <ActionButtons type="delete" onClick={() => handleDelete(role)} />
         </div>
-      )
-    }
-
+      ),
+    },
   ] as Column<Role>[];
 
   return (
@@ -130,16 +129,17 @@ export default function RoleManagementPage() {
         />
       </div>
 
-       <div className="flex flex-wrap gap-3 mb-4">
-        
-
+      <div className="flex flex-wrap gap-3 mb-4">
         <div className="flex-1 min-w-64">
           <Input
             placeholder="Nhập tên vai trò để tìm kiếm..."
             className="w-full"
             value={filters.searchKeyword}
             onChange={(e) => {
-              setFilters(prev => ({ ...prev, searchKeyword: e.target.value }))
+              setFilters((prev) => ({
+                ...prev,
+                searchKeyword: e.target.value,
+              }));
             }}
           />
         </div>
@@ -162,12 +162,34 @@ export default function RoleManagementPage() {
         onOpenChange={setIsAddDialogOpen}
         initialData={selectedRole || undefined}
         mode={selectedRole ? "edit" : "add"}
-        onSubmit={(data) => {
-          permAPI.createRole(data).then(res => {
-            toast.success("Thêm vai trò mới thành công!")
-          }).catch(err => {
+        onSubmit={async (data) => {
+          try {
+            setLoading(true);
+            await permAPI.createRole(data);
 
-          })
+            // Refresh danh sách roles
+            const res = await permAPI.getRoles(filters);
+            setRoles(res.data?.data);
+
+            // Đóng dialog và hiện thông báo
+            setIsAddDialogOpen(false);
+            setSelectedRole(null);
+            setDialogState({
+              isOpen: true,
+              title: "Thêm thành công",
+              message: "Thêm vai trò mới thành công!",
+              type: "success",
+            });
+          } catch {
+            setDialogState({
+              isOpen: true,
+              title: "Thêm thất bại",
+              message: "Có lỗi xảy ra khi thêm vai trò!",
+              type: "error",
+            });
+          } finally {
+            setLoading(false);
+          }
         }}
       />
 
@@ -176,14 +198,19 @@ export default function RoleManagementPage() {
         open={isDeleteDialogOpen}
         onOpenChange={setIsDeleteDialogOpen}
         onConfirm={handleDeleteRole}
-        title="Xác nhận xóa người dùng"
-        description={`Bạn có chắc chắn muốn xóa người dùng ${selectedRole?.name}?`}
+        title="Xác nhận xóa vai trò"
+        description={`Bạn có chắc chắn muốn xóa vai trò ${selectedRole?.name}?`}
       />
 
-      {/* Success Dialog */}
-      <SuccessDialog
-        open={isSuccessDialogOpen}
-        onOpenChange={setIsSuccessDialogOpen}
+      {/* Notification Dialog */}
+      <NotificationDialog
+        open={dialogState.isOpen}
+        onOpenChange={(open) =>
+          setDialogState({ ...dialogState, isOpen: open })
+        }
+        title={dialogState.title}
+        message={dialogState.message}
+        type={dialogState.type}
       />
     </div>
   );

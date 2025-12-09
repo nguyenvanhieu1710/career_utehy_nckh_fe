@@ -1,23 +1,19 @@
-import { BaseModel } from './base';
+import { BaseModel } from "./base";
 
 export interface User extends BaseModel {
   email: string;
   username: string;
-  password_hash: string;
-  role: string;
-  avatar_url: string;
-  phone: string;
-  university: string;
-  major: string;
-  graduation_year: string;
-  experience: string;
-  bio: string;
-  status: string;
-  roles: UserRole[];
-  permissions: UserPermission[];
-  job_statuses: JobStatus[];
-  cv_profiles: CVProfile[];
-  favorite_jobs: JobFavorite[];
+  fullname: string;
+  birthday?: string;
+  avatar_url?: string;
+  phone?: string;
+  unversity?: string;
+  major?: string;
+  graduation_year?: string;
+  experience?: string;
+  bio?: string;
+  roles?: UserRole[];
+  permissions?: UserPermission[];
 }
 
 export interface UserRole extends BaseModel {
@@ -48,6 +44,13 @@ export interface UserUpdate {
   email?: string;
   username?: string;
   password?: string;
+}
+
+export interface UserCreate {
+  email: string;
+  username: string;
+  password: string;
+  fullname: string;
 }
 
 export interface AddPermissionRequest {
