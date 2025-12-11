@@ -1,9 +1,23 @@
-import { BaseModel } from './base';
-import { Company } from './company';
-import { User } from './user';
+import { BaseModel } from "./base";
+import { Company } from "./company";
+import { User } from "./user";
 
-export type JobType = 'full-time' | 'part-time' | 'intern' | 'freelance' | 'contract';
-export type JobStatusType = 'pending' | 'approved' | 'rejected' | 'applied' | 'interviewing' | 'offered' | 'hired' | 'rejected_after_interview' | 'withdrawn';
+export type JobType =
+  | "full-time"
+  | "part-time"
+  | "intern"
+  | "freelance"
+  | "contract";
+export type JobStatusType =
+  | "pending"
+  | "approved"
+  | "rejected"
+  | "applied"
+  | "interviewing"
+  | "offered"
+  | "hired"
+  | "rejected_after_interview"
+  | "withdrawn";
 
 export interface Job extends BaseModel {
   title: string;
@@ -25,7 +39,7 @@ export interface Job extends BaseModel {
   url_source: string | null;
   posted_at: string | null;
   expired_at: string | null;
-  
+
   // Relationships
   company?: Company;
   source?: DataSource;
@@ -54,12 +68,12 @@ export interface JobCreate {
   expired_at?: string;
 }
 
-export interface JobUpdate extends Partial<JobCreate> {}
+export type JobUpdate = Partial<JobCreate>;
 
 export interface JobFavorite extends BaseModel {
   user_id: string;
   job_id: string;
-  
+
   // Relationships
   user?: User;
   job?: Job;
@@ -70,7 +84,7 @@ export interface JobStatus extends BaseModel {
   job_id: string;
   status: JobStatusType;
   notes: string | null;
-  
+
   // Relationships
   user?: User;
   job?: Job;
@@ -91,5 +105,5 @@ export interface JobSearchParams {
   company_id?: string;
   page?: number;
   size?: number;
-  sort_by?: 'relevance' | 'newest' | 'salary_high' | 'salary_low';
+  sort_by?: "relevance" | "newest" | "salary_high" | "salary_low";
 }

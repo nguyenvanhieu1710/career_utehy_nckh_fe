@@ -1,11 +1,9 @@
-// Base types used across the application
-
 type UUID = string;
 type DateTime = string;
 
 export interface BaseModel {
   id: UUID;
-  action_status: 'active' | 'inactive' | 'deleted';
+  action_status: "active" | "inactive" | "deleted";
   created_at: DateTime;
   updated_at: DateTime;
   created_by_user_id: UUID | null;
@@ -20,9 +18,9 @@ export interface PaginatedResponse<T> {
   total_pages: number;
 }
 
-export interface GetSchema{
-  id?: string,
-  searchKeyword?: string,
-  page?: number,
-  row?: number
+export interface GetSchema {
+  id?: string;
+  searchKeyword?: string;
+  page?: number;
+  row?: number;
 }

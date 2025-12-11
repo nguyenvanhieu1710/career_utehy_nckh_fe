@@ -1,10 +1,10 @@
-import { BaseModel } from './base';
-import { UserRole } from './user';
+import { BaseModel } from "./base";
+import { UserRole } from "./user";
 
 export interface PermissionGroup extends BaseModel {
   name: string;
   description: string | null;
-  
+
   // Relationships
   user_roles?: UserRole[];
   permissions?: GroupPermission[];
@@ -13,7 +13,7 @@ export interface PermissionGroup extends BaseModel {
 export interface GroupPermission extends BaseModel {
   group_id: string;
   perm: string;
-  
+
   // Relationships
   group?: PermissionGroup;
 }
@@ -24,7 +24,7 @@ export interface CreateGroupRequest {
   perms?: string[];
 }
 
-export interface UpdateGroupRequest extends Partial<CreateGroupRequest> {}
+export type UpdateGroupRequest = Partial<CreateGroupRequest>;
 
 export interface AddPermissionToGroupRequest {
   group_id: string;
@@ -36,14 +36,14 @@ export interface RemovePermissionFromGroupRequest {
   perm: string;
 }
 
-export interface Role {
-  id?: number;
-  name?: string;
+// Alias for consistency with backend
+export type Role = PermissionGroup;
+
+// Create and Update types for API calls
+export interface RoleCreate {
+  name: string;
   description?: string;
-  created_at?: DateTime;
-  permissions?: {
-    id: string,
-    group_id: string,
-    perm: string
-  }[]
+  perms?: string[];
 }
+
+export type RoleUpdate = Partial<RoleCreate>;

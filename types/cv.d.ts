@@ -1,5 +1,5 @@
-import { BaseModel } from './base';
-import { User } from './user';
+import { BaseModel } from "./base";
+import { User } from "./user";
 
 export interface Project {
   name: string;
@@ -20,7 +20,7 @@ export interface Certification {
 
 export interface LanguageProficiency {
   language: string;
-  proficiency: 'basic' | 'conversational' | 'professional' | 'native';
+  proficiency: "basic" | "conversational" | "professional" | "native";
 }
 
 export interface CVProfile extends BaseModel {
@@ -32,7 +32,6 @@ export interface CVProfile extends BaseModel {
   sections: string;
 }
 
-
 export interface CVProfileCreate {
   title: string;
   summary?: string;
@@ -42,4 +41,4 @@ export interface CVProfileCreate {
   file_url?: string;
 }
 
-export interface CVProfileUpdate extends Partial<CVProfileCreate> { }
+export type CVProfileUpdate = Partial<CVProfileCreate>;

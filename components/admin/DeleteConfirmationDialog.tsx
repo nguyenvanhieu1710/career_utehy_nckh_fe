@@ -35,9 +35,9 @@ export const DeleteConfirmationDialog = ({
         </AlertDialogHeader>
         <AlertDialogDescription className="text-center pt-6 pb-2">
           <span className="inline-block text-7xl mb-4">😓</span>
-          <div className="text-base text-green-900 font-medium">
+          <span className="block text-base text-green-900 font-medium">
             {description}
-          </div>
+          </span>
         </AlertDialogDescription>
         <AlertDialogFooter className="sm:justify-center gap-3 pt-4">
           <AlertDialogCancel className="min-w-32 bg-white border-2 border-green-600 text-green-600 hover:bg-green-50 hover:text-green-900 hover:border-green-600 cursor-pointer">

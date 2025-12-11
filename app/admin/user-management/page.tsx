@@ -97,12 +97,11 @@ export default function UserManagementPage() {
         type: "success",
       });
       setIsAddDialogOpen(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       setDialogState({
         isOpen: true,
         title: "Tạo người dùng thất bại",
-        message:
-          error.response?.data?.detail || "Có lỗi xảy ra khi tạo người dùng!",
+        message: "Có lỗi xảy ra khi tạo người dùng!",
         type: "error",
       });
     } finally {
@@ -116,9 +115,8 @@ export default function UserManagementPage() {
     try {
       setLoading(true);
 
-      // Gọi API update user
       await userAPI.updateUser(selectedUser.id.toString(), {
-        username: data.fullname,
+        fullname: data.fullname,
         email: data.email,
       });
 
@@ -136,13 +134,11 @@ export default function UserManagementPage() {
       });
       setIsAddDialogOpen(false);
       setSelectedUser(null);
-    } catch (error: any) {
+    } catch (error: unknown) {
       setDialogState({
         isOpen: true,
         title: "Cập nhật thất bại",
-        message:
-          error.response?.data?.detail ||
-          "Có lỗi xảy ra khi cập nhật người dùng!",
+        message: "Có lỗi xảy ra khi cập nhật người dùng!",
         type: "error",
       });
     } finally {
@@ -177,8 +173,7 @@ export default function UserManagementPage() {
       setDialogState({
         isOpen: true,
         title: "Xóa thất bại",
-        message:
-          error.response?.data?.detail || "Có lỗi xảy ra khi xóa người dùng!",
+        message: "Có lỗi xảy ra khi xóa người dùng!",
         type: "error",
       });
       setIsDeleteDialogOpen(false);
@@ -223,7 +218,11 @@ export default function UserManagementPage() {
             user.action_status === "active" ? "text-green-600" : "text-red-600"
           }
         >
-          {user.action_status || "Chưa xác định"}
+          {user.action_status === "active"
+            ? "Hoạt động"
+            : user.action_status === "inactive"
+            ? "Không hoạt động"
+            : "Đã xóa"}
         </span>
       ),
     },
@@ -232,7 +231,7 @@ export default function UserManagementPage() {
       render: (user) => (
         <div className="flex gap-2">
           <ActionButtons type="edit" onClick={() => handleEdit(user)} />
-          <ActionButtons type="ban" onClick={() => handleDelete(user)} />
+          <ActionButtons type="delete" onClick={() => handleDelete(user)} />
         </div>
       ),
     },
