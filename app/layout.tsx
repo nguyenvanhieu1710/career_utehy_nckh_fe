@@ -1,13 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Providers } from "./_providers/providers";
-import { Inter } from "next/font/google";
 import { Toaster } from "sonner";
-
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: "Career UTEHY",
@@ -21,7 +15,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.variable} antialiased`}>
+      <body className="font-sans antialiased">
         <Providers>
           <div className="fixed top-4 right-4 z-50">
             <Toaster richColors position="top-right" />

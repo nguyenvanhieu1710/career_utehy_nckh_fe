@@ -45,7 +45,7 @@ const itemVariants = {
 
 export default function ProfileSidebar() {
   const [active, setActive] = useState({
-    lookingJob: false,
+    lookingJob: true,
     visibleForRecruiter: false,
   });
   const [userName, setUserName] = useState("");
@@ -139,25 +139,6 @@ export default function ProfileSidebar() {
         </div>
         <p className="text-xs text-black-500">
           Bật trạng thái ứng tuyển ngay để gia tăng cơ hội việc làm.
-        </p>
-      </motion.div>
-
-      <motion.div className="w-full mt-6" variants={itemVariants}>
-        <div className="flex items-center gap-2 mb-2">
-          <Switch
-            id="visibleForRecruiter"
-            checked={active.visibleForRecruiter}
-            onCheckedChange={(v) =>
-              setActive((prev) => ({ ...prev, visibleForRecruiter: v }))
-            }
-          />
-          <Label htmlFor="visibleForRecruiter" className="text-sm font-medium">
-            Bật cho NTD tìm
-          </Label>
-        </div>
-        <p className="text-xs text-black-500">
-          Cho phép các Nhà tuyển dụng đã được Joboko xác thực xem CV của bạn để
-          họ có thể chủ động liên hệ với bạn
         </p>
       </motion.div>
     </motion.aside>
