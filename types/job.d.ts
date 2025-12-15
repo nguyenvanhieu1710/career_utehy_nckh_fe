@@ -1,109 +1,90 @@
-import { BaseModel } from "./base";
-import { Company } from "./company";
-import { User } from "./user";
-
-export type JobType =
-  | "full-time"
-  | "part-time"
-  | "intern"
-  | "freelance"
-  | "contract";
-export type JobStatusType =
-  | "pending"
-  | "approved"
-  | "rejected"
-  | "applied"
-  | "interviewing"
-  | "offered"
-  | "hired"
-  | "rejected_after_interview"
-  | "withdrawn";
-
-export interface Job extends BaseModel {
+export interface Job {
+  id: string;
   title: string;
-  slug: string;
-  company_id: string;
-  location: string | null;
-  other_locations: string[] | null;
-  work_arrangement: string | null;
-  job_type: JobType;
-  salary_display: string | null;
-  salary_min: number | null;
-  salary_max: number | null;
-  skills: string[] | null;
-  requirements: string | null;
-  description: string | null;
-  benefits: string | null;
-  status: JobStatusType;
-  source_id: string | null;
-  url_source: string | null;
-  posted_at: string | null;
-  expired_at: string | null;
-
-  // Relationships
-  company?: Company;
-  source?: DataSource;
-  favorites?: JobFavorite[];
-  statuses?: JobStatus[];
+  company: {
+    id: string;
+    name: string;
+    logo?: string;
+    location?: string;
+  };
+  location: string;
+  salary?: string;
+  jobType: "full-time" | "part-time" | "contract" | "internship";
+  workArrangement: "remote" | "hybrid" | "onsite";
+  postedDate: string;
+  description: string;
+  requirements: string[];
+  skills: string[];
+  benefits?: string[];
+  isUrgent?: boolean;
+  isFeatured?: boolean;
+  applicationCount?: number;
 }
 
-export interface JobCreate {
-  title: string;
-  company_id: string;
+export interface JobFilters {
+  search?: string;
   location?: string;
-  other_locations?: string[];
-  work_arrangement?: string;
-  job_type: JobType;
-  salary_display?: string;
-  salary_min?: number;
-  salary_max?: number;
+  jobTypes?: string[];
+  workArrangements?: string[];
+  salaryRange?: {
+    min?: number;
+    max?: number;
+  };
   skills?: string[];
-  requirements?: string;
-  description?: string;
-  benefits?: string;
-  status?: JobStatusType;
-  source_id?: string;
-  url_source?: string;
-  posted_at?: string;
-  expired_at?: string;
+  postedWithin?: number; // days
+  companySize?: string[];
+  experienceLevel?: string[];
 }
 
-export type JobUpdate = Partial<JobCreate>;
-
-export interface JobFavorite extends BaseModel {
-  user_id: string;
-  job_id: string;
-
-  // Relationships
-  user?: User;
-  job?: Job;
+export interface JobSearchState {
+  jobs: Job[];
+  filters: JobFilters;
+  loading: boolean;
+  hasMore: boolean;
+  page: number;
+  total: number;
 }
 
-export interface JobStatus extends BaseModel {
-  user_id: string;
-  job_id: string;
-  status: JobStatusType;
-  notes: string | null;
+// Constants for UI
+export const JOB_TYPES = [
+  { value: "full-time", label: "Toàn thời gian" },
+  { value: "part-time", label: "Bán thời gian" },
+  { value: "contract", label: "Hợp đồng" },
+  { value: "internship", label: "Thực tập" },
+];
 
-  // Relationships
-  user?: User;
-  job?: Job;
-}
+export const WORK_ARRANGEMENTS = [
+  { value: "remote", label: "Làm việc từ xa" },
+  { value: "hybrid", label: "Hybrid" },
+  { value: "onsite", label: "Tại văn phòng" },
+];
 
-export interface JobApplyRequest {
-  job_id: string;
-  cv_profile_id: string;
-  cover_letter?: string;
-}
+export const SALARY_RANGES = [
+  { label: "Dưới 10 triệu", min: 0, max: 10 },
+  { label: "10 - 20 triệu", min: 10, max: 20 },
+  { label: "20 - 30 triệu", min: 20, max: 30 },
+  { label: "30 - 50 triệu", min: 30, max: 50 },
+  { label: "Trên 50 triệu", min: 50, max: null },
+];
 
-export interface JobSearchParams {
-  query?: string;
-  location?: string;
-  job_type?: JobType[];
-  salary_min?: number;
-  salary_max?: number;
-  company_id?: string;
-  page?: number;
-  size?: number;
-  sort_by?: "relevance" | "newest" | "salary_high" | "salary_low";
-}
+export const POSTED_WITHIN = [
+  { value: 1, label: "Hôm nay" },
+  { value: 3, label: "3 ngày qua" },
+  { value: 7, label: "1 tuần qua" },
+  { value: 30, label: "1 tháng qua" },
+];
+
+export const COMPANY_SIZES = [
+  { value: "startup", label: "Startup (1-50)" },
+  { value: "small", label: "Nhỏ (51-200)" },
+  { value: "medium", label: "Trung bình (201-1000)" },
+  { value: "large", label: "Lớn (1000+)" },
+];
+
+export const EXPERIENCE_LEVELS = [
+  { value: "entry", label: "Mới ra trường" },
+  { value: "junior", label: "Junior (1-3 năm)" },
+  { value: "mid", label: "Middle (3-5 năm)" },
+  { value: "senior", label: "Senior (5+ năm)" },
+  { value: "lead", label: "Lead/Manager" },
+];
