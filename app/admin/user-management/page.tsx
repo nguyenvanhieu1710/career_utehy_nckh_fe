@@ -50,6 +50,19 @@ export default function UserManagementPage() {
       .finally(() => setLoading(false));
   }, [filters]);
 
+  const loadUsers = () => {
+    setLoading(true);
+    userAPI
+      .getUsers(filters)
+      .then((res) => {
+        setUsers(res.data?.data || []);
+        setTotal(res.data?.total || 0);
+        setTotalPages(res.data?.max_page || 1);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  };
+
   const handleRoleChange = (value: string) => {
     setRoleFilter(value);
     // Reset to page 1 when filter changes
@@ -74,19 +87,31 @@ export default function UserManagementPage() {
     try {
       setLoading(true);
 
-      // Gọi API create user
-      await userAPI.createUser({
+      // Create user first
+      const createResult = await userAPI.createUser({
         email: data.email,
         username: data.email.split("@")[0], // Generate username from email
         password: data.email.split("@")[0], // Default password
         fullname: data.fullname,
       });
 
-      // Refresh danh sách user sau khi create
-      const res = await userAPI.getUsers(filters);
-      setUsers(res.data?.data || []);
-      setTotal(res.data?.total || 0);
-      setTotalPages(res.data?.max_page || 1);
+      // If there's an avatar file, upload it
+      if (data.avatarFile && createResult.data?.data?.id) {
+        try {
+          await userAPI.uploadAvatar(
+            createResult.data.data.id.toString(),
+            data.avatarFile,
+            true
+          );
+        } catch (avatarError) {
+          console.warn(
+            "Avatar upload failed, but user was created:",
+            avatarError
+          );
+        }
+      }
+
+      loadUsers();
 
       setDialogState({
         isOpen: true,
@@ -120,11 +145,7 @@ export default function UserManagementPage() {
         email: data.email,
       });
 
-      // Refresh danh sách user sau khi update
-      const res = await userAPI.getUsers(filters);
-      setUsers(res.data?.data || []);
-      setTotal(res.data?.total || 0);
-      setTotalPages(res.data?.max_page || 1);
+      loadUsers();
 
       setDialogState({
         isOpen: true,
@@ -134,7 +155,7 @@ export default function UserManagementPage() {
       });
       setIsAddDialogOpen(false);
       setSelectedUser(null);
-    } catch (error: unknown) {
+    } catch {
       setDialogState({
         isOpen: true,
         title: "Cập nhật thất bại",
@@ -200,11 +221,26 @@ export default function UserManagementPage() {
     {
       label: "Avatar",
       render: (user) => (
-        <img
-          src={user.avatar_url || "/default-avatar.jpg"}
-          alt={user.fullname}
-          className="w-10 h-10 rounded-full object-cover"
-        />
+        <div className="w-10 h-10 rounded-full border border-gray-200 overflow-hidden bg-gray-50">
+          <img
+            src={userAPI.getAvatarUrl(user)}
+            alt={`${user.fullname} avatar`}
+            className="w-full h-full object-cover"
+            onLoad={() => {
+              console.log("✅ Avatar loaded successfully for:", user.fullname);
+            }}
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              console.error(
+                "❌ Avatar failed to load for:",
+                user.fullname,
+                "URL:",
+                target.src
+              );
+              target.src = "/default-avatar.png";
+            }}
+          />
+        </div>
       ),
     },
     { label: "Họ tên", field: "fullname" },
@@ -293,6 +329,7 @@ export default function UserManagementPage() {
               }
             : undefined
         }
+        user={selectedUser || undefined}
         mode={selectedUser ? "edit" : "add"}
         onSubmit={(data) =>
           selectedUser ? handleUpdateUser(data) : handleAddUser(data)
