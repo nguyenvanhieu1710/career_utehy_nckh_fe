@@ -4,7 +4,7 @@ import {
   Home,
   Users,
   Database,
-  Briefcase,
+  // Briefcase,
   FileText,
   Menu,
   ChevronLeft,
@@ -29,11 +29,11 @@ const menuItems = [
     label: "Quản lý nguồn dữ liệu",
     icon: Database,
   },
-  {
-    href: "/admin/crawl-management",
-    label: "Quản lý crawl tin tuyển dụng",
-    icon: Briefcase,
-  },
+  // {
+  //   href: "/admin/crawl-management",
+  //   label: "Quản lý crawl tin tuyển dụng",
+  //   icon: Briefcase,
+  // },
   {
     href: "/admin/job-management",
     label: "Quản lý tin tuyển dụng",
