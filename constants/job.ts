@@ -9,6 +9,9 @@ export const JOB_TYPE_OPTIONS: { value: JobType; label: string }[] = [
   { value: "contract", label: "Hợp đồng" },
 ];
 
+// Alternative export names for backward compatibility
+export const JOB_TYPES = JOB_TYPE_OPTIONS;
+
 // Job Status Options for Select/Dropdown
 export const JOB_STATUS_OPTIONS: {
   value: JobStatusType;
@@ -27,6 +30,9 @@ export const WORK_ARRANGEMENT_OPTIONS = [
   { value: "hybrid", label: "Kết hợp" },
 ];
 
+// Alternative export names for backward compatibility
+export const WORK_ARRANGEMENTS = WORK_ARRANGEMENT_OPTIONS;
+
 // Company Size Options
 export const COMPANY_SIZE_OPTIONS = [
   { value: "startup", label: "Startup (1-10 nhân viên)" },
@@ -35,6 +41,9 @@ export const COMPANY_SIZE_OPTIONS = [
   { value: "large", label: "Lớn (201-1000 nhân viên)" },
   { value: "enterprise", label: "Doanh nghiệp (1000+ nhân viên)" },
 ];
+
+// Alternative export names for backward compatibility
+export const COMPANY_SIZES = COMPANY_SIZE_OPTIONS;
 
 // Industry Options
 export const INDUSTRY_OPTIONS = [
@@ -60,6 +69,23 @@ export const SALARY_RANGES = [
   { min: 50, max: 100, label: "50 - 100 triệu" },
   { min: 100, max: null, label: "Trên 100 triệu" },
 ];
+
+// Posted Within Options for Job Filters
+export const POSTED_WITHIN = [
+  { value: 1, label: "Hôm nay" },
+  { value: 3, label: "3 ngày qua" },
+  { value: 7, label: "1 tuần qua" },
+  { value: 30, label: "1 tháng qua" },
+] as const;
+
+// Experience Level Options
+export const EXPERIENCE_LEVELS = [
+  { value: "entry", label: "Mới ra trường" },
+  { value: "junior", label: "Junior (1-3 năm)" },
+  { value: "mid", label: "Middle (3-5 năm)" },
+  { value: "senior", label: "Senior (5+ năm)" },
+  { value: "lead", label: "Lead/Manager" },
+] as const;
 
 // Popular Skills for Jobs
 export const POPULAR_SKILLS = [
