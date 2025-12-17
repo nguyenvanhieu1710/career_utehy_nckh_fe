@@ -47,7 +47,7 @@ const searchData = {
     "Giáo dục",
     "Y tế",
   ],
-  jobTypes: [
+  job_types: [
     "Toàn thời gian",
     "Bán thời gian",
     "Thực tập",
@@ -460,7 +460,7 @@ export function HeroSearch() {
               {
                 key: "jobType",
                 label: "Loại hình",
-                data: searchData.jobTypes,
+                data: searchData.job_types,
                 icon: filterIcons.jobType,
               },
               {

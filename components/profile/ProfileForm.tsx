@@ -63,14 +63,12 @@ export default function ProfileForm() {
           birthday: userData.birthday || "",
           gender: userData.gender || "",
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error("Error loading user data:", error);
         setDialogState({
           isOpen: true,
           title: "Lỗi tải dữ liệu",
-          message:
-            error.response?.data?.detail ||
-            "Không thể tải thông tin người dùng. Vui lòng thử lại.",
+          message: "Không thể tải thông tin người dùng. Vui lòng thử lại.",
           type: "error",
         });
       } finally {
@@ -243,14 +241,11 @@ export default function ProfileForm() {
           message: "Thông tin cá nhân của bạn đã được cập nhật!",
           type: "success",
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         setDialogState({
           isOpen: true,
           title: "Cập nhật thất bại",
-          message:
-            error.response?.data?.detail ||
-            error.message ||
-            "Có lỗi xảy ra khi cập nhật thông tin!",
+          message: "Có lỗi xảy ra khi cập nhật thông tin!",
           type: "error",
         });
       } finally {
@@ -260,21 +255,21 @@ export default function ProfileForm() {
   };
 
   // Animation variants with proper TypeScript types
-  const container: Record<string, unknown> = {
+  const container = {
     hidden: { opacity: 0 },
     show: {
       opacity: 1,
       transition: {
-        when: "beforeChildren",
+        when: "beforeChildren" as const,
         staggerChildren: 0.08,
         delayChildren: 0.1,
         duration: 0.6,
-        ease: [0.16, 1, 0.3, 1] as unknown, // Using 'as any' to bypass the type check
+        ease: "easeOut" as const,
       },
     },
   };
 
-  const item: Record<string, unknown> = {
+  const item = {
     hidden: { opacity: 0, y: 20 },
     show: {
       opacity: 1,
@@ -288,7 +283,7 @@ export default function ProfileForm() {
     },
   };
 
-  const header: Record<string, unknown> = {
+  const header = {
     hidden: { opacity: 0, y: -20 },
     show: {
       opacity: 1,
