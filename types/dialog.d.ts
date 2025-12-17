@@ -26,6 +26,8 @@ export interface AccountDialogData {
   role?: string;
   status?: "active" | "inactive";
   avatar?: string;
+  roles?: string[];
+  permissions?: string[];
 }
 
 export interface AccountDialogSubmitData {
@@ -34,4 +36,6 @@ export interface AccountDialogSubmitData {
   role: string;
   status: "active" | "inactive";
   avatarFile?: File;
+  roles?: string[];
+  permissions?: string[];
 }

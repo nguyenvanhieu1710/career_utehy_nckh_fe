@@ -18,10 +18,9 @@ import {
   SelectValue,
 } from "@/components/ui/Select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Upload, X, Eye, EyeOff, Image as ImageIcon } from "lucide-react";
 import { userAPI } from "@/services/user";
-import { User } from "@/types/user";
+import { User, Role } from "@/types/user";
 import type {
   AccountDialogData,
   AccountDialogSubmitData,
@@ -34,6 +33,8 @@ interface AccountDialogProps {
   user?: User; // For edit mode to get user ID
   mode?: "add" | "edit";
   onSubmit?: (data: AccountDialogSubmitData) => void;
+  availableRoles?: Role[];
+  rolesLoading?: boolean;
 }
 
 export const AccountDialog = ({
@@ -43,6 +44,8 @@ export const AccountDialog = ({
   user,
   mode = "add",
   onSubmit,
+  availableRoles = [],
+  rolesLoading = false,
 }: AccountDialogProps) => {
   const [fullname, setFullname] = useState("");
   const [email, setEmail] = useState("");
@@ -170,6 +173,8 @@ export const AccountDialog = ({
       const uploadedUrl = await uploadAvatar(user.id.toString(), avatarFile);
       if (uploadedUrl) {
         finalAvatarUrl = uploadedUrl;
+        // Use the uploaded URL for future reference
+        console.log("Avatar uploaded successfully:", finalAvatarUrl);
       }
     }
 
@@ -178,6 +183,7 @@ export const AccountDialog = ({
       email: email.trim(),
       role,
       status,
+      roles: role ? [role] : [], // Convert single role to array for backend
       ...(mode === "add" && avatarFile ? { avatarFile } : {}),
     });
   };
@@ -200,8 +206,8 @@ export const AccountDialog = ({
                 {/* Current Avatar Display */}
                 {(avatarPreview || currentAvatarUrl) && (
                   <div className="relative inline-block">
-                    <div className="w-20 h-20 rounded-lg border-2 border-green-200 overflow-hidden bg-gray-50">
-                      <img
+                    <div className="w-20 h-20 rounded-lg border-2 border-green-200 overflow-hidden bg-gray-50 relative">
+                      <Image
                         src={
                           avatarPreview ||
                           userAPI.getAvatarUrl({
@@ -209,7 +215,8 @@ export const AccountDialog = ({
                           } as User)
                         }
                         alt="Avatar preview"
-                        className="w-full h-full object-cover"
+                        fill
+                        className="object-cover"
                       />
                     </div>
                     <button
@@ -284,16 +291,19 @@ export const AccountDialog = ({
                     onClick={() => setShowAvatarPreview(false)}
                   >
                     <div className="relative max-w-md max-h-md">
-                      <img
-                        src={
-                          avatarPreview ||
-                          userAPI.getAvatarUrl({
-                            avatar_url: currentAvatarUrl,
-                          } as User)
-                        }
-                        alt="Avatar preview"
-                        className="max-w-full max-h-full rounded-lg"
-                      />
+                      <div className="relative w-96 h-96">
+                        <Image
+                          src={
+                            avatarPreview ||
+                            userAPI.getAvatarUrl({
+                              avatar_url: currentAvatarUrl,
+                            } as User)
+                          }
+                          alt="Avatar preview"
+                          fill
+                          className="object-contain rounded-lg"
+                        />
+                      </div>
                       <button
                         onClick={() => setShowAvatarPreview(false)}
                         className="absolute -top-2 -right-2 bg-white text-gray-600 rounded-full p-2 hover:bg-gray-100 transition-colors"
@@ -379,6 +389,7 @@ export const AccountDialog = ({
                     setErrors({ ...errors, role: undefined });
                   }
                 }}
+                disabled={rolesLoading}
               >
                 <SelectTrigger
                   className={`border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900 ${
@@ -387,14 +398,28 @@ export const AccountDialog = ({
                       : ""
                   }`}
                 >
-                  <SelectValue placeholder="Lựa chọn vai trò" />
+                  <SelectValue
+                    placeholder={
+                      rolesLoading ? "Đang tải vai trò..." : "Lựa chọn vai trò"
+                    }
+                  />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="manager">Quản trị viên</SelectItem>
-                  <SelectItem value="lecturer">Giảng viên</SelectItem>
-                  <SelectItem value="student">Sinh viên</SelectItem>
-                  <SelectItem value="reviewer">Phản biện</SelectItem>
+                  {availableRoles.map((roleItem) => (
+                    <SelectItem key={roleItem.id} value={roleItem.id}>
+                      {roleItem.name}
+                      {roleItem.description && (
+                        <span className="text-gray-500 text-xs ml-2">
+                          - {roleItem.description}
+                        </span>
+                      )}
+                    </SelectItem>
+                  ))}
+                  {availableRoles.length === 0 && !rolesLoading && (
+                    <SelectItem value="" disabled>
+                      Không có vai trò nào
+                    </SelectItem>
+                  )}
                 </SelectContent>
               </Select>
               {errors.role && (

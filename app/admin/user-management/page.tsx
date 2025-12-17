@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Filters } from "@/components/admin/Filters";
 import { AddButton } from "@/components/admin/AddButton";
 import { Column, Table } from "@/components/admin/Table";
@@ -9,7 +9,10 @@ import { AccountDialog } from "@/components/admin/AccountDialog";
 import { DeleteConfirmationDialog } from "@/components/admin/DeleteConfirmationDialog";
 import { NotificationDialog } from "@/components/admin/NotificationDialog";
 import { ActionButtons } from "@/components/admin/ActionButtons";
+import { UserRoleDisplay } from "@/components/admin/UserRoleDisplay";
 import { userAPI } from "@/services/user";
+import { useRoles } from "@/contexts/RolesContext";
+import { useDebounce } from "@/hooks/useDebounce";
 import { GetSchema } from "@/types/base";
 import { User } from "@/types/user";
 import { DialogState, AccountDialogSubmitData } from "@/types/dialog";
@@ -31,42 +34,62 @@ export default function UserManagementPage() {
     searchKeyword: "",
     page: 1,
     row: 10,
+    role_id: undefined,
   });
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [searchInput, setSearchInput] = useState<string>("");
 
+  // Use roles context for caching and error handling
+  const { roles: availableRoles, loading: rolesLoading } = useRoles();
+
+  // Debounce search input
+  const debouncedSearch = useDebounce(searchInput, 500);
+
+  // Load users with optimized API calls
+  const loadUsers = useCallback(async (currentFilters: GetSchema) => {
+    try {
+      setLoading(true);
+
+      const res = await userAPI.getUsers(currentFilters);
+      setUsers(res.data?.data || []);
+      setTotal(res.data?.total || 0);
+      setTotalPages(res.data?.max_page || 1);
+    } catch (error) {
+      setDialogState({
+        isOpen: true,
+        title: "Lỗi tải dữ liệu",
+        message: "Không thể tải danh sách người dùng. Vui lòng thử lại.",
+        type: "error",
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Update filters when debounced search changes
   useEffect(() => {
-    setLoading(true);
-    userAPI
-      .getUsers(filters)
-      .then((res) => {
-        setUsers(res.data?.data || []);
-        setTotal(res.data?.total || 0);
-        setTotalPages(res.data?.max_page || 1);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, [filters]);
+    setFilter((prev) => ({
+      ...prev,
+      searchKeyword: debouncedSearch,
+      page: 1, // Reset to first page on search
+    }));
+  }, [debouncedSearch]);
 
-  const loadUsers = () => {
-    setLoading(true);
-    userAPI
-      .getUsers(filters)
-      .then((res) => {
-        setUsers(res.data?.data || []);
-        setTotal(res.data?.total || 0);
-        setTotalPages(res.data?.max_page || 1);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  };
+  // Load users when filters change
+  useEffect(() => {
+    loadUsers(filters);
+  }, [filters, loadUsers]);
 
   const handleRoleChange = (value: string) => {
     setRoleFilter(value);
-    // Reset to page 1 when filter changes
-    setFilter({ ...filters, page: 1 });
+    setFilter((prev) => ({
+      ...prev,
+      role_id: value === "all" ? undefined : value,
+      page: 1,
+    }));
   };
 
   const handleStatusChange = (value: string) => {
@@ -76,7 +99,7 @@ export default function UserManagementPage() {
   };
 
   const handleSearchChange = (value: string) => {
-    setFilter({ ...filters, searchKeyword: value, page: 1 });
+    setSearchInput(value); // This will trigger debounced search
   };
 
   const handlePageChange = (page: number) => {
@@ -93,6 +116,7 @@ export default function UserManagementPage() {
         username: data.email.split("@")[0], // Generate username from email
         password: data.email.split("@")[0], // Default password
         fullname: data.fullname,
+        role_ids: data.roles || [], // Send roles to backend
       });
 
       // If there's an avatar file, upload it
@@ -111,18 +135,25 @@ export default function UserManagementPage() {
         }
       }
 
-      loadUsers();
+      loadUsers(filters);
+
+      const selectedRoleName = data.roles?.[0]
+        ? availableRoles.find((r) => r.id === data.roles?.[0])?.name ||
+          "Không xác định"
+        : "Chưa gán vai trò";
 
       setDialogState({
         isOpen: true,
         title: "Tạo người dùng thành công",
-        message: `Người dùng ${data.fullname} đã được tạo! Mật khẩu mặc định: ${
+        message: `Người dùng ${
+          data.fullname
+        } đã được tạo với vai trò ${selectedRoleName}! Mật khẩu mặc định: ${
           data.email.split("@")[0]
         }`,
         type: "success",
       });
       setIsAddDialogOpen(false);
-    } catch (error: unknown) {
+    } catch {
       setDialogState({
         isOpen: true,
         title: "Tạo người dùng thất bại",
@@ -143,9 +174,10 @@ export default function UserManagementPage() {
       await userAPI.updateUser(selectedUser.id.toString(), {
         fullname: data.fullname,
         email: data.email,
+        role_ids: data.roles || [], // Send roles to backend
       });
 
-      loadUsers();
+      loadUsers(filters);
 
       setDialogState({
         isOpen: true,
@@ -190,7 +222,7 @@ export default function UserManagementPage() {
         type: "success",
       });
       setSelectedUser(null);
-    } catch (error: unknown) {
+    } catch {
       setDialogState({
         isOpen: true,
         title: "Xóa thất bại",
@@ -203,8 +235,25 @@ export default function UserManagementPage() {
     }
   };
 
-  const handleEdit = (user: User) => {
+  const handleEdit = async (user: User) => {
     setSelectedUser(user);
+
+    // Load user roles for editing
+    try {
+      const userRoles = await userAPI.getUserRolesPermissions(
+        user.id.toString()
+      );
+      const currentRoleId = userRoles.data.data.roles?.[0]?.id || "";
+
+      // Update selected user with current role for dialog
+      setSelectedUser({
+        ...user,
+        currentRoleId, // Add this for dialog initialization
+      } as User & { currentRoleId: string });
+    } catch {
+      console.error("Failed to load user roles");
+    }
+
     setIsAddDialogOpen(true);
   };
 
@@ -226,17 +275,8 @@ export default function UserManagementPage() {
             src={userAPI.getAvatarUrl(user)}
             alt={`${user.fullname} avatar`}
             className="w-full h-full object-cover"
-            onLoad={() => {
-              console.log("✅ Avatar loaded successfully for:", user.fullname);
-            }}
             onError={(e) => {
               const target = e.target as HTMLImageElement;
-              console.error(
-                "❌ Avatar failed to load for:",
-                user.fullname,
-                "URL:",
-                target.src
-              );
               target.src = "/default-avatar.png";
             }}
           />
@@ -245,7 +285,12 @@ export default function UserManagementPage() {
     },
     { label: "Họ tên", field: "fullname" },
     { label: "Email", field: "email" },
-    { label: "Vai trò", render: () => <span>{"Chưa xác định"}</span> },
+    {
+      label: "Vai trò",
+      render: (user) => (
+        <UserRoleDisplay userId={user.id.toString()} maxDisplay={2} />
+      ),
+    },
     {
       label: "Trạng thái",
       render: (user) => (
@@ -278,12 +323,14 @@ export default function UserManagementPage() {
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Quản lý tài khoản</h1>
-        <AddButton
-          onClick={() => {
-            setSelectedUser(null);
-            setIsAddDialogOpen(true);
-          }}
-        />
+        <div className="flex gap-2">
+          <AddButton
+            onClick={() => {
+              setSelectedUser(null);
+              setIsAddDialogOpen(true);
+            }}
+          />
+        </div>
       </div>
 
       {/* Filter */}
@@ -294,6 +341,8 @@ export default function UserManagementPage() {
         onRoleChange={handleRoleChange}
         onStatusChange={handleStatusChange}
         onSearchChange={handleSearchChange}
+        availableRoles={availableRoles}
+        rolesLoading={rolesLoading}
       />
 
       {/* Table */}
@@ -320,7 +369,9 @@ export default function UserManagementPage() {
             ? {
                 fullname: selectedUser.fullname,
                 email: selectedUser.email,
-                role: "student", // TODO: Get from user roles
+                role:
+                  (selectedUser as User & { currentRoleId: string })
+                    .currentRoleId || "", // Use loaded role ID
                 status:
                   selectedUser.action_status === "active"
                     ? "active"
@@ -334,6 +385,8 @@ export default function UserManagementPage() {
         onSubmit={(data) =>
           selectedUser ? handleUpdateUser(data) : handleAddUser(data)
         }
+        availableRoles={availableRoles}
+        rolesLoading={rolesLoading}
       />
 
       {/* Delete Confirmation Dialog */}

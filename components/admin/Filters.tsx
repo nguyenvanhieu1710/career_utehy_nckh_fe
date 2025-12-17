@@ -8,6 +8,7 @@ import {
   SelectValue,
 } from "@/components/ui/Select";
 import { Input } from "@/components/ui/input";
+import { Role } from "@/types/user";
 
 interface FiltersProps {
   role?: string;
@@ -18,6 +19,8 @@ interface FiltersProps {
   onSearchChange?: (value: string) => void;
   hideRoleFilter?: boolean;
   searchPlaceholder?: string;
+  availableRoles?: Role[];
+  rolesLoading?: boolean;
 }
 
 export function Filters({
@@ -29,19 +32,29 @@ export function Filters({
   onSearchChange,
   hideRoleFilter = false,
   searchPlaceholder = "Nhập từ khóa để tìm kiếm...",
+  availableRoles = [],
+  rolesLoading = false,
 }: FiltersProps) {
   return (
     <div className="flex flex-wrap gap-3 mb-4">
       {!hideRoleFilter && (
-        <Select value={role} onValueChange={onRoleChange}>
+        <Select
+          value={role}
+          onValueChange={onRoleChange}
+          disabled={rolesLoading}
+        >
           <SelectTrigger className="w-48">
-            <SelectValue placeholder="Lọc theo vai trò" />
+            <SelectValue
+              placeholder={rolesLoading ? "Đang tải..." : "Lọc theo vai trò"}
+            />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Tất cả vai trò</SelectItem>
-            <SelectItem value="sinh-vien">Sinh viên</SelectItem>
-            <SelectItem value="nha-tuyen-dung">Nhà tuyển dụng</SelectItem>
-            <SelectItem value="admin">Admin</SelectItem>
+            {availableRoles.map((roleItem) => (
+              <SelectItem key={roleItem.id} value={roleItem.id}>
+                {roleItem.name}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       )}

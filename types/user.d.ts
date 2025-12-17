@@ -51,6 +51,9 @@ export interface UserUpdate {
   address?: string;
   gender?: string;
   password?: string;
+  avatar_url?: string;
+  role_ids?: string[];
+  permissions?: string[];
 }
 
 export interface UserCreate {
@@ -58,6 +61,8 @@ export interface UserCreate {
   username: string;
   password: string;
   fullname: string;
+  role_ids?: string[];
+  permissions?: string[];
 }
 
 export interface AddPermissionRequest {
@@ -143,3 +148,75 @@ export const USER_AVATAR_CONSTRAINTS = {
   ],
   allowedExtensions: [".jpg", ".jpeg", ".png", ".gif", ".webp"],
 } as const;
+
+export interface Role {
+  id: string;
+  name: string;
+  description?: string | null;
+}
+
+export interface Permission {
+  name: string;
+  description?: string;
+}
+
+export interface UserWithRoles extends User {
+  roles: Role[];
+  permissions: string[];
+}
+
+export interface UpdateUserRoles {
+  role_ids: string[];
+  permissions: string[];
+}
+
+export interface AvailableRole {
+  id: string;
+  name: string;
+  description?: string | null;
+}
+
+export interface UserRolesPermissionsResponse {
+  status: string;
+  data: UserWithRoles;
+}
+
+export interface AvailableRolesResponse {
+  status: string;
+  data: AvailableRole[];
+}
+
+export interface AvailablePermissionsResponse {
+  status: string;
+  data: Permission[];
+}
+
+export interface UpdateRolesResponse {
+  status: string;
+  message: string;
+}
+
+export interface UserRoleFormData {
+  selectedRoles: string[];
+  selectedPermissions: string[];
+}
+
+export interface RoleSelectorProps {
+  availableRoles: Role[];
+  selectedRoles: string[];
+  onChange: (roleIds: string[]) => void;
+  disabled?: boolean;
+}
+
+export interface PermissionSelectorProps {
+  availablePermissions: Permission[];
+  selectedPermissions: string[];
+  onChange: (permissions: string[]) => void;
+  disabled?: boolean;
+}
+
+export interface UserRoleDisplayProps {
+  roles: Role[];
+  maxDisplay?: number;
+  showTooltip?: boolean;
+}

@@ -66,12 +66,6 @@ export const categoryAPI = {
 
   // Helper method to get avatar URL with fallback
   getAvatarUrl: (category: Category, defaultUrl?: string): string => {
-    console.log("🔍 getAvatarUrl called with:", {
-      categoryId: category.id,
-      categoryName: category.name,
-      avatar_url: category.avatar_url,
-    });
-
     if (category.avatar_url) {
       let finalUrl = "";
       // If avatar_url starts with /uploads/, convert to full backend URL
@@ -82,13 +76,11 @@ export const categoryAPI = {
         finalUrl = `${BACKEND_BASE_URL}/uploads/${category.avatar_url}`;
       }
 
-      console.log("✅ Avatar URL generated:", finalUrl);
       return finalUrl;
     }
 
     // Return default avatar or fallback
     const fallbackUrl = defaultUrl || "/default-category.png";
-    console.log("⚠️ No avatar_url, using fallback:", fallbackUrl);
     return fallbackUrl;
   },
 

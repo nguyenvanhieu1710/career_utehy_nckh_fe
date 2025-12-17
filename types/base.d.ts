@@ -23,4 +23,5 @@ export interface GetSchema {
   searchKeyword?: string;
   page?: number;
   row?: number;
+  role_id?: string;
 }

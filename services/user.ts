@@ -1,9 +1,17 @@
 import api from "@/cores/api";
+import { config, getUploadsUrl, debugLog } from "@/lib/config";
 import { GetSchema } from "@/types/base";
-import { User, UserUpdate, UserCreate } from "@/types/user";
-
-// Backend base URL for static files
-const BACKEND_BASE_URL = "http://127.0.0.1:8000";
+import {
+  User,
+  UserUpdate,
+  UserCreate,
+  UpdateUserRoles,
+  AvailableRole,
+  UserRolesPermissionsResponse,
+  AvailableRolesResponse,
+  AvailablePermissionsResponse,
+  UpdateRolesResponse,
+} from "@/types/user";
 
 // User avatar upload response types
 interface UserAvatarUploadResponse {
@@ -79,43 +87,29 @@ export const userAPI = {
 
   // Helper method to get avatar URL with fallback
   getAvatarUrl: (user: User, defaultUrl?: string): string => {
-    console.log("🔍 getAvatarUrl called with:", {
+    debugLog("Getting avatar URL for user:", {
       userId: user.id,
       userName: user.username,
       avatar_url: user.avatar_url,
     });
 
     if (user.avatar_url) {
-      let finalUrl = "";
-      // If avatar_url starts with /uploads/, convert to full backend URL
-      if (user.avatar_url.startsWith("/uploads/")) {
-        finalUrl = `${BACKEND_BASE_URL}${user.avatar_url}`;
-      } else {
-        // If it's a relative path, prepend the full backend URL
-        finalUrl = `${BACKEND_BASE_URL}/uploads/${user.avatar_url}`;
-      }
-
-      console.log("✅ Avatar URL generated:", finalUrl);
+      const finalUrl = getUploadsUrl(user.avatar_url);
+      debugLog("Avatar URL generated:", finalUrl);
       return finalUrl;
     }
 
     // Return default avatar or fallback
-    const fallbackUrl = defaultUrl || "/default-avatar.png";
-    console.log("⚠️ No avatar_url, using fallback:", fallbackUrl);
+    const fallbackUrl = defaultUrl || config.ui.defaultAvatar;
+    debugLog("No avatar_url, using fallback:", fallbackUrl);
     return fallbackUrl;
   },
 
   // Helper method to validate avatar file
   validateAvatarFile: (file: File): { isValid: boolean; errors: string[] } => {
     const errors: string[] = [];
-    const maxSize = 5 * 1024 * 1024; // 5MB
-    const allowedTypes = [
-      "image/jpeg",
-      "image/jpg",
-      "image/png",
-      "image/gif",
-      "image/webp",
-    ];
+    const { maxSize, allowedImageTypes, allowedImageExtensions } =
+      config.upload;
 
     // Check file size
     if (file.size > maxSize) {
@@ -123,16 +117,24 @@ export const userAPI = {
     }
 
     // Check file type
-    if (!allowedTypes.includes(file.type)) {
-      errors.push(`File type must be one of: ${allowedTypes.join(", ")}`);
+    if (
+      !allowedImageTypes.includes(
+        file.type as (typeof allowedImageTypes)[number]
+      )
+    ) {
+      errors.push(`File type must be one of: ${allowedImageTypes.join(", ")}`);
     }
 
     // Check file name extension
     const extension = file.name.toLowerCase().split(".").pop();
-    const allowedExtensions = ["jpg", "jpeg", "png", "gif", "webp"];
-    if (!extension || !allowedExtensions.includes(extension)) {
+    if (
+      !extension ||
+      !allowedImageExtensions.includes(
+        extension as (typeof allowedImageExtensions)[number]
+      )
+    ) {
       errors.push(
-        `File extension must be one of: ${allowedExtensions.join(", ")}`
+        `File extension must be one of: ${allowedImageExtensions.join(", ")}`
       );
     }
 
@@ -140,5 +142,47 @@ export const userAPI = {
       isValid: errors.length === 0,
       errors,
     };
+  },
+
+  // Role and Permission management methods
+  getUserRolesPermissions: (userId: string) =>
+    api.get<UserRolesPermissionsResponse>(
+      `/auth/get-user-roles-permissions/${userId}`
+    ),
+
+  updateUserRoles: (userId: string, data: UpdateUserRoles) =>
+    api.put<UpdateRolesResponse>(`/auth/update-user-roles/${userId}`, data),
+
+  getAvailableRoles: () =>
+    api.get<AvailableRolesResponse>("/auth/available-roles"),
+
+  getAvailablePermissions: () =>
+    api.get<AvailablePermissionsResponse>("/auth/available-permissions"),
+
+  // Helper method to format role names for display
+  formatRoleNames: (roles: AvailableRole[]): string => {
+    if (!roles || roles.length === 0) return "Chưa có vai trò";
+    if (roles.length === 1) return roles[0].name;
+    if (roles.length <= 3) return roles.map((r) => r.name).join(", ");
+    return `${roles
+      .slice(0, 2)
+      .map((r) => r.name)
+      .join(", ")} +${roles.length - 2} khác`;
+  },
+
+  // Helper method to check if user has specific permission
+  hasPermission: (
+    userPermissions: string[],
+    requiredPermission: string
+  ): boolean => {
+    return userPermissions.includes(requiredPermission);
+  },
+
+  // Helper method to check if user has any of the required permissions
+  hasAnyPermission: (
+    userPermissions: string[],
+    requiredPermissions: string[]
+  ): boolean => {
+    return requiredPermissions.some((perm) => userPermissions.includes(perm));
   },
 };
