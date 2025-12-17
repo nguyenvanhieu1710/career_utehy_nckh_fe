@@ -313,10 +313,12 @@ export default function JobManagementPage() {
               ? "bg-green-100 text-green-800"
               : job.status === "pending"
               ? "bg-orange-100 text-orange-800"
-              : "bg-red-100 text-red-800"
+              : job.status === "rejected"
+              ? "bg-red-100 text-red-800"
+              : "bg-gray-100 text-gray-800"
           }`}
         >
-          {getJobStatusLabel(job.status)}
+          {getJobStatusLabel(job.status || "pending")}
         </span>
       ),
     },
@@ -343,35 +345,8 @@ export default function JobManagementPage() {
             setSelectedJob(null);
             setIsJobDialogOpen(true);
           }}
-          label="Thêm tin tuyển dụng"
         />
       </div>
-
-      {/* Filter */}
-      <Filters
-        role={statusFilter}
-        status={typeFilter}
-        searchKeyword={filters.searchKeyword || ""}
-        onRoleChange={handleStatusChange}
-        onStatusChange={handleTypeChange}
-        onSearchChange={handleSearchChange}
-        roleLabel="Trạng thái"
-        statusLabel="Loại công việc"
-        roleOptions={[
-          { value: "all", label: "Tất cả trạng thái" },
-          { value: "pending", label: "Chờ duyệt" },
-          { value: "approved", label: "Đã duyệt" },
-          { value: "rejected", label: "Từ chối" },
-        ]}
-        statusOptions={[
-          { value: "all", label: "Tất cả loại" },
-          { value: "full-time", label: "Toàn thời gian" },
-          { value: "part-time", label: "Bán thời gian" },
-          { value: "intern", label: "Thực tập" },
-          { value: "freelance", label: "Freelance" },
-          { value: "contract", label: "Hợp đồng" },
-        ]}
-      />
 
       {/* Table */}
       <div className="bg-white rounded-lg shadow-sm border">

@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/Select";
-import { Job } from "@/types/job";
+import { Job, JobType, JobStatusType } from "@/types/job";
 import { companyAPI } from "@/services/company";
 import {
   JOB_TYPE_OPTIONS,
@@ -28,20 +28,24 @@ import {
   VIETNAM_CITIES,
 } from "@/constants/job";
 
+interface Company {
+  id: string;
+  name: string;
+}
+
 interface JobDialogData {
   title: string;
   company_id: string;
   location?: string;
-  work_arrangement?: string;
-  job_type: string;
-  salary_display?: string;
+  work_arrangement?: "remote" | "hybrid" | "onsite";
+  job_type: JobType;
+  salary?: string;
   salary_min?: number;
   salary_max?: number;
   requirements?: string;
   description?: string;
   benefits?: string;
-  status?: string;
-  url_source?: string;
+  status?: JobStatusType;
 }
 
 interface JobDialogProps {
@@ -60,19 +64,18 @@ export const JobDialog = ({
   const [title, setTitle] = useState("");
   const [companyId, setCompanyId] = useState("");
   const [location, setLocation] = useState("");
-  const [workArrangement, setWorkArrangement] = useState("");
-  const [jobType, setJobType] = useState("full-time");
-  const [salaryDisplay, setSalaryDisplay] = useState("");
+  const [workArrangement, setWorkArrangement] = useState<
+    "remote" | "hybrid" | "onsite" | ""
+  >("");
+  const [jobType, setJobType] = useState<JobType>("full-time");
+  const [salary, setSalary] = useState("");
   const [salaryMin, setSalaryMin] = useState<number | undefined>();
   const [salaryMax, setSalaryMax] = useState<number | undefined>();
   const [requirements, setRequirements] = useState("");
   const [description, setDescription] = useState("");
   const [benefits, setBenefits] = useState("");
-  const [status, setStatus] = useState("pending");
-  const [urlSource, setUrlSource] = useState("");
-  const [companies, setCompanies] = useState<{ id: string; name: string }[]>(
-    []
-  );
+  const [status, setStatus] = useState<JobStatusType>("pending");
+  const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{
     title?: string;
@@ -99,37 +102,47 @@ export const JobDialog = ({
 
   // Populate form when editing
   useEffect(() => {
-    if (job) {
-      setTitle(job.title);
-      setCompanyId(job.company_id);
-      setLocation(job.location || "");
-      setWorkArrangement(job.work_arrangement || "");
-      setJobType(job.job_type);
-      setSalaryDisplay(job.salary_display || "");
-      setSalaryMin(job.salary_min || undefined);
-      setSalaryMax(job.salary_max || undefined);
-      setRequirements(job.requirements || "");
-      setDescription(job.description || "");
-      setBenefits(job.benefits || "");
-      setStatus(job.status);
-      setUrlSource(job.url_source || "");
-    } else {
-      // Reset form for new job
-      setTitle("");
-      setCompanyId("");
-      setLocation("");
-      setWorkArrangement("");
-      setJobType("full-time");
-      setSalaryDisplay("");
-      setSalaryMin(undefined);
-      setSalaryMax(undefined);
-      setRequirements("");
-      setDescription("");
-      setBenefits("");
-      setStatus("pending");
-      setUrlSource("");
-    }
-    setErrors({});
+    if (!open) return;
+
+    const populateForm = () => {
+      if (job) {
+        setTitle(job.title);
+        setCompanyId(job.company.id);
+        setLocation(job.location || "");
+        setWorkArrangement(job.work_arrangement || "");
+        setJobType(job.job_type);
+        setSalary(job.salary || "");
+        setSalaryMin(job.salary_min || undefined);
+        setSalaryMax(job.salary_max || undefined);
+        setRequirements(
+          Array.isArray(job.requirements)
+            ? job.requirements.join("\n")
+            : job.requirements || ""
+        );
+        setDescription(job.description || "");
+        setBenefits(Array.isArray(job.benefits) ? job.benefits.join("\n") : "");
+        setStatus(job.status || "pending");
+      } else {
+        // Reset form for new job
+        setTitle("");
+        setCompanyId("");
+        setLocation("");
+        setWorkArrangement("");
+        setJobType("full-time");
+        setSalary("");
+        setSalaryMin(undefined);
+        setSalaryMax(undefined);
+        setRequirements("");
+        setDescription("");
+        setBenefits("");
+        setStatus("pending");
+      }
+      setErrors({});
+    };
+
+    // Use setTimeout to avoid cascading renders
+    const timeoutId = setTimeout(populateForm, 0);
+    return () => clearTimeout(timeoutId);
   }, [job, open]);
 
   const validateForm = () => {
@@ -162,14 +175,13 @@ export const JobDialog = ({
       location: location || undefined,
       work_arrangement: workArrangement || undefined,
       job_type: jobType,
-      salary_display: salaryDisplay || undefined,
+      salary: salary || undefined,
       salary_min: salaryMin,
       salary_max: salaryMax,
       requirements: requirements || undefined,
       description: description || undefined,
       benefits: benefits || undefined,
       status: status || undefined,
-      url_source: urlSource || undefined,
     };
 
     onSuccess(data);
@@ -225,7 +237,10 @@ export const JobDialog = ({
 
             <div>
               <Label htmlFor="job_type">Loại công việc</Label>
-              <Select value={jobType} onValueChange={setJobType}>
+              <Select
+                value={jobType}
+                onValueChange={(value) => setJobType(value as JobType)}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -243,7 +258,11 @@ export const JobDialog = ({
               <Label htmlFor="work_arrangement">Hình thức làm việc</Label>
               <Select
                 value={workArrangement}
-                onValueChange={setWorkArrangement}
+                onValueChange={(value) =>
+                  setWorkArrangement(
+                    value as "remote" | "hybrid" | "onsite" | ""
+                  )
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Chọn hình thức" />
@@ -276,7 +295,10 @@ export const JobDialog = ({
 
             <div>
               <Label htmlFor="status">Trạng thái</Label>
-              <Select value={status} onValueChange={setStatus}>
+              <Select
+                value={status}
+                onValueChange={(value) => setStatus(value as JobStatusType)}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -294,11 +316,11 @@ export const JobDialog = ({
           {/* Salary */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <Label htmlFor="salary_display">Mức lương hiển thị</Label>
+              <Label htmlFor="salary">Mức lương hiển thị</Label>
               <Input
-                id="salary_display"
-                value={salaryDisplay}
-                onChange={(e) => setSalaryDisplay(e.target.value)}
+                id="salary"
+                value={salary}
+                onChange={(e) => setSalary(e.target.value)}
                 placeholder="VD: 15-25 triệu VND"
               />
             </div>
@@ -330,16 +352,6 @@ export const JobDialog = ({
                 placeholder="25"
               />
             </div>
-          </div>
-
-          <div>
-            <Label htmlFor="url_source">URL nguồn</Label>
-            <Input
-              id="url_source"
-              value={urlSource}
-              onChange={(e) => setUrlSource(e.target.value)}
-              placeholder="https://..."
-            />
           </div>
 
           {/* Text Areas */}
@@ -381,15 +393,14 @@ export const JobDialog = ({
           <DialogFooter>
             <Button
               type="button"
-              variant="outline"
               onClick={() => onOpenChange(false)}
-              disabled={loading}
-            >
-              Hủy
-            </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? "Đang lưu..." : job ? "Cập nhật" : "Tạo mới"}
-            </Button>
+              value="Hủy"
+            />
+            <Button
+              type="submit"
+              disable={loading}
+              value={loading ? "Đang lưu..." : job ? "Cập nhật" : "Tạo mới"}
+            />
           </DialogFooter>
         </form>
       </DialogContent>
