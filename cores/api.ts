@@ -1,10 +1,10 @@
 import { getTokenCookie } from "@/services/auth";
+import { config, apiLog } from "@/lib/config";
 import axios from "axios";
 
-const API_BASE_URL = "http://127.0.0.1:8000/api/v1";
-
 const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: config.api.baseUrl,
+  timeout: config.api.timeout,
 });
 
 // Interceptor để thêm token động vào mỗi request
@@ -23,7 +23,14 @@ api.interceptors.request.use(
 
 // Interceptor để xử lý response errors
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    apiLog("Response received:", {
+      url: response.config?.url,
+      method: response.config?.method,
+      status: response.status,
+    });
+    return response;
+  },
   (error) => {
     if (error.response) {
       // Log lỗi để debug

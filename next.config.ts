@@ -15,7 +15,18 @@ const nextConfig: NextConfig = {
         port: "8000",
         pathname: "/uploads/**",
       },
+      // Add more patterns for production if needed
+      // {
+      //   protocol: "https",
+      //   hostname: "your-api-domain.com",
+      //   pathname: "/uploads/**",
+      // },
     ],
+  },
+  // Enable environment variables
+  env: {
+    NEXT_PUBLIC_API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL,
+    NEXT_PUBLIC_BACKEND_BASE_URL: process.env.NEXT_PUBLIC_BACKEND_BASE_URL,
   },
 };
 
