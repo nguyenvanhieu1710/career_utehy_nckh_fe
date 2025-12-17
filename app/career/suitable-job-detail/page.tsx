@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 
@@ -29,7 +29,7 @@ import {
   mockQuickFilters,
 } from "@/mocks/mockSuitableJobData";
 
-export default function SuitableJobDetailPage() {
+function SuitableJobDetailContent() {
   const { isAuthenticated, isLoading } = useAuth();
   const searchParams = useSearchParams();
   const jobId = searchParams.get("id");
@@ -184,5 +184,19 @@ export default function SuitableJobDetailPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function SuitableJobDetailPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+        </div>
+      }
+    >
+      <SuitableJobDetailContent />
+    </Suspense>
   );
 }

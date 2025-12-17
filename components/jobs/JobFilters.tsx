@@ -120,22 +120,22 @@ export const JobFilters = ({
   };
 
   const handleJobTypeChange = (jobType: string, checked: boolean) => {
-    const currentTypes = filters.jobTypes || [];
+    const currentTypes = filters.job_types || [];
     const newTypes = checked
       ? [...currentTypes, jobType]
       : currentTypes.filter((type) => type !== jobType);
-    updateFilters({ jobTypes: newTypes });
+    updateFilters({ job_types: newTypes });
   };
 
   const handleWorkArrangementChange = (
     arrangement: string,
     checked: boolean
   ) => {
-    const currentArrangements = filters.workArrangements || [];
+    const currentArrangements = filters.work_arrangements || [];
     const newArrangements = checked
       ? [...currentArrangements, arrangement]
       : currentArrangements.filter((arr) => arr !== arrangement);
-    updateFilters({ workArrangements: newArrangements });
+    updateFilters({ work_arrangements: newArrangements });
   };
 
   const handleSkillChange = (skill: string, checked: boolean) => {
@@ -147,24 +147,24 @@ export const JobFilters = ({
   };
 
   const handleCompanySizeChange = (size: string, checked: boolean) => {
-    const currentSizes = filters.companySize || [];
+    const currentSizes = filters.company_size || [];
     const newSizes = checked
       ? [...currentSizes, size]
       : currentSizes.filter((s) => s !== size);
-    updateFilters({ companySize: newSizes });
+    updateFilters({ company_size: newSizes });
   };
 
   const handleExperienceLevelChange = (level: string, checked: boolean) => {
-    const currentLevels = filters.experienceLevel || [];
+    const currentLevels = filters.experience_level || [];
     const newLevels = checked
       ? [...currentLevels, level]
       : currentLevels.filter((l) => l !== level);
-    updateFilters({ experienceLevel: newLevels });
+    updateFilters({ experience_level: newLevels });
   };
 
   const handleSalaryRangeChange = (min?: number, max?: number | null) => {
     updateFilters({
-      salaryRange: {
+      salary_range: {
         min: min,
         max: max === null ? undefined : max,
       },
@@ -174,15 +174,15 @@ export const JobFilters = ({
   const getActiveFiltersCount = () => {
     let count = 0;
     if (filters.location) count++;
-    if (filters.jobTypes?.length) count += filters.jobTypes.length;
-    if (filters.workArrangements?.length)
-      count += filters.workArrangements.length;
-    if (filters.salaryRange?.min || filters.salaryRange?.max) count++;
-    if (filters.postedWithin) count++;
+    if (filters.job_types?.length) count += filters.job_types.length;
+    if (filters.work_arrangements?.length)
+      count += filters.work_arrangements.length;
+    if (filters.salary_range?.min || filters.salary_range?.max) count++;
+    if (filters.posted_within) count++;
     if (filters.skills?.length) count += filters.skills.length;
-    if (filters.companySize?.length) count += filters.companySize.length;
-    if (filters.experienceLevel?.length)
-      count += filters.experienceLevel.length;
+    if (filters.company_size?.length) count += filters.company_size.length;
+    if (filters.experience_level?.length)
+      count += filters.experience_level.length;
     return count;
   };
 
@@ -270,7 +270,7 @@ export const JobFilters = ({
               >
                 <input
                   type="checkbox"
-                  checked={filters.jobTypes?.includes(type.value) || false}
+                  checked={filters.job_types?.includes(type.value) || false}
                   onChange={(e) =>
                     handleJobTypeChange(type.value, e.target.checked)
                   }
@@ -300,7 +300,7 @@ export const JobFilters = ({
                 <input
                   type="checkbox"
                   checked={
-                    filters.workArrangements?.includes(arrangement.value) ||
+                    filters.work_arrangements?.includes(arrangement.value) ||
                     false
                   }
                   onChange={(e) =>
@@ -335,8 +335,8 @@ export const JobFilters = ({
                   type="radio"
                   name="salaryRange"
                   checked={
-                    filters.salaryRange?.min === range.min &&
-                    filters.salaryRange?.max === range.max
+                    filters.salary_range?.min === range.min &&
+                    filters.salary_range?.max === range.max
                   }
                   onChange={() => handleSalaryRangeChange(range.min, range.max)}
                   className="border-gray-300 text-green-600 focus:ring-green-500 cursor-pointer"
@@ -367,8 +367,10 @@ export const JobFilters = ({
                 <input
                   type="radio"
                   name="postedWithin"
-                  checked={filters.postedWithin === option.value}
-                  onChange={() => updateFilters({ postedWithin: option.value })}
+                  checked={filters.posted_within === option.value}
+                  onChange={() =>
+                    updateFilters({ posted_within: option.value })
+                  }
                   className="border-gray-300 text-green-600 focus:ring-green-500 cursor-pointer"
                   disabled={loading}
                 />
@@ -381,8 +383,8 @@ export const JobFilters = ({
               <input
                 type="radio"
                 name="postedWithin"
-                checked={!filters.postedWithin}
-                onChange={() => updateFilters({ postedWithin: undefined })}
+                checked={!filters.posted_within}
+                onChange={() => updateFilters({ posted_within: undefined })}
                 className="border-gray-300 text-green-600 focus:ring-green-500"
                 disabled={loading}
               />
@@ -431,7 +433,7 @@ export const JobFilters = ({
               >
                 <input
                   type="checkbox"
-                  checked={filters.companySize?.includes(size.value) || false}
+                  checked={filters.company_size?.includes(size.value) || false}
                   onChange={(e) =>
                     handleCompanySizeChange(size.value, e.target.checked)
                   }
@@ -461,7 +463,7 @@ export const JobFilters = ({
                 <input
                   type="checkbox"
                   checked={
-                    filters.experienceLevel?.includes(level.value) || false
+                    filters.experience_level?.includes(level.value) || false
                   }
                   onChange={(e) =>
                     handleExperienceLevelChange(level.value, e.target.checked)

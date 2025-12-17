@@ -51,7 +51,8 @@ export const JobList = ({
       case "newest":
         return sortedJobs.sort(
           (a, b) =>
-            new Date(b.postedDate).getTime() - new Date(a.postedDate).getTime()
+            new Date(b.posted_date).getTime() -
+            new Date(a.posted_date).getTime()
         );
       case "salary":
         return sortedJobs.sort((a, b) => {
@@ -71,9 +72,9 @@ export const JobList = ({
       case "relevant":
         // Sort by featured first, then by application count
         return sortedJobs.sort((a, b) => {
-          if (a.isFeatured && !b.isFeatured) return -1;
-          if (!a.isFeatured && b.isFeatured) return 1;
-          return (b.applicationCount || 0) - (a.applicationCount || 0);
+          if (a.is_featured && !b.is_featured) return -1;
+          if (!a.is_featured && b.is_featured) return 1;
+          return (b.application_count || 0) - (a.application_count || 0);
         });
       default:
         return sortedJobs;

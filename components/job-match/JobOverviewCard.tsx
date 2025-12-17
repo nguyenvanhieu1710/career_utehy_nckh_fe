@@ -30,9 +30,9 @@ interface JobOverviewCardProps {
     company: Company;
     location: string;
     salary?: string;
-    jobType: "full-time" | "part-time" | "contract" | "intern" | "freelance";
-    workArrangement: "remote" | "hybrid" | "onsite";
-    postedDate: string;
+    job_type: "full-time" | "part-time" | "contract" | "intern" | "freelance";
+    work_arrangement: "remote" | "hybrid" | "onsite";
+    posted_date: string;
   };
   onSave?: () => void;
   onShare?: () => void;
@@ -125,16 +125,16 @@ export function JobOverviewCard({
                   )}
                   <div className="flex items-center gap-1">
                     <Clock className="h-4 w-4" />
-                    <span>Đăng {formatDate(job.postedDate)}</span>
+                    <span>Đăng {formatDate(job.posted_date)}</span>
                   </div>
                 </div>
 
                 <div className="flex gap-2">
                   <Badge variant="secondary">
-                    {getJobTypeLabel(job.jobType)}
+                    {getJobTypeLabel(job.job_type)}
                   </Badge>
                   <Badge variant="outline">
-                    {getWorkArrangementLabel(job.workArrangement)}
+                    {getWorkArrangementLabel(job.work_arrangement)}
                   </Badge>
                 </div>
               </div>

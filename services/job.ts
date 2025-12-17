@@ -16,13 +16,13 @@ export const jobAPI = {
   },
 
   // Create new job
-  createJob: async (data: JobCreate) => {
+  createJob: async (data: unknown) => {
     const response = await api.post("/job/create-job", data);
     return response.data;
   },
 
   // Update job
-  updateJob: async (jobId: string, data: JobUpdate) => {
+  updateJob: async (jobId: string, data: unknown) => {
     const response = await api.put(`/job/update-job/${jobId}`, data);
     return response.data;
   },

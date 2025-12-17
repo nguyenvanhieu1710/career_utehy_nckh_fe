@@ -6,14 +6,15 @@ export const mockJobData = {
     name: "Công ty cổ phần Dream Viet Education - Kyna English",
     logo: "/logo/kyna-english.png",
     location: "Toàn quốc",
-    size: "100-500 nhân viên",
-    industry: "Giáo dục - Đào tạo",
   },
   location: "Toàn quốc",
   salary: "15 - 25 triệu VNĐ",
-  jobType: "full-time" as const,
-  workArrangement: "remote" as const,
-  postedDate: "2024-12-10",
+  job_type: "full-time" as const,
+  work_arrangement: "remote" as const,
+  posted_date: "2024-12-10",
+  description: "Tuyển dụng giáo viên tiếng Anh online với mức lương hấp dẫn",
+  requirements: ["Bằng cử nhân tiếng Anh", "Kinh nghiệm giảng dạy 2+ năm"],
+  skills: ["Tiếng Anh", "Giảng dạy", "Giao tiếp"],
 };
 
 export const mockMatchData = {

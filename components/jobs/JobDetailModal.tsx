@@ -109,7 +109,11 @@ export const JobDetailModal = ({
     }
   };
 
-  const tabs = [
+  const tabs: Array<{
+    id: "overview" | "company" | "requirements";
+    label: string;
+    icon: typeof Briefcase;
+  }> = [
     { id: "overview", label: "Tổng quan", icon: Briefcase },
     { id: "company", label: "Công ty", icon: Building },
     { id: "requirements", label: "Yêu cầu", icon: CheckCircle },
@@ -131,10 +135,10 @@ export const JobDetailModal = ({
                     <h2 className="text-xl font-bold text-gray-900">
                       {job.title}
                     </h2>
-                    {job.isFeatured && (
+                    {job.is_featured && (
                       <Star className="h-4 w-4 text-yellow-500 fill-current" />
                     )}
-                    {job.isUrgent && (
+                    {job.is_urgent && (
                       <span className="bg-red-50 text-red-700 text-xs font-medium px-2 py-1 rounded-full">
                         Gấp
                       </span>
@@ -154,11 +158,11 @@ export const JobDetailModal = ({
                 </div>
                 <div className="flex items-center gap-1">
                   <Briefcase className="h-4 w-4" />
-                  {formatJobType(job.jobType)}
+                  {formatJobType(job.job_type)}
                 </div>
                 <div className="flex items-center gap-1">
                   <Clock className="h-4 w-4" />
-                  {formatPostedDate(job.postedDate)}
+                  {formatPostedDate(job.posted_date)}
                 </div>
                 <div className="flex items-center gap-1">
                   <DollarSign className="h-4 w-4" />
@@ -205,7 +209,11 @@ export const JobDetailModal = ({
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id as any)}
+                  onClick={() =>
+                    setActiveTab(
+                      tab.id as "overview" | "company" | "requirements"
+                    )
+                  }
                   className={`flex items-center gap-2 px-6 py-3 text-sm font-medium transition-colors relative ${
                     activeTab === tab.id
                       ? "text-green-600 border-b-2 border-green-600"
@@ -281,7 +289,7 @@ export const JobDetailModal = ({
                   )}
 
                   {/* Work Arrangement */}
-                  {job.workArrangement && (
+                  {job.work_arrangement && (
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900 mb-3">
                         Hình thức làm việc
@@ -290,7 +298,7 @@ export const JobDetailModal = ({
                         <div className="flex items-center gap-2">
                           <Users className="h-5 w-5 text-blue-600" />
                           <span className="font-medium text-blue-900">
-                            {formatWorkArrangement(job.workArrangement)}
+                            {formatWorkArrangement(job.work_arrangement)}
                           </span>
                         </div>
                       </div>
@@ -476,10 +484,10 @@ export const JobDetailModal = ({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="text-sm text-gray-600">
-                {job.applicationCount} người đã ứng tuyển
+                {job.application_count} người đã ứng tuyển
               </div>
               <div className="text-sm text-gray-600">
-                Đăng {formatPostedDate(job.postedDate)}
+                Đăng {formatPostedDate(job.posted_date)}
               </div>
             </div>
 

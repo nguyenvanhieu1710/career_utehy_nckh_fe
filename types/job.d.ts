@@ -1,5 +1,3 @@
-// Frontend-only Job types for UI development
-
 // Job Type enum
 export type JobType =
   | "full-time"
@@ -21,32 +19,36 @@ export interface Job {
     location?: string;
   };
   location: string;
+  other_locations?: string[];
   salary?: string;
-  jobType: JobType;
-  workArrangement: "remote" | "hybrid" | "onsite";
-  postedDate: string;
+  salary_min?: number;
+  salary_max?: number;
+  job_type: JobType;
+  work_arrangement: "remote" | "hybrid" | "onsite";
+  posted_date: string;
   description: string;
   requirements: string[];
   skills: string[];
   benefits?: string[];
-  isUrgent?: boolean;
-  isFeatured?: boolean;
-  applicationCount?: number;
+  is_urgent?: boolean;
+  is_featured?: boolean;
+  application_count?: number;
+  status?: JobStatusType;
 }
 
 export interface JobFilters {
   search?: string;
   location?: string;
-  jobTypes?: string[];
-  workArrangements?: string[];
-  salaryRange?: {
+  job_types?: string[];
+  work_arrangements?: string[];
+  salary_range?: {
     min?: number;
     max?: number;
   };
   skills?: string[];
-  postedWithin?: number; // days
-  companySize?: string[];
-  experienceLevel?: string[];
+  posted_within?: number; // days
+  company_size?: string[];
+  experience_level?: string[];
 }
 
 export interface JobSearchState {
@@ -56,4 +58,44 @@ export interface JobSearchState {
   hasMore: boolean;
   page: number;
   total: number;
+}
+
+// Job Create interface (for creating new jobs)
+export interface JobCreate {
+  title: string;
+  company_id: string;
+  location?: string;
+  other_locations?: string[];
+  salary?: string;
+  salary_min?: number;
+  salary_max?: number;
+  job_type: JobType;
+  work_arrangement?: "remote" | "hybrid" | "onsite";
+  description?: string;
+  requirements?: string;
+  skills?: string[];
+  benefits?: string;
+  is_urgent?: boolean;
+  is_featured?: boolean;
+  status?: JobStatusType;
+}
+
+// Job Update interface (for updating existing jobs)
+export interface JobUpdate {
+  title?: string;
+  company_id?: string;
+  location?: string;
+  other_locations?: string[];
+  salary?: string;
+  salary_min?: number;
+  salary_max?: number;
+  job_type?: JobType;
+  work_arrangement?: "remote" | "hybrid" | "onsite";
+  description?: string;
+  requirements?: string;
+  skills?: string[];
+  benefits?: string;
+  is_urgent?: boolean;
+  is_featured?: boolean;
+  status?: JobStatusType;
 }

@@ -13,9 +13,9 @@ export const mockJobs: Job[] = [
     },
     location: "Hà Nội",
     salary: "25 - 35 triệu VNĐ",
-    jobType: "full-time",
-    workArrangement: "hybrid",
-    postedDate: "2024-12-14",
+    job_type: "full-time",
+    work_arrangement: "hybrid",
+    posted_date: "2024-12-14",
     description:
       "Chúng tôi đang tìm kiếm một Senior Frontend Developer có kinh nghiệm với React, TypeScript và Next.js để tham gia vào đội ngũ phát triển sản phẩm.",
     requirements: [
@@ -26,8 +26,8 @@ export const mockJobs: Job[] = [
     ],
     skills: ["React", "TypeScript", "Next.js", "Tailwind CSS", "Git"],
     benefits: ["Bảo hiểm sức khỏe", "Thưởng hiệu suất", "Làm việc từ xa"],
-    isFeatured: true,
-    applicationCount: 45,
+    is_featured: true,
+    application_count: 45,
   },
   {
     id: "2",
@@ -40,9 +40,9 @@ export const mockJobs: Job[] = [
     },
     location: "TP.HCM",
     salary: "20 - 30 triệu VNĐ",
-    jobType: "full-time",
-    workArrangement: "onsite",
-    postedDate: "2024-12-13",
+    job_type: "full-time",
+    work_arrangement: "onsite",
+    posted_date: "2024-12-13",
     description:
       "Tham gia phát triển các ứng dụng web hiện đại với công nghệ mới nhất. Làm việc trong môi trường năng động và sáng tạo.",
     requirements: [
@@ -53,8 +53,8 @@ export const mockJobs: Job[] = [
     ],
     skills: ["Node.js", "React", "MongoDB", "Express.js", "Docker"],
     benefits: ["Lương tháng 13", "Team building", "Đào tạo kỹ năng"],
-    isUrgent: true,
-    applicationCount: 32,
+    is_urgent: true,
+    application_count: 32,
   },
   {
     id: "3",
@@ -67,9 +67,9 @@ export const mockJobs: Job[] = [
     },
     location: "Đà Nẵng",
     salary: "15 - 25 triệu VNĐ",
-    jobType: "full-time",
-    workArrangement: "remote",
-    postedDate: "2024-12-12",
+    job_type: "full-time",
+    work_arrangement: "remote",
+    posted_date: "2024-12-12",
     description:
       "Thiết kế giao diện người dùng cho các ứng dụng mobile và web. Tạo ra những trải nghiệm người dùng tuyệt vời.",
     requirements: [
@@ -84,7 +84,7 @@ export const mockJobs: Job[] = [
       "Creative environment",
       "Design tools provided",
     ],
-    applicationCount: 28,
+    application_count: 28,
   },
   {
     id: "4",
@@ -97,9 +97,9 @@ export const mockJobs: Job[] = [
     },
     location: "Hà Nội",
     salary: "30 - 45 triệu VNĐ",
-    jobType: "full-time",
-    workArrangement: "hybrid",
-    postedDate: "2024-12-11",
+    job_type: "full-time",
+    work_arrangement: "hybrid",
+    posted_date: "2024-12-11",
     description:
       "Quản lý và tối ưu hóa hạ tầng cloud, triển khai CI/CD pipelines và đảm bảo tính ổn định của hệ thống.",
     requirements: [
@@ -110,8 +110,8 @@ export const mockJobs: Job[] = [
     ],
     skills: ["AWS", "Docker", "Kubernetes", "Jenkins", "Terraform"],
     benefits: ["High salary", "Stock options", "International projects"],
-    isFeatured: true,
-    applicationCount: 18,
+    is_featured: true,
+    application_count: 18,
   },
   {
     id: "5",
@@ -124,9 +124,9 @@ export const mockJobs: Job[] = [
     },
     location: "TP.HCM",
     salary: "18 - 28 triệu VNĐ",
-    jobType: "full-time",
-    workArrangement: "onsite",
-    postedDate: "2024-12-10",
+    job_type: "full-time",
+    work_arrangement: "onsite",
+    posted_date: "2024-12-10",
     description:
       "Phát triển ứng dụng mobile đa nền tảng với React Native. Tham gia vào các dự án thú vị cho khách hàng quốc tế.",
     requirements: [
@@ -137,7 +137,7 @@ export const mockJobs: Job[] = [
     ],
     skills: ["React Native", "Redux", "TypeScript", "iOS", "Android"],
     benefits: ["Performance bonus", "Learning budget", "Modern office"],
-    applicationCount: 41,
+    application_count: 41,
   },
   {
     id: "6",
@@ -150,9 +150,9 @@ export const mockJobs: Job[] = [
     },
     location: "Hà Nội",
     salary: "5 - 8 triệu VNĐ",
-    jobType: "intern",
-    workArrangement: "hybrid",
-    postedDate: "2024-12-09",
+    job_type: "intern",
+    work_arrangement: "hybrid",
+    posted_date: "2024-12-09",
     description:
       "Cơ hội thực tập tuyệt vời cho sinh viên muốn khám phá lĩnh vực phân tích dữ liệu và business intelligence.",
     requirements: [
@@ -167,7 +167,7 @@ export const mockJobs: Job[] = [
       "Certificate",
       "Potential full-time offer",
     ],
-    applicationCount: 67,
+    application_count: 67,
   },
   {
     id: "7",
@@ -180,9 +180,9 @@ export const mockJobs: Job[] = [
     },
     location: "TP.HCM",
     salary: "22 - 32 triệu VNĐ",
-    jobType: "full-time",
-    workArrangement: "remote",
-    postedDate: "2024-12-08",
+    job_type: "full-time",
+    work_arrangement: "remote",
+    posted_date: "2024-12-08",
     description:
       "Xây dựng và maintain các API services, database design và tối ưu hóa performance cho các ứng dụng quy mô lớn.",
     requirements: [
@@ -193,8 +193,8 @@ export const mockJobs: Job[] = [
     ],
     skills: ["Node.js", "Express.js", "PostgreSQL", "Redis", "AWS"],
     benefits: ["Remote work", "Flexible schedule", "Tech allowance"],
-    isUrgent: true,
-    applicationCount: 29,
+    is_urgent: true,
+    application_count: 29,
   },
   {
     id: "8",
@@ -207,9 +207,9 @@ export const mockJobs: Job[] = [
     },
     location: "Hà Nội",
     salary: "35 - 50 triệu VNĐ",
-    jobType: "full-time",
-    workArrangement: "hybrid",
-    postedDate: "2024-12-07",
+    job_type: "full-time",
+    work_arrangement: "hybrid",
+    posted_date: "2024-12-07",
     description:
       "Dẫn dắt phát triển sản phẩm từ ý tưởng đến triển khai. Làm việc chặt chẽ với team engineering và design.",
     requirements: [
@@ -230,8 +230,8 @@ export const mockJobs: Job[] = [
       "Stock options",
       "International exposure",
     ],
-    isFeatured: true,
-    applicationCount: 23,
+    is_featured: true,
+    application_count: 23,
   },
 ];
 
@@ -265,16 +265,16 @@ export const getJobsByFilters = (
   }
 
   // Job type filter
-  if (filters.jobTypes && filters.jobTypes.length > 0) {
+  if (filters.job_types && filters.job_types.length > 0) {
     filteredJobs = filteredJobs.filter((job) =>
-      filters.jobTypes!.includes(job.jobType)
+      filters.job_types!.includes(job.job_type)
     );
   }
 
   // Work arrangement filter
-  if (filters.workArrangements && filters.workArrangements.length > 0) {
+  if (filters.work_arrangements && filters.work_arrangements.length > 0) {
     filteredJobs = filteredJobs.filter((job) =>
-      filters.workArrangements!.includes(job.workArrangement)
+      filters.work_arrangements!.includes(job.work_arrangement)
     );
   }
 
@@ -290,11 +290,11 @@ export const getJobsByFilters = (
   }
 
   // Posted within filter
-  if (filters.postedWithin) {
+  if (filters.posted_within) {
     const daysAgo = new Date();
-    daysAgo.setDate(daysAgo.getDate() - filters.postedWithin);
+    daysAgo.setDate(daysAgo.getDate() - filters.posted_within);
     filteredJobs = filteredJobs.filter(
-      (job) => new Date(job.postedDate) >= daysAgo
+      (job) => new Date(job.posted_date) >= daysAgo
     );
   }
 

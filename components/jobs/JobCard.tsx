@@ -117,13 +117,13 @@ export const JobCard = ({
                   <h3 className="text-lg font-semibold text-gray-900 group-hover:text-green-600 transition-colors line-clamp-1">
                     {job.title}
                   </h3>
-                  {job.isFeatured && (
+                  {job.is_featured && (
                     <div className="flex items-center gap-1 bg-yellow-50 text-yellow-700 text-xs font-medium px-2 py-1 rounded-full">
                       <Star className="h-3 w-3 fill-current" />
                       Nổi bật
                     </div>
                   )}
-                  {job.isUrgent && (
+                  {job.is_urgent && (
                     <span className="bg-red-50 text-red-700 text-xs font-medium px-2 py-1 rounded-full">
                       Gấp
                     </span>
@@ -153,15 +153,15 @@ export const JobCard = ({
                   </div>
                   <div className="flex items-center gap-1">
                     <Briefcase className="h-4 w-4 flex-shrink-0" />
-                    <span>{formatJobType(job.jobType)}</span>
+                    <span>{formatJobType(job.job_type)}</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <Clock className="h-4 w-4 flex-shrink-0" />
-                    <span>{formatPostedDate(job.postedDate)}</span>
+                    <span>{formatPostedDate(job.posted_date)}</span>
                   </div>
-                  {job.workArrangement && (
+                  {job.work_arrangement && (
                     <div className="bg-blue-50 text-blue-700 text-xs font-medium px-2 py-1 rounded-full">
-                      {formatWorkArrangement(job.workArrangement)}
+                      {formatWorkArrangement(job.work_arrangement)}
                     </div>
                   )}
                 </div>
@@ -196,9 +196,9 @@ export const JobCard = ({
                   <div className="text-lg font-bold text-gray-900 mb-1">
                     {job.salary}
                   </div>
-                  {job.applicationCount && (
+                  {job.application_count && (
                     <div className="text-sm text-gray-500">
-                      {job.applicationCount} ứng viên
+                      {job.application_count} ứng viên
                     </div>
                   )}
                 </div>
