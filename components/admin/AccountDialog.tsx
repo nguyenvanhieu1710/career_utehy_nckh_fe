@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -17,8 +17,11 @@ import {
   SelectValue,
 } from "@/components/ui/Select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Upload } from "lucide-react";
+import { Upload, X, Eye, EyeOff, Image as ImageIcon } from "lucide-react";
+import { userAPI } from "@/services/user";
+import { User, Role } from "@/types/user";
+import { EntityStatus } from "@/types/status";
+import { useStatus } from "@/contexts/StatusContext";
 import type {
   AccountDialogData,
   AccountDialogSubmitData,
@@ -28,66 +31,107 @@ interface AccountDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   initialData?: AccountDialogData;
+  user?: User; // For edit mode to get user ID
   mode?: "add" | "edit";
   onSubmit?: (data: AccountDialogSubmitData) => void;
+  availableRoles?: Role[];
+  rolesLoading?: boolean;
 }
 
 export const AccountDialog = ({
   open,
   onOpenChange,
   initialData,
+  user,
   mode = "add",
   onSubmit,
+  availableRoles = [],
+  rolesLoading = false,
 }: AccountDialogProps) => {
+  // Get status options from context
+  const { statusOptions, loading: statusLoading } = useStatus();
+
   const [fullname, setFullname] = useState("");
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("");
-  const [status, setStatus] = useState<"active" | "inactive">("active");
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [status, setStatus] = useState<EntityStatus>(EntityStatus.ACTIVE);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [currentAvatarUrl, setCurrentAvatarUrl] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [showAvatarPreview, setShowAvatarPreview] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [errors, setErrors] = useState<{
     fullname?: string;
     email?: string;
     role?: string;
+    avatar?: string;
   }>({});
 
   // Reset form when dialog opens
   useEffect(() => {
-    if (!open) return;
-
-    const fullnameValue = initialData?.fullname ?? "";
-    const emailValue = initialData?.email ?? "";
-    const roleValue = initialData?.role ?? "";
-    const statusValue = initialData?.status ?? "active";
-    const avatarValue = initialData?.avatar ?? null;
-
-    setFullname(fullnameValue);
-    setEmail(emailValue);
-    setRole(roleValue);
-    setStatus(statusValue);
-    setAvatarPreview(avatarValue);
-    setAvatarFile(null);
-    setErrors({});
+    if (open) {
+      setFullname(initialData?.fullname ?? "");
+      setEmail(initialData?.email ?? "");
+      setRole(initialData?.role ?? "");
+      setStatus((initialData?.status as EntityStatus) ?? EntityStatus.ACTIVE);
+      setCurrentAvatarUrl(initialData?.avatar ?? null);
+      setAvatarFile(null);
+      setAvatarPreview(null);
+      setIsUploading(false);
+      setShowAvatarPreview(false);
+      setErrors({});
+    }
   }, [open, initialData]);
 
-  // Cleanup object URL to prevent memory leak
-  useEffect(() => {
-    return () => {
-      if (avatarPreview && avatarPreview.startsWith("blob:")) {
-        URL.revokeObjectURL(avatarPreview);
-      }
-    };
-  }, [avatarPreview]);
+  // Handle file selection
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      // Revoke previous object URL if exists
-      if (avatarPreview && avatarPreview.startsWith("blob:")) {
-        URL.revokeObjectURL(avatarPreview);
-      }
-      setAvatarFile(file);
-      setAvatarPreview(URL.createObjectURL(file));
+    // Validate file
+    const validation = userAPI.validateAvatarFile(file);
+    if (!validation.isValid) {
+      setErrors({ ...errors, avatar: validation.errors.join(", ") });
+      return;
+    }
+
+    setAvatarFile(file);
+    setErrors({ ...errors, avatar: undefined });
+
+    // Create preview
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setAvatarPreview(e.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Remove avatar
+  const handleRemoveAvatar = () => {
+    setAvatarFile(null);
+    setAvatarPreview(null);
+    setCurrentAvatarUrl(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  // Upload avatar for existing user
+  const uploadAvatar = async (
+    userId: string,
+    file: File
+  ): Promise<string | null> => {
+    try {
+      setIsUploading(true);
+      const result = await userAPI.uploadAvatar(userId, file, true);
+      return result.data.avatar_info.file_url;
+    } catch (error) {
+      console.error("Avatar upload failed:", error);
+      setErrors({ ...errors, avatar: "Tải lên avatar thất bại" });
+      return null;
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -123,14 +167,28 @@ export const AccountDialog = ({
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!validateForm()) return;
+
+    let finalAvatarUrl = currentAvatarUrl;
+
+    // If editing and there's a new avatar file, upload it first
+    if (mode === "edit" && user && avatarFile) {
+      const uploadedUrl = await uploadAvatar(user.id.toString(), avatarFile);
+      if (uploadedUrl) {
+        finalAvatarUrl = uploadedUrl;
+        // Use the uploaded URL for future reference
+        console.log("Avatar uploaded successfully:", finalAvatarUrl);
+      }
+    }
+
     onSubmit?.({
       fullname: fullname.trim(),
       email: email.trim(),
       role,
       status,
-      avatarFile: avatarFile ?? undefined,
+      roles: role ? [role] : [], // Convert single role to array for backend
+      ...(mode === "add" && avatarFile ? { avatarFile } : {}),
     });
   };
 
@@ -144,32 +202,120 @@ export const AccountDialog = ({
         </DialogHeader>
 
         <div className="grid gap-6 py-4">
-          {/* Avatar */}
-          <div className="flex items-center gap-6">
-            <Label className="text-right w-32 shrink-0 text-green-900">
-              Ảnh đại diện
-            </Label>
-            <div className="flex flex-col items-center gap-3">
-              <Avatar className="h-24 w-24">
-                <AvatarImage src={avatarPreview ?? ""} />
-                <AvatarFallback className="text-lg">
-                  {fullname.slice(0, 2).toUpperCase() || "AD"}
-                </AvatarFallback>
-              </Avatar>
-              <label
-                htmlFor="avatar-upload"
-                className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg cursor-pointer hover:bg-green-700 transition-colors duration-200"
-              >
-                <Upload className="h-4 w-4" />
-                <span>Chọn ảnh</span>
-                <input
-                  id="avatar-upload"
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleFileChange}
-                />
-              </label>
+          {/* Avatar Upload */}
+          <div className="grid grid-cols-4 items-start gap-4">
+            <Label className="text-right text-green-900 pt-2">Avatar</Label>
+            <div className="col-span-3">
+              <div className="space-y-4">
+                {/* Current Avatar Display */}
+                {(avatarPreview || currentAvatarUrl) && (
+                  <div className="relative inline-block">
+                    <div className="w-20 h-20 rounded-lg border-2 border-green-200 overflow-hidden bg-gray-50 relative">
+                      <img
+                        src={
+                          avatarPreview ||
+                          userAPI.getAvatarUrl({
+                            avatar_url: currentAvatarUrl,
+                          } as User)
+                        }
+                        alt="Avatar preview"
+                        className="object-cover"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowAvatarPreview(!showAvatarPreview)}
+                      className="absolute -top-2 -right-2 bg-green-600 text-white rounded-full p-1 hover:bg-green-700 transition-colors cursor-pointer"
+                      title={showAvatarPreview ? "Ẩn xem trước" : "Xem trước"}
+                    >
+                      {showAvatarPreview ? (
+                        <EyeOff className="w-3 h-3" />
+                      ) : (
+                        <Eye className="w-3 h-3" />
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleRemoveAvatar}
+                      className="absolute -top-2 -left-2 bg-red-600 text-white rounded-full p-1  hover:bg-red-700 transition-colors cursor-pointer"
+                      title="Xóa avatar"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                )}
+
+                {/* Upload Button */}
+                <div className="flex items-center gap-3">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploading}
+                    className="inline-flex items-center gap-2 px-4 py-2 border border-green-300 rounded-md text-sm font-medium text-green-700 bg-white hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                  >
+                    {isUploading ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600"></div>
+                        Đang tải lên...
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="w-4 h-4" />
+                        {avatarPreview || currentAvatarUrl
+                          ? "Thay đổi avatar"
+                          : "Chọn avatar"}
+                      </>
+                    )}
+                  </button>
+                  {!avatarPreview && !currentAvatarUrl && (
+                    <div className="flex items-center gap-2 text-gray-500 text-sm">
+                      <ImageIcon className="w-4 h-4" />
+                      <span>JPG, PNG, GIF tối đa 5MB</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Error Message */}
+                {errors.avatar && (
+                  <p className="text-red-500 text-sm">{errors.avatar}</p>
+                )}
+
+                {/* Large Preview Modal */}
+                {showAvatarPreview && (avatarPreview || currentAvatarUrl) && (
+                  <div
+                    className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+                    onClick={() => setShowAvatarPreview(false)}
+                  >
+                    <div className="relative max-w-md max-h-md">
+                      <div className="relative w-96 h-96">
+                        <img
+                          src={
+                            avatarPreview ||
+                            userAPI.getAvatarUrl({
+                              avatar_url: currentAvatarUrl,
+                            } as User)
+                          }
+                          alt="Avatar preview"
+                          className="object-contain rounded-lg"
+                        />
+                      </div>
+                      <button
+                        onClick={() => setShowAvatarPreview(false)}
+                        className="absolute -top-2 -right-2 bg-white text-gray-600 rounded-full p-2 hover:bg-gray-100 transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -245,6 +391,7 @@ export const AccountDialog = ({
                     setErrors({ ...errors, role: undefined });
                   }
                 }}
+                disabled={rolesLoading}
               >
                 <SelectTrigger
                   className={`border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900 ${
@@ -253,14 +400,28 @@ export const AccountDialog = ({
                       : ""
                   }`}
                 >
-                  <SelectValue placeholder="Lựa chọn vai trò" />
+                  <SelectValue
+                    placeholder={
+                      rolesLoading ? "Đang tải vai trò..." : "Lựa chọn vai trò"
+                    }
+                  />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="manager">Quản trị viên</SelectItem>
-                  <SelectItem value="lecturer">Giảng viên</SelectItem>
-                  <SelectItem value="student">Sinh viên</SelectItem>
-                  <SelectItem value="reviewer">Phản biện</SelectItem>
+                  {availableRoles.map((roleItem) => (
+                    <SelectItem key={roleItem.id} value={roleItem.id}>
+                      {roleItem.name}
+                      {roleItem.description && (
+                        <span className="text-gray-500 text-xs ml-2">
+                          - {roleItem.description}
+                        </span>
+                      )}
+                    </SelectItem>
+                  ))}
+                  {availableRoles.length === 0 && !rolesLoading && (
+                    <SelectItem value="" disabled>
+                      Không có vai trò nào
+                    </SelectItem>
+                  )}
                 </SelectContent>
               </Select>
               {errors.role && (
@@ -271,38 +432,44 @@ export const AccountDialog = ({
 
           <div className="grid grid-cols-4 items-start gap-4">
             <Label className="text-right pt-2 text-green-900">Trạng thái</Label>
-            <RadioGroup
-              value={status}
-              onValueChange={(value: "active" | "inactive") => setStatus(value)}
-              className="col-span-3 flex flex-col space-y-3"
-            >
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem
-                  value="active"
-                  id="active"
-                  className="border-green-600 text-green-600"
-                />
-                <Label
-                  htmlFor="active"
-                  className="font-normal cursor-pointer text-green-900"
-                >
-                  Còn hoạt động
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem
-                  value="inactive"
-                  id="inactive"
-                  className="border-green-600 text-green-600"
-                />
-                <Label
-                  htmlFor="inactive"
-                  className="font-normal cursor-pointer text-green-900"
-                >
-                  Ngừng hoạt động
-                </Label>
-              </div>
-            </RadioGroup>
+            <div className="col-span-3">
+              <Select
+                value={status}
+                onValueChange={(value: EntityStatus) => setStatus(value)}
+                disabled={statusLoading}
+              >
+                <SelectTrigger className="w-full border-green-200 focus:border-green-500 focus:ring-green-500">
+                  <SelectValue
+                    placeholder={
+                      statusLoading ? "Đang tải..." : "Chọn trạng thái"
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {statusOptions.map((statusOption) => (
+                    <SelectItem
+                      key={statusOption.value}
+                      value={statusOption.value}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`w-2 h-2 rounded-full ${
+                            statusOption.color === "green"
+                              ? "bg-green-500"
+                              : statusOption.color === "yellow"
+                              ? "bg-yellow-500"
+                              : statusOption.color === "red"
+                              ? "bg-red-500"
+                              : "bg-gray-500"
+                          }`}
+                        />
+                        {statusOption.label}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
 
@@ -310,6 +477,7 @@ export const AccountDialog = ({
           <Button
             value={mode === "add" ? "Thêm" : "Lưu"}
             onClick={handleSubmit}
+            disable={isUploading}
           />
         </DialogFooter>
       </DialogContent>

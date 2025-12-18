@@ -1,4 +1,5 @@
 import { HeroSearch } from "@/components/home/HeroSearch";
+import SuitableJobs from "@/components/home/SuitableJobs";
 import TopCompanies from "@/components/home/TopCompanies";
 import HotJobs from "@/components/home/HotJobs";
 import TrendingIndustries from "@/components/home/TrendingIndustries";
@@ -12,15 +13,16 @@ export default function Home() {
   return (
     <div>
       <main className="flex-1 bg-gray-50">
-        <Header/>
-        <HeroSearch/>
-        <TopCompanies/>
-        <HotJobs/>
-        <TrendingIndustries/>
-        <FeaturedJobs/>
-        <TrustedSources/>
-        <SystemIntro/>
-        <Footer/>
+        <Header />
+        <HeroSearch />
+        <SuitableJobs />
+        <TopCompanies />
+        <HotJobs />
+        <TrendingIndustries />
+        <FeaturedJobs />
+        <TrustedSources />
+        <SystemIntro />
+        <Footer />
       </main>
     </div>
   );

@@ -52,7 +52,7 @@ export default function TrustedSources() {
               transition={{ duration: 0.5, delay: index * 0.1 }}
               viewport={{ once: true }}
               whileHover={{ y: -6 }}
-              className="grayscale hover:grayscale-0 transition-all duration-300"
+              className="grayscale hover:grayscale-0 transition-all duration-300 cursor-pointer"
             >
               <Image
                 src={partner.logo}

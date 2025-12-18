@@ -1,4 +1,4 @@
-import { BaseModel } from './base';
+import { BaseModel } from "./base";
 
 export interface Company extends BaseModel {
   name: string;
@@ -14,7 +14,7 @@ export interface Company extends BaseModel {
   email: string | null;
   support_email: string | null;
   phone: string | null;
-  
+
   // Relationships
   jobs?: Job[];
 }
@@ -35,4 +35,4 @@ export interface CompanyCreate {
   phone?: string;
 }
 
-export interface CompanyUpdate extends Partial<CompanyCreate> {}
+export type CompanyUpdate = Partial<CompanyCreate>;

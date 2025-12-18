@@ -7,6 +7,8 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { useState } from "react";
 import SectionTitle from "../common/SectionTitle";
+import { useAuth } from "@/hooks/useAuth";
+import { LoginRequired } from "@/components/auth/LoginRequired";
 
 interface JobItemProps {
   job_id?: string | number;
@@ -175,7 +177,32 @@ const JobItem = ({
   );
 };
 
+// Login Required Section Component
+const LoginRequiredSection = () => {
+  return (
+    <section className="py-16 px-4">
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        viewport={{ once: true }}
+        className="flex justify-between items-center mb-8"
+      >
+        <SectionTitle title="CÔNG VIỆC PHÙ HỢP VỚI BẠN" />
+      </motion.div>
+
+      <LoginRequired
+        title="Đăng nhập để xem công việc phù hợp"
+        description="Hệ thống sẽ phân tích hồ sơ của bạn và gợi ý những công việc phù hợp nhất. Đăng nhập ngay để khám phá cơ hội nghề nghiệp dành riêng cho bạn!"
+        showSignup={true}
+      />
+    </section>
+  );
+};
+
 export default function SuitableJobs() {
+  const { isAuthenticated, isLoading } = useAuth();
+
   const jobs = [
     {
       id: 1,
@@ -205,6 +232,27 @@ export default function SuitableJobs() {
     },
   };
 
+  // Show loading state
+  if (isLoading) {
+    return (
+      <section className="py-16 px-4">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="flex justify-center items-center py-20"
+        >
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </motion.div>
+      </section>
+    );
+  }
+
+  // Show login required if not authenticated
+  if (!isAuthenticated) {
+    return <LoginRequiredSection />;
+  }
+
+  // Show suitable jobs if authenticated
   return (
     <section className="py-16 px-4">
       <motion.div

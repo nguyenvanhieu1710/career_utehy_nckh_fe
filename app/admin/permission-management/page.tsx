@@ -12,10 +12,11 @@ import { permAPI } from "@/services/perm";
 import { Role } from "@/types/permission";
 import { Input } from "@/components/ui/input";
 import { DialogState } from "@/types/dialog";
+import { GetSchema } from "@/types/base";
 
 export default function RoleManagementPage() {
   const [loading, setLoading] = useState(true);
-  const [roles, setRoles] = useState<Role[]>();
+  const [roles, setRoles] = useState<Role[]>([]);
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -25,19 +26,31 @@ export default function RoleManagementPage() {
     message: "",
     type: "success",
   });
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState<GetSchema>({
     id: "",
     searchKeyword: "",
     page: 1,
-    row: 100,
+    row: 10,
   });
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
   const [perms, setPerms] = useState<string[]>();
 
   // Load permissions list (chỉ 1 lần)
   useEffect(() => {
-    permAPI.getPerms().then((res) => {
-      setPerms(res.data);
-    });
+    permAPI
+      .getPerms()
+      .then((res) => {
+        setPerms(res.data);
+      })
+      .catch(() => {
+        setDialogState({
+          isOpen: true,
+          title: "Lỗi",
+          message: "Không thể tải danh sách quyền!",
+          type: "error",
+        });
+      });
   }, []);
 
   // Load roles list (khi filters thay đổi)
@@ -46,7 +59,9 @@ export default function RoleManagementPage() {
     permAPI
       .getRoles(filters)
       .then((res) => {
-        setRoles(res.data?.data);
+        setRoles(res.data?.data || []);
+        setTotal(res.data?.total || 0);
+        setTotalPages(res.data?.max_page || 1);
       })
       .catch(() => {
         setDialogState({
@@ -59,26 +74,112 @@ export default function RoleManagementPage() {
       .finally(() => setLoading(false));
   }, [filters]);
 
+  const handleSearchChange = (value: string) => {
+    setFilters({ ...filters, searchKeyword: value, page: 1 });
+  };
+
+  const handlePageChange = (page: number) => {
+    setFilters({ ...filters, page });
+  };
+
+  const handleAddRole = async (data: {
+    name: string;
+    description?: string;
+    perms: string[];
+  }) => {
+    try {
+      setLoading(true);
+
+      // Gọi API create role
+      await permAPI.createRole(data);
+
+      // Refresh danh sách roles sau khi create
+      const res = await permAPI.getRoles(filters);
+      setRoles(res.data?.data || []);
+      setTotal(res.data?.total || 0);
+      setTotalPages(res.data?.max_page || 1);
+
+      setDialogState({
+        isOpen: true,
+        title: "Tạo vai trò thành công",
+        message: `Vai trò ${data.name} đã được tạo!`,
+        type: "success",
+      });
+      setIsAddDialogOpen(false);
+    } catch {
+      setDialogState({
+        isOpen: true,
+        title: "Tạo vai trò thất bại",
+        message: "Có lỗi xảy ra khi tạo vai trò!",
+        type: "error",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateRole = async (data: {
+    name: string;
+    description?: string;
+    perms: string[];
+  }) => {
+    if (!selectedRole) return;
+
+    try {
+      setLoading(true);
+
+      // Gọi API update role
+      await permAPI.updateRole(selectedRole.id.toString(), data);
+
+      // Refresh danh sách roles sau khi update
+      const res = await permAPI.getRoles(filters);
+      setRoles(res.data?.data || []);
+      setTotal(res.data?.total || 0);
+      setTotalPages(res.data?.max_page || 1);
+
+      setDialogState({
+        isOpen: true,
+        title: "Cập nhật thành công",
+        message: "Thông tin vai trò đã được cập nhật!",
+        type: "success",
+      });
+      setIsAddDialogOpen(false);
+      setSelectedRole(null);
+    } catch {
+      setDialogState({
+        isOpen: true,
+        title: "Cập nhật thất bại",
+        message: "Có lỗi xảy ra khi cập nhật vai trò!",
+        type: "error",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleDeleteRole = async () => {
     if (!selectedRole || !selectedRole.id) return;
 
     try {
       setLoading(true);
-      // TODO: Implement delete API
-      // await permAPI.deleteRole(selectedRole.id);
 
-      // Refresh danh sách roles
+      // Gọi API delete role
+      await permAPI.deleteRole(selectedRole.id.toString());
+
+      // Refresh danh sách roles sau khi delete
       const res = await permAPI.getRoles(filters);
-      setRoles(res.data?.data);
+      setRoles(res.data?.data || []);
+      setTotal(res.data?.total || 0);
+      setTotalPages(res.data?.max_page || 1);
 
       setIsDeleteDialogOpen(false);
-      setSelectedRole(null);
       setDialogState({
         isOpen: true,
-        title: "Xóa thành công",
-        message: "Đã xóa vai trò thành công!",
+        title: "Xóa vai trò thành công",
+        message: `Vai trò ${selectedRole.name} đã được xóa!`,
         type: "success",
       });
+      setSelectedRole(null);
     } catch {
       setDialogState({
         isOpen: true,
@@ -86,6 +187,7 @@ export default function RoleManagementPage() {
         message: "Có lỗi xảy ra khi xóa vai trò!",
         type: "error",
       });
+      setIsDeleteDialogOpen(false);
     } finally {
       setLoading(false);
     }
@@ -102,7 +204,10 @@ export default function RoleManagementPage() {
   };
 
   const columns: Column<Role>[] = [
-    { label: "#", render: (_, i) => i + 1 },
+    {
+      label: "#",
+      render: (_, i) => ((filters.page || 1) - 1) * (filters.row || 10) + i + 1,
+    },
     { label: "Name", field: "name" },
     { label: "Description", field: "description" },
     {
@@ -135,12 +240,7 @@ export default function RoleManagementPage() {
             placeholder="Nhập tên vai trò để tìm kiếm..."
             className="w-full"
             value={filters.searchKeyword}
-            onChange={(e) => {
-              setFilters((prev) => ({
-                ...prev,
-                searchKeyword: e.target.value,
-              }));
-            }}
+            onChange={(e) => handleSearchChange(e.target.value)}
           />
         </div>
       </div>
@@ -148,49 +248,36 @@ export default function RoleManagementPage() {
       {/* Table */}
       <div className="bg-white rounded-lg shadow-sm border">
         <div className="p-4">
-          <Table columns={columns} data={roles || []} loading={loading} />
+          <Table columns={columns} data={roles} loading={loading} />
         </div>
       </div>
 
       {/* Pagination */}
-      <Pagination amountOfRecord={roles?.length || 0} />
+      <Pagination
+        amountOfRecord={total}
+        currentPage={filters.page || 1}
+        totalPages={totalPages}
+        onPageChange={handlePageChange}
+      />
 
       {/* Add/Edit Role Dialog */}
       <RoleDialog
         open={isAddDialogOpen}
         permissions={perms || []}
         onOpenChange={setIsAddDialogOpen}
-        initialData={selectedRole || undefined}
+        initialData={
+          selectedRole
+            ? {
+                name: selectedRole.name,
+                description: selectedRole.description || undefined,
+                permissions: selectedRole.permissions,
+              }
+            : undefined
+        }
         mode={selectedRole ? "edit" : "add"}
-        onSubmit={async (data) => {
-          try {
-            setLoading(true);
-            await permAPI.createRole(data);
-
-            // Refresh danh sách roles
-            const res = await permAPI.getRoles(filters);
-            setRoles(res.data?.data);
-
-            // Đóng dialog và hiện thông báo
-            setIsAddDialogOpen(false);
-            setSelectedRole(null);
-            setDialogState({
-              isOpen: true,
-              title: "Thêm thành công",
-              message: "Thêm vai trò mới thành công!",
-              type: "success",
-            });
-          } catch {
-            setDialogState({
-              isOpen: true,
-              title: "Thêm thất bại",
-              message: "Có lỗi xảy ra khi thêm vai trò!",
-              type: "error",
-            });
-          } finally {
-            setLoading(false);
-          }
-        }}
+        onSubmit={(data) =>
+          selectedRole ? handleUpdateRole(data) : handleAddRole(data)
+        }
       />
 
       {/* Delete Confirmation Dialog */}

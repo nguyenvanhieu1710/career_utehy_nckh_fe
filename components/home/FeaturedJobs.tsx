@@ -4,36 +4,42 @@ import PaginationArrows from "@/components/common/PaginationArrows";
 
 const featuredJobs = [
   {
+    job_id: "job-001",
     logo: "/logo/kyna-english.png",
     title: "Giáo viên Tiếng Anh online",
     company: "Công ty cổ phần Dream Viet Education - Kyna English",
     location: "Toàn quốc",
   },
   {
+    job_id: "job-002",
     logo: "/logo/mavin.jpg",
     title: "Chuyên viên Pháp chế",
     company: "Công ty cổ phần Tập đoàn Mavin",
     location: "Hà Nội",
   },
   {
+    job_id: "job-003",
     logo: "/logo/arian-holding.jpg",
     title: "Thực tập sinh Nhân sự",
     company: "Công ty cổ phần Bất động sản AsianHolding",
     location: "Hồ Chí Minh",
   },
   {
+    job_id: "job-004",
     logo: "/logo/avepoint.png",
     title: "Intern/Junior/Middle QA/Tester",
     company: "Công ty TNHH AvePoint",
     location: "Hà Nội, Đà Nẵng",
   },
   {
+    job_id: "job-005",
     logo: "/logo/x-media.png",
     title: "Chuyên viên tuyển dụng",
     company: "Công ty cổ phần X-Media",
     location: "",
   },
   {
+    job_id: "job-006",
     logo: "/logo/funtap.png",
     title: "Senior Unity Developer",
     company: "Công ty Cổ phần Funtap",

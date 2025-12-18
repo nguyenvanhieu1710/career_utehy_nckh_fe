@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Filters } from "@/components/admin/Filters";
 import { AddButton } from "@/components/admin/AddButton";
 import { Column, Table } from "@/components/admin/Table";
@@ -9,7 +9,11 @@ import { AccountDialog } from "@/components/admin/AccountDialog";
 import { DeleteConfirmationDialog } from "@/components/admin/DeleteConfirmationDialog";
 import { NotificationDialog } from "@/components/admin/NotificationDialog";
 import { ActionButtons } from "@/components/admin/ActionButtons";
+import { UserRoleDisplay } from "@/components/admin/UserRoleDisplay";
+import { StatusBadge } from "@/components/common/StatusBadge";
 import { userAPI } from "@/services/user";
+import { useRoles } from "@/contexts/RolesContext";
+import { useDebounce } from "@/hooks/useDebounce";
 import { GetSchema } from "@/types/base";
 import { User } from "@/types/user";
 import { DialogState, AccountDialogSubmitData } from "@/types/dialog";
@@ -31,39 +35,75 @@ export default function UserManagementPage() {
     searchKeyword: "",
     page: 1,
     row: 10,
+    role_id: undefined,
   });
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [searchInput, setSearchInput] = useState<string>("");
 
+  // Use roles context for caching and error handling
+  const { roles: availableRoles, loading: rolesLoading } = useRoles();
+
+  // Debounce search input
+  const debouncedSearch = useDebounce(searchInput, 500);
+
+  // Load users with optimized API calls
+  const loadUsers = useCallback(async (currentFilters: GetSchema) => {
+    try {
+      setLoading(true);
+
+      const res = await userAPI.getUsers(currentFilters);
+      setUsers(res.data?.data || []);
+      setTotal(res.data?.total || 0);
+      setTotalPages(res.data?.max_page || 1);
+    } catch (error) {
+      setDialogState({
+        isOpen: true,
+        title: "Lỗi tải dữ liệu",
+        message: "Không thể tải danh sách người dùng. Vui lòng thử lại.",
+        type: "error",
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Update filters when debounced search changes
   useEffect(() => {
-    setLoading(true);
-    userAPI
-      .getUsers(filters)
-      .then((res) => {
-        setUsers(res.data?.data || []);
-        setTotal(res.data?.total || 0);
-        setTotalPages(res.data?.max_page || 1);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, [filters]);
+    setFilter((prev) => ({
+      ...prev,
+      searchKeyword: debouncedSearch,
+      page: 1, // Reset to first page on search
+    }));
+  }, [debouncedSearch]);
+
+  // Load users when filters change
+  useEffect(() => {
+    loadUsers(filters);
+  }, [filters, loadUsers]);
 
   const handleRoleChange = (value: string) => {
     setRoleFilter(value);
-    // Reset to page 1 when filter changes
-    setFilter({ ...filters, page: 1 });
+    setFilter((prev) => ({
+      ...prev,
+      role_id: value === "all" ? undefined : value,
+      page: 1,
+    }));
   };
 
   const handleStatusChange = (value: string) => {
     setStatusFilter(value);
-    // Reset to page 1 when filter changes
-    setFilter({ ...filters, page: 1 });
+    setFilter((prev) => ({
+      ...prev,
+      status: value === "all" ? undefined : value,
+      page: 1,
+    }));
   };
 
   const handleSearchChange = (value: string) => {
-    setFilter({ ...filters, searchKeyword: value, page: 1 });
+    setSearchInput(value); // This will trigger debounced search
   };
 
   const handlePageChange = (page: number) => {
@@ -74,35 +114,54 @@ export default function UserManagementPage() {
     try {
       setLoading(true);
 
-      // Gọi API create user
-      await userAPI.createUser({
+      // Create user first
+      const createResult = await userAPI.createUser({
         email: data.email,
         username: data.email.split("@")[0], // Generate username from email
         password: data.email.split("@")[0], // Default password
         fullname: data.fullname,
+        role_ids: data.roles || [], // Send roles to backend
       });
 
-      // Refresh danh sách user sau khi create
-      const res = await userAPI.getUsers(filters);
-      setUsers(res.data?.data || []);
-      setTotal(res.data?.total || 0);
-      setTotalPages(res.data?.max_page || 1);
+      // If there's an avatar file, upload it
+      if (data.avatarFile && createResult.data?.data?.id) {
+        try {
+          await userAPI.uploadAvatar(
+            createResult.data.data.id.toString(),
+            data.avatarFile,
+            true
+          );
+        } catch (avatarError) {
+          console.warn(
+            "Avatar upload failed, but user was created:",
+            avatarError
+          );
+        }
+      }
+
+      loadUsers(filters);
+
+      const selectedRoleName = data.roles?.[0]
+        ? availableRoles.find((r) => r.id === data.roles?.[0])?.name ||
+          "Không xác định"
+        : "Chưa gán vai trò";
 
       setDialogState({
         isOpen: true,
         title: "Tạo người dùng thành công",
-        message: `Người dùng ${data.fullname} đã được tạo! Mật khẩu mặc định: ${
+        message: `Người dùng ${
+          data.fullname
+        } đã được tạo với vai trò ${selectedRoleName}! Mật khẩu mặc định: ${
           data.email.split("@")[0]
         }`,
         type: "success",
       });
       setIsAddDialogOpen(false);
-    } catch (error: any) {
+    } catch {
       setDialogState({
         isOpen: true,
         title: "Tạo người dùng thất bại",
-        message:
-          error.response?.data?.detail || "Có lỗi xảy ra khi tạo người dùng!",
+        message: "Có lỗi xảy ra khi tạo người dùng!",
         type: "error",
       });
     } finally {
@@ -116,17 +175,14 @@ export default function UserManagementPage() {
     try {
       setLoading(true);
 
-      // Gọi API update user
       await userAPI.updateUser(selectedUser.id.toString(), {
-        username: data.fullname,
+        fullname: data.fullname,
         email: data.email,
+        action_status: data.status,
+        role_ids: data.roles || [], // Send roles to backend
       });
 
-      // Refresh danh sách user sau khi update
-      const res = await userAPI.getUsers(filters);
-      setUsers(res.data?.data || []);
-      setTotal(res.data?.total || 0);
-      setTotalPages(res.data?.max_page || 1);
+      loadUsers(filters);
 
       setDialogState({
         isOpen: true,
@@ -136,13 +192,11 @@ export default function UserManagementPage() {
       });
       setIsAddDialogOpen(false);
       setSelectedUser(null);
-    } catch (error: any) {
+    } catch {
       setDialogState({
         isOpen: true,
         title: "Cập nhật thất bại",
-        message:
-          error.response?.data?.detail ||
-          "Có lỗi xảy ra khi cập nhật người dùng!",
+        message: "Có lỗi xảy ra khi cập nhật người dùng!",
         type: "error",
       });
     } finally {
@@ -173,12 +227,11 @@ export default function UserManagementPage() {
         type: "success",
       });
       setSelectedUser(null);
-    } catch (error: unknown) {
+    } catch {
       setDialogState({
         isOpen: true,
         title: "Xóa thất bại",
-        message:
-          error.response?.data?.detail || "Có lỗi xảy ra khi xóa người dùng!",
+        message: "Có lỗi xảy ra khi xóa người dùng!",
         type: "error",
       });
       setIsDeleteDialogOpen(false);
@@ -187,8 +240,25 @@ export default function UserManagementPage() {
     }
   };
 
-  const handleEdit = (user: User) => {
+  const handleEdit = async (user: User) => {
     setSelectedUser(user);
+
+    // Load user roles for editing
+    try {
+      const userRoles = await userAPI.getUserRolesPermissions(
+        user.id.toString()
+      );
+      const currentRoleId = userRoles.data.data.roles?.[0]?.id || "";
+
+      // Update selected user with current role for dialog
+      setSelectedUser({
+        ...user,
+        currentRoleId, // Add this for dialog initialization
+      } as User & { currentRoleId: string });
+    } catch {
+      console.error("Failed to load user roles");
+    }
+
     setIsAddDialogOpen(true);
   };
 
@@ -205,34 +275,45 @@ export default function UserManagementPage() {
     {
       label: "Avatar",
       render: (user) => (
-        <img
-          src={user.avatar_url || "/default-avatar.jpg"}
-          alt={user.fullname}
-          className="w-10 h-10 rounded-full object-cover"
-        />
+        <div className="w-10 h-10 rounded-full border border-gray-200 overflow-hidden bg-gray-50">
+          <img
+            src={userAPI.getAvatarUrl(user)}
+            alt={`${user.fullname} avatar`}
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.src = "/default-avatar.jpg";
+            }}
+          />
+        </div>
       ),
     },
     { label: "Họ tên", field: "fullname" },
     { label: "Email", field: "email" },
-    { label: "Vai trò", render: () => <span>{"Chưa xác định"}</span> },
+    {
+      label: "Vai trò",
+      render: (user) => (
+        <UserRoleDisplay userId={user.id.toString()} maxDisplay={2} />
+      ),
+    },
     {
       label: "Trạng thái",
-      render: (user) => (
-        <span
-          className={
-            user.action_status === "active" ? "text-green-600" : "text-red-600"
-          }
-        >
-          {user.action_status || "Chưa xác định"}
-        </span>
-      ),
+      render: (user) => {
+        return (
+          <StatusBadge
+            status={user.action_status || "active"}
+            size="sm"
+            showIcon
+          />
+        );
+      },
     },
     {
       label: "Hành động",
       render: (user) => (
         <div className="flex gap-2">
           <ActionButtons type="edit" onClick={() => handleEdit(user)} />
-          <ActionButtons type="ban" onClick={() => handleDelete(user)} />
+          <ActionButtons type="delete" onClick={() => handleDelete(user)} />
         </div>
       ),
     },
@@ -243,12 +324,14 @@ export default function UserManagementPage() {
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Quản lý tài khoản</h1>
-        <AddButton
-          onClick={() => {
-            setSelectedUser(null);
-            setIsAddDialogOpen(true);
-          }}
-        />
+        <div className="flex gap-2">
+          <AddButton
+            onClick={() => {
+              setSelectedUser(null);
+              setIsAddDialogOpen(true);
+            }}
+          />
+        </div>
       </div>
 
       {/* Filter */}
@@ -259,6 +342,8 @@ export default function UserManagementPage() {
         onRoleChange={handleRoleChange}
         onStatusChange={handleStatusChange}
         onSearchChange={handleSearchChange}
+        availableRoles={availableRoles}
+        rolesLoading={rolesLoading}
       />
 
       {/* Table */}
@@ -285,7 +370,9 @@ export default function UserManagementPage() {
             ? {
                 fullname: selectedUser.fullname,
                 email: selectedUser.email,
-                role: "student", // TODO: Get from user roles
+                role:
+                  (selectedUser as User & { currentRoleId: string })
+                    .currentRoleId || "", // Use loaded role ID
                 status:
                   selectedUser.action_status === "active"
                     ? "active"
@@ -294,10 +381,13 @@ export default function UserManagementPage() {
               }
             : undefined
         }
+        user={selectedUser || undefined}
         mode={selectedUser ? "edit" : "add"}
         onSubmit={(data) =>
           selectedUser ? handleUpdateUser(data) : handleAddUser(data)
         }
+        availableRoles={availableRoles}
+        rolesLoading={rolesLoading}
       />
 
       {/* Delete Confirmation Dialog */}

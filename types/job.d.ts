@@ -1,95 +1,101 @@
-import { BaseModel } from './base';
-import { Company } from './company';
-import { User } from './user';
+// Job Type enum
+export type JobType =
+  | "full-time"
+  | "part-time"
+  | "intern"
+  | "freelance"
+  | "contract";
 
-export type JobType = 'full-time' | 'part-time' | 'intern' | 'freelance' | 'contract';
-export type JobStatusType = 'pending' | 'approved' | 'rejected' | 'applied' | 'interviewing' | 'offered' | 'hired' | 'rejected_after_interview' | 'withdrawn';
+// Job Status enum
+export type JobStatusType = "pending" | "approved" | "rejected";
 
-export interface Job extends BaseModel {
+export interface Job {
+  id: string;
   title: string;
-  slug: string;
-  company_id: string;
-  location: string | null;
-  other_locations: string[] | null;
-  work_arrangement: string | null;
+  company: {
+    id: string;
+    name: string;
+    logo?: string;
+    location?: string;
+  };
+  location: string;
+  other_locations?: string[];
+  salary?: string;
+  salary_min?: number;
+  salary_max?: number;
   job_type: JobType;
-  salary_display: string | null;
-  salary_min: number | null;
-  salary_max: number | null;
-  skills: string[] | null;
-  requirements: string | null;
-  description: string | null;
-  benefits: string | null;
-  status: JobStatusType;
-  source_id: string | null;
-  url_source: string | null;
-  posted_at: string | null;
-  expired_at: string | null;
-  
-  // Relationships
-  company?: Company;
-  source?: DataSource;
-  favorites?: JobFavorite[];
-  statuses?: JobStatus[];
+  work_arrangement: "remote" | "hybrid" | "onsite";
+  posted_date: string;
+  description: string;
+  requirements: string[];
+  skills: string[];
+  benefits?: string[];
+  is_urgent?: boolean;
+  is_featured?: boolean;
+  application_count?: number;
+  status?: JobStatusType;
 }
 
+export interface JobFilters {
+  search?: string;
+  location?: string;
+  job_types?: string[];
+  work_arrangements?: string[];
+  salary_range?: {
+    min?: number;
+    max?: number;
+  };
+  skills?: string[];
+  posted_within?: number; // days
+  company_size?: string[];
+  experience_level?: string[];
+}
+
+export interface JobSearchState {
+  jobs: Job[];
+  filters: JobFilters;
+  loading: boolean;
+  hasMore: boolean;
+  page: number;
+  total: number;
+}
+
+// Job Create interface (for creating new jobs)
 export interface JobCreate {
   title: string;
   company_id: string;
   location?: string;
   other_locations?: string[];
-  work_arrangement?: string;
+  salary?: string;
+  salary_min?: number;
+  salary_max?: number;
   job_type: JobType;
-  salary_display?: string;
-  salary_min?: number;
-  salary_max?: number;
-  skills?: string[];
-  requirements?: string;
+  work_arrangement?: "remote" | "hybrid" | "onsite";
   description?: string;
+  requirements?: string;
+  skills?: string[];
   benefits?: string;
+  is_urgent?: boolean;
+  is_featured?: boolean;
   status?: JobStatusType;
-  source_id?: string;
-  url_source?: string;
-  posted_at?: string;
-  expired_at?: string;
 }
 
-export interface JobUpdate extends Partial<JobCreate> {}
-
-export interface JobFavorite extends BaseModel {
-  user_id: string;
-  job_id: string;
-  
-  // Relationships
-  user?: User;
-  job?: Job;
-}
-
-export interface JobStatus extends BaseModel {
-  user_id: string;
-  job_id: string;
-  status: JobStatusType;
-  notes: string | null;
-  
-  // Relationships
-  user?: User;
-  job?: Job;
-}
-
-export interface JobApplyRequest {
-  job_id: string;
-  cv_profile_id: string;
-  cover_letter?: string;
-}
-
-export interface JobSearchParams {
-  query?: string;
+// Job Update interface (for updating existing jobs)
+export interface JobUpdate {
+  title?: string;
+  company_id?: string;
   location?: string;
-  job_type?: JobType[];
+  other_locations?: string[];
+  salary?: string;
   salary_min?: number;
   salary_max?: number;
-  company_id?: string;
-  page?: number;
-  size?: number;
-  sort_by?: 'relevance' | 'newest' | 'salary_high' | 'salary_low';
+  job_type?: JobType;
+  work_arrangement?: "remote" | "hybrid" | "onsite";
+  description?: string;
+  requirements?: string;
+  skills?: string[];
+  benefits?: string;
+  is_urgent?: boolean;
+  is_featured?: boolean;
+  status?: JobStatusType;
 }

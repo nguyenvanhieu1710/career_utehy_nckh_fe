@@ -5,37 +5,14 @@ import Link from "next/link";
 import Button from "@/components/ui/Button";
 import { Menu, X } from "lucide-react";
 import { MobileNavLink } from "./MobileNavLink";
-import {
-  authAPI,
-  logout,
-  setTokenCookie,
-  setUserStorage,
-} from "@/services/auth";
 import { ProfileDropdown } from "./ProfileDropdown";
+import { useAuth } from "@/hooks/useAuth";
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [checkToken, setCheckToken] = useState(false);
-
-  useEffect(() => {
-    authAPI
-      .verify()
-      .then((res) => {
-        setTokenCookie(res.data.access_token);
-        setUserStorage(
-          res.data.email,
-          res.data.user_name,
-          res.data.user_id,
-          res.data.fullname
-        );
-        setCheckToken(true);
-      })
-      .catch((err) => {
-        setCheckToken(false);
-      });
-  }, []);
+  const { isAuthenticated, user, isLoading } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -87,7 +64,9 @@ export function Navbar() {
             </div>
           </div>
 
-          {checkToken ? (
+          {isLoading ? (
+            <div className="w-8 h-8 animate-pulse bg-gray-200 rounded-full"></div>
+          ) : isAuthenticated && user ? (
             <div className="relative">
               <button
                 onClick={() => setIsProfileOpen(!isProfileOpen)}
@@ -95,11 +74,9 @@ export function Navbar() {
               >
                 <div className="flex flex-col gap-0 text-left">
                   <div className="font-bold text-sm text-gray-700">
-                    {localStorage.getItem("fullname")}
+                    {user.fullname}
                   </div>
-                  <div className="text-xs text-gray-500">
-                    @{localStorage.getItem("account_username")}
-                  </div>
+                  <div className="text-xs text-gray-500">@{user.username}</div>
                 </div>
                 <img
                   src="/avatars/avatar-1.jpeg"
