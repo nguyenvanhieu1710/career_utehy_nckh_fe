@@ -1,6 +1,4 @@
-/**
- * Common dialog types used across the application
- */
+import { EntityStatus } from "./status";
 
 export type DialogType = "success" | "error" | "warning" | "info";
 
@@ -24,7 +22,7 @@ export interface AccountDialogData {
   fullname?: string;
   email?: string;
   role?: string;
-  status?: "active" | "inactive";
+  status?: EntityStatus | string;
   avatar?: string;
   roles?: string[];
   permissions?: string[];
@@ -34,7 +32,7 @@ export interface AccountDialogSubmitData {
   fullname: string;
   email: string;
   role: string;
-  status: "active" | "inactive";
+  status: EntityStatus;
   avatarFile?: File;
   roles?: string[];
   permissions?: string[];

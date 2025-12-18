@@ -1,4 +1,6 @@
 import api from "@/cores/api";
+import { config, getUploadsUrl } from "@/lib/config";
+import axios from "axios";
 import { GetSchema } from "@/types/base";
 import {
   Category,
@@ -6,12 +8,28 @@ import {
   CategoryUpdate,
   CategoryAvatarUploadResponse,
   CategoryAvatarRemoveResponse,
+  PublicCategory,
+  PublicCategoriesResponse,
+  PublicCategoryResponse,
 } from "@/types/category";
 
-// Backend base URL for static files
-const BACKEND_BASE_URL = "http://127.0.0.1:8000";
+// Create a separate axios instance for public API calls (no auth required)
+const publicAPI = axios.create({
+  baseURL: config.api.baseUrl,
+  timeout: config.api.timeout,
+});
 
 export const categoryAPI = {
+  // Public API (no authentication required)
+  getPublicCategories: (limit: number = 30) =>
+    publicAPI.get<PublicCategoriesResponse>(
+      `/public/categories?limit=${limit}`
+    ),
+
+  getPublicCategoryById: (categoryId: string) =>
+    publicAPI.get<PublicCategoryResponse>(`/public/categories/${categoryId}`),
+
+  // Admin API (authentication required)
   getCategories: (filters: GetSchema) =>
     api.post<{
       total: number;
@@ -64,23 +82,25 @@ export const categoryAPI = {
       `/category/remove-avatar/${categoryId}`
     ),
 
-  // Helper method to get avatar URL with fallback
+  // Helper method for public categories to get avatar URL with fallback
+  getPublicAvatarUrl: (category: PublicCategory): string => {
+    if (category.avatar_url) {
+      return getUploadsUrl(category.avatar_url);
+    }
+
+    // Return default avatar for public display
+    return config.ui.defaultCategoryAvatar || "/default-category.png";
+  },
+
+  // Helper method to get avatar URL with fallback (for admin)
   getAvatarUrl: (category: Category, defaultUrl?: string): string => {
     if (category.avatar_url) {
-      let finalUrl = "";
-      // If avatar_url starts with /uploads/, convert to full backend URL
-      if (category.avatar_url.startsWith("/uploads/")) {
-        finalUrl = `${BACKEND_BASE_URL}${category.avatar_url}`;
-      } else {
-        // If it's a relative path, prepend the full backend URL
-        finalUrl = `${BACKEND_BASE_URL}/uploads/${category.avatar_url}`;
-      }
-
-      return finalUrl;
+      return getUploadsUrl(category.avatar_url);
     }
 
     // Return default avatar or fallback
-    const fallbackUrl = defaultUrl || "/default-category.png";
+    const fallbackUrl =
+      defaultUrl || config.ui.defaultCategoryAvatar || "/default-category.png";
     return fallbackUrl;
   },
 

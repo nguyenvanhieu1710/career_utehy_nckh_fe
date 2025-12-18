@@ -28,7 +28,8 @@ export const config = {
 
   // UI Configuration
   ui: {
-    defaultAvatar: "/default-avatar.png",
+    defaultAvatar: "/default-avatar.jpg",
+    defaultCategoryAvatar: "/default-category.png",
     itemsPerPage: 10,
     maxRoleDisplay: 2,
   },

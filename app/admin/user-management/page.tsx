@@ -10,6 +10,7 @@ import { DeleteConfirmationDialog } from "@/components/admin/DeleteConfirmationD
 import { NotificationDialog } from "@/components/admin/NotificationDialog";
 import { ActionButtons } from "@/components/admin/ActionButtons";
 import { UserRoleDisplay } from "@/components/admin/UserRoleDisplay";
+import { StatusBadge } from "@/components/common/StatusBadge";
 import { userAPI } from "@/services/user";
 import { useRoles } from "@/contexts/RolesContext";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -94,8 +95,11 @@ export default function UserManagementPage() {
 
   const handleStatusChange = (value: string) => {
     setStatusFilter(value);
-    // Reset to page 1 when filter changes
-    setFilter({ ...filters, page: 1 });
+    setFilter((prev) => ({
+      ...prev,
+      status: value === "all" ? undefined : value,
+      page: 1,
+    }));
   };
 
   const handleSearchChange = (value: string) => {
@@ -174,6 +178,7 @@ export default function UserManagementPage() {
       await userAPI.updateUser(selectedUser.id.toString(), {
         fullname: data.fullname,
         email: data.email,
+        action_status: data.status,
         role_ids: data.roles || [], // Send roles to backend
       });
 
@@ -277,7 +282,7 @@ export default function UserManagementPage() {
             className="w-full h-full object-cover"
             onError={(e) => {
               const target = e.target as HTMLImageElement;
-              target.src = "/default-avatar.png";
+              target.src = "/default-avatar.jpg";
             }}
           />
         </div>
@@ -293,19 +298,15 @@ export default function UserManagementPage() {
     },
     {
       label: "Trạng thái",
-      render: (user) => (
-        <span
-          className={
-            user.action_status === "active" ? "text-green-600" : "text-red-600"
-          }
-        >
-          {user.action_status === "active"
-            ? "Hoạt động"
-            : user.action_status === "inactive"
-            ? "Không hoạt động"
-            : "Đã xóa"}
-        </span>
-      ),
+      render: (user) => {
+        return (
+          <StatusBadge
+            status={user.action_status || "active"}
+            size="sm"
+            showIcon
+          />
+        );
+      },
     },
     {
       label: "Hành động",

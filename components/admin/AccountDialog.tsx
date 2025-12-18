@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from "react";
-import Image from "next/image";
 import {
   Dialog,
   DialogContent,
@@ -21,6 +20,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Upload, X, Eye, EyeOff, Image as ImageIcon } from "lucide-react";
 import { userAPI } from "@/services/user";
 import { User, Role } from "@/types/user";
+import { EntityStatus } from "@/types/status";
+import { useStatus } from "@/contexts/StatusContext";
 import type {
   AccountDialogData,
   AccountDialogSubmitData,
@@ -47,10 +48,13 @@ export const AccountDialog = ({
   availableRoles = [],
   rolesLoading = false,
 }: AccountDialogProps) => {
+  // Get status options from context
+  const { statusOptions, loading: statusLoading } = useStatus();
+
   const [fullname, setFullname] = useState("");
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("");
-  const [status, setStatus] = useState<"active" | "inactive">("active");
+  const [status, setStatus] = useState<EntityStatus>(EntityStatus.ACTIVE);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [currentAvatarUrl, setCurrentAvatarUrl] = useState<string | null>(null);
@@ -70,7 +74,7 @@ export const AccountDialog = ({
       setFullname(initialData?.fullname ?? "");
       setEmail(initialData?.email ?? "");
       setRole(initialData?.role ?? "");
-      setStatus(initialData?.status ?? "active");
+      setStatus((initialData?.status as EntityStatus) ?? EntityStatus.ACTIVE);
       setCurrentAvatarUrl(initialData?.avatar ?? null);
       setAvatarFile(null);
       setAvatarPreview(null);
@@ -207,7 +211,7 @@ export const AccountDialog = ({
                 {(avatarPreview || currentAvatarUrl) && (
                   <div className="relative inline-block">
                     <div className="w-20 h-20 rounded-lg border-2 border-green-200 overflow-hidden bg-gray-50 relative">
-                      <Image
+                      <img
                         src={
                           avatarPreview ||
                           userAPI.getAvatarUrl({
@@ -215,7 +219,6 @@ export const AccountDialog = ({
                           } as User)
                         }
                         alt="Avatar preview"
-                        fill
                         className="object-cover"
                       />
                     </div>
@@ -292,7 +295,7 @@ export const AccountDialog = ({
                   >
                     <div className="relative max-w-md max-h-md">
                       <div className="relative w-96 h-96">
-                        <Image
+                        <img
                           src={
                             avatarPreview ||
                             userAPI.getAvatarUrl({
@@ -300,7 +303,6 @@ export const AccountDialog = ({
                             } as User)
                           }
                           alt="Avatar preview"
-                          fill
                           className="object-contain rounded-lg"
                         />
                       </div>
@@ -430,38 +432,44 @@ export const AccountDialog = ({
 
           <div className="grid grid-cols-4 items-start gap-4">
             <Label className="text-right pt-2 text-green-900">Trạng thái</Label>
-            <RadioGroup
-              value={status}
-              onValueChange={(value: "active" | "inactive") => setStatus(value)}
-              className="col-span-3 flex flex-col space-y-3"
-            >
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem
-                  value="active"
-                  id="active"
-                  className="border-green-600 text-green-600"
-                />
-                <Label
-                  htmlFor="active"
-                  className="font-normal cursor-pointer text-green-900"
-                >
-                  Còn hoạt động
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem
-                  value="inactive"
-                  id="inactive"
-                  className="border-green-600 text-green-600"
-                />
-                <Label
-                  htmlFor="inactive"
-                  className="font-normal cursor-pointer text-green-900"
-                >
-                  Ngừng hoạt động
-                </Label>
-              </div>
-            </RadioGroup>
+            <div className="col-span-3">
+              <Select
+                value={status}
+                onValueChange={(value: EntityStatus) => setStatus(value)}
+                disabled={statusLoading}
+              >
+                <SelectTrigger className="w-full border-green-200 focus:border-green-500 focus:ring-green-500">
+                  <SelectValue
+                    placeholder={
+                      statusLoading ? "Đang tải..." : "Chọn trạng thái"
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {statusOptions.map((statusOption) => (
+                    <SelectItem
+                      key={statusOption.value}
+                      value={statusOption.value}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`w-2 h-2 rounded-full ${
+                            statusOption.color === "green"
+                              ? "bg-green-500"
+                              : statusOption.color === "yellow"
+                              ? "bg-yellow-500"
+                              : statusOption.color === "red"
+                              ? "bg-red-500"
+                              : "bg-gray-500"
+                          }`}
+                        />
+                        {statusOption.label}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
 

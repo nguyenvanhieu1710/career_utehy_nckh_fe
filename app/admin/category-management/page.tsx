@@ -227,22 +227,22 @@ export default function CategoryManagementPage() {
     },
     { label: "Tên danh mục ngành", field: "name" },
     { label: "Mô tả", field: "description" },
-    {
-      label: "Trạng thái",
-      render: (category) => (
-        <span
-          className={
-            category.action_status === "active"
-              ? "text-green-600"
-              : "text-red-600"
-          }
-        >
-          {category.action_status === "active"
-            ? "Hoạt động"
-            : "Ngừng hoạt động"}
-        </span>
-      ),
-    },
+    // {
+    //   label: "Trạng thái",
+    //   render: (category) => (
+    //     <span
+    //       className={
+    //         category.action_status === "active"
+    //           ? "text-green-600"
+    //           : "text-red-600"
+    //       }
+    //     >
+    //       {category.action_status === "active"
+    //         ? "Hoạt động"
+    //         : "Ngừng hoạt động"}
+    //     </span>
+    //   ),
+    // },
     {
       label: "Hành động",
       render: (category) => (

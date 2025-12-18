@@ -41,6 +41,26 @@ export interface CategoryAvatarRemoveResponse {
   category: Category;
 }
 
+// Public category response (simplified structure)
+export interface PublicCategory {
+  id: string;
+  name: string;
+  description?: string;
+  avatar_url?: string;
+  created_at?: string;
+}
+
+export interface PublicCategoriesResponse {
+  status: string;
+  data: PublicCategory[];
+  total: number;
+}
+
+export interface PublicCategoryResponse {
+  status: string;
+  data: PublicCategory;
+}
+
 // File upload types
 export interface FileUploadProgress {
   loaded: number;

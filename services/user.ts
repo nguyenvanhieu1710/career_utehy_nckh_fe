@@ -11,29 +11,9 @@ import {
   AvailableRolesResponse,
   AvailablePermissionsResponse,
   UpdateRolesResponse,
+  UserAvatarUploadResponse,
+  UserAvatarRemoveResponse,
 } from "@/types/user";
-
-// User avatar upload response types
-interface UserAvatarUploadResponse {
-  status: "success";
-  message: string;
-  avatar_info: {
-    file_url: string;
-    file_path: string;
-    relative_path: string;
-    original_name: string;
-    file_size: number;
-    file_type: string;
-    upload_date: string;
-  };
-  user: User;
-}
-
-interface UserAvatarRemoveResponse {
-  status: "success";
-  message: string;
-  user: User;
-}
 
 export const userAPI = {
   getUsers: (filters: GetSchema) =>

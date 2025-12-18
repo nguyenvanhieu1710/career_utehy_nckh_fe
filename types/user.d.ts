@@ -52,6 +52,7 @@ export interface UserUpdate {
   gender?: string;
   password?: string;
   avatar_url?: string;
+  action_status?: string;
   role_ids?: string[];
   permissions?: string[];
 }
