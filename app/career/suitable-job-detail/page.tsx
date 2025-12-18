@@ -13,10 +13,7 @@ import {
   RadarChart,
   ImprovementSuggestions,
   EnhancedMatchScoreCard,
-  ExpandableSection,
   TabbedSection,
-  InteractiveFilters,
-  QuickFilters,
 } from "@/components/job-match";
 import {
   mockJobData,
@@ -25,8 +22,6 @@ import {
   mockChartData,
   mockRadarData,
   mockSuggestions,
-  mockFilterGroups,
-  mockQuickFilters,
 } from "@/mocks/mockSuitableJobData";
 
 function SuitableJobDetailContent() {
@@ -140,28 +135,6 @@ function SuitableJobDetailContent() {
           defaultTab="overview"
           className="mb-6"
         />
-
-        {/* Interactive Filters */}
-        <ExpandableSection
-          title="Bộ lọc nâng cao"
-          defaultExpanded={false}
-          className="mb-6"
-        >
-          <div className="space-y-4">
-            <QuickFilters
-              filters={mockQuickFilters}
-              onFilterClick={(filterId) =>
-                console.log("Quick filter:", filterId)
-              }
-            />
-            <InteractiveFilters
-              filterGroups={mockFilterGroups}
-              onFiltersChange={(filters) =>
-                console.log("Filters changed:", filters)
-              }
-            />
-          </div>
-        </ExpandableSection>
 
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center">

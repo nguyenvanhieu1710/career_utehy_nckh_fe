@@ -1,37 +1,68 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import Image from "next/image";
 import SectionTitle from "@/components/common/SectionTitle";
-
-const industries = [
-  {
-    image: "/logo/sales.jpg",
-    title: "Kinh doanh/ Bán hàng/ Chăm sóc khách hàng",
-  },
-  {
-    image: "/logo/finance.jpg",
-    title: "Tài chính/ Kế toán",
-  },
-  {
-    image: "/logo/hr.jpg",
-    title: "Hành chính/ Nhân sự/ Trợ lý/ Biên phiên dịch",
-  },
-  {
-    image: "/logo/it.jpg",
-    title: "IT/ Phần mềm/ IOT/ Điện tử viễn thông",
-  },
-  {
-    image: "/logo/education.jpg",
-    title: "Giáo dục và Đào tạo",
-  },
-  {
-    image: "/logo/healthcare.jpg",
-    title: "Y tế/ Sức khỏe/ Làm đẹp",
-  },
-];
+import PaginationArrows from "../common/PaginationArrows";
+import { categoryAPI } from "@/services/category";
+import { PublicCategory } from "@/types/category";
 
 export default function TrendingIndustries() {
+  // Data states
+  const [categories, setCategories] = useState<PublicCategory[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 6;
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const response = await categoryAPI.getPublicCategories();
+
+        setCategories(response.data.data || []);
+      } catch (err) {
+        console.error("❌ Failed to fetch categories:", err);
+        setError("Failed to load categories");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCategories();
+  }, []);
+
+  // Use fallback data if no categories loaded
+  const displayCategories = categories.length > 0 ? categories : [];
+
+  // Pagination calculations
+  const totalPages = Math.ceil(displayCategories.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const currentCategories = displayCategories.slice(startIndex, endIndex);
+
+  // Pagination handlers
+  const handlePrevious = () => {
+    setCurrentPage((prev) => Math.max(1, prev - 1));
+  };
+
+  const handleNext = () => {
+    setCurrentPage((prev) => Math.min(totalPages, prev + 1));
+  };
+
+  const hasPrevious = currentPage > 1;
+  const hasNext = currentPage < totalPages;
+
+  // Reset to page 1 when categories change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [categories.length]);
+
   return (
     <section className="py-20 bg-white">
       <div className="container mx-auto px-4">
@@ -40,36 +71,90 @@ export default function TrendingIndustries() {
           className="text-4xl bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent"
         />
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10 max-w-6xl mx-auto">
-          {industries.map((item, index) => {
-            return (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                viewport={{ once: true }}
-                whileHover={{ scale: 1.05, y: -8 }}
-                className="group cursor-pointer"
-              >
-                <div className="bg-white rounded-3xl hover:shadow-2xl transition-all duration-300 p-4 h-full flex flex-col">
-                  <div className="w-full h-32 aspect-square relative mb-6">
-                    <Image
-                      src={item.image}
-                      alt={item.title}
-                      fill
-                      className="object-cover rounded-lg"
-                      sizes="(max-width: 768px) 100vw, 50vw"
-                    />
+        {/* Loading State */}
+        {loading && (
+          <div className="flex justify-center items-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+            <span className="ml-3 text-gray-600">Đang tải ngành nghề...</span>
+          </div>
+        )}
+
+        {/* Error State (with fallback data) */}
+        {error && !loading && (
+          <div className="text-center py-4 mb-6">
+            <p className="text-yellow-600 text-sm">
+              ⚠️ Không thể tải dữ liệu từ server, hiển thị dữ liệu mặc định
+            </p>
+          </div>
+        )}
+
+        {/* Categories Grid */}
+        {!loading && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10 max-w-6xl mx-auto">
+            {currentCategories.map((category, index) => {
+              const avatarUrl = categoryAPI.getPublicAvatarUrl(category);
+
+              return (
+                <motion.div
+                  key={category.id}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                  viewport={{ once: true }}
+                  whileHover={{ scale: 1.05, y: -8 }}
+                  className="group cursor-pointer"
+                >
+                  <div className="bg-white rounded-3xl hover:shadow-2xl transition-all duration-300 p-4 h-full flex flex-col">
+                    <div className="w-full h-32 mb-6 overflow-hidden rounded-lg">
+                      <img
+                        src={avatarUrl}
+                        alt={category.name}
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.src = "/default-category.png";
+                        }}
+                      />
+                    </div>
+                    <div className="flex flex-col flex-grow">
+                      <h3 className="text-lg text-center font-bold text-gray-800 leading-tight mb-2">
+                        {category.name}
+                      </h3>
+                    </div>
                   </div>
-                  <h3 className="text-lg font-bold text-gray-800 leading-tight mt-auto">
-                    {item.title}
-                  </h3>
-                </div>
-              </motion.div>
-            );
-          })}
-        </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Pagination */}
+        {!loading && totalPages > 1 && (
+          <div className="flex flex-col items-center mt-12 gap-4">
+            {/* Page Indicator */}
+            {/* <div className="text-sm text-gray-500">
+              Trang {currentPage} / {totalPages} ({displayCategories.length}{" "}
+              ngành nghề)
+            </div> */}
+
+            {/* Pagination Arrows */}
+            <PaginationArrows
+              onPrevious={handlePrevious}
+              onNext={handleNext}
+              hasPrevious={hasPrevious}
+              hasNext={hasNext}
+            />
+          </div>
+        )}
+
+        {/* Empty State */}
+        {!loading && !error && displayCategories.length === 0 && (
+          <div className="text-center py-12">
+            <p className="text-gray-500">
+              Chưa có ngành nghề nào được hiển thị
+            </p>
+          </div>
+        )}
       </div>
     </section>
   );

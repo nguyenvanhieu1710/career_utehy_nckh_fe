@@ -15,5 +15,4 @@ export {
   TabbedSection,
   Accordion,
 } from "./ExpandableSection";
-export { InteractiveFilters, QuickFilters } from "./InteractiveFilters";
 export { EnhancedMatchScoreCard } from "./EnhancedMatchScoreCard";
