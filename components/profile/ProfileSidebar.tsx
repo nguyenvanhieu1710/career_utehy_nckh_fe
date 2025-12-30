@@ -2,12 +2,14 @@
 
 import * as Avatar from "@radix-ui/react-avatar";
 import { Switch } from "@/components/ui/switch";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Lock, LogOut, UserRound } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { Label } from "@/components/ui/label";
 import { motion } from "framer-motion";
-import { getUserStorage, logout } from "@/services/auth";
+import { logout } from "@/services/auth";
+import { userAPI } from "@/services/user";
+import { useAuth } from "@/hooks/useAuth";
 
 // Animation variants with proper TypeScript types
 const containerVariants = {
@@ -44,19 +46,11 @@ const itemVariants = {
 } as const;
 
 export default function ProfileSidebar() {
+  const { user } = useAuth();
   const [active, setActive] = useState({
     lookingJob: true,
     visibleForRecruiter: false,
   });
-  const [userName, setUserName] = useState("");
-
-  // Load user name from localStorage after component mounts (client-side only)
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const userStorage = getUserStorage();
-      setUserName(userStorage.fullname || "");
-    }
-  }, []);
 
   return (
     <motion.aside
@@ -85,7 +79,11 @@ export default function ProfileSidebar() {
           <Avatar.Root className="w-full h-full">
             <Avatar.Image
               className="w-full h-full object-cover"
-              src="/avatars/avatar-7.jpg"
+              src={
+                user
+                  ? userAPI.getAvatarUrl(user, "/default-avatar.jpg")
+                  : "/default-avatar.jpg"
+              }
               alt="Avatar"
             />
             <Avatar.Fallback className="text-gray-500">A</Avatar.Fallback>
@@ -95,7 +93,9 @@ export default function ProfileSidebar() {
 
       <motion.div variants={itemVariants} className="text-center">
         <p className="text-black-600">Chào bạn trở lại,</p>
-        <h3 className="font-semibold text-lg mb-5">{userName || "Guest"}</h3>
+        <h3 className="font-semibold text-lg mb-5">
+          {user?.fullname || "Guest"}
+        </h3>
       </motion.div>
 
       <motion.div

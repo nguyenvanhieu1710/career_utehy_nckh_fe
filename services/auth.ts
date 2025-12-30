@@ -27,6 +27,8 @@ export const logout = () => {
   window.localStorage.removeItem("account_email");
   window.localStorage.removeItem("account_username");
   window.localStorage.removeItem("account_id");
+  window.localStorage.removeItem("fullname");
+  window.localStorage.removeItem("avatar_url");
   window.location.href = "/";
 };
 
@@ -34,12 +36,16 @@ export const setUserStorage = (
   email: string,
   username: string,
   id: string,
-  fullname: string
+  fullname: string,
+  avatar_url?: string
 ) => {
   window.localStorage.setItem("account_email", email);
   window.localStorage.setItem("account_username", username);
   window.localStorage.setItem("account_id", id);
   window.localStorage.setItem("fullname", fullname);
+  if (avatar_url) {
+    window.localStorage.setItem("avatar_url", avatar_url);
+  }
 };
 
 export const getUserStorage = () => {
@@ -49,17 +55,20 @@ export const getUserStorage = () => {
       username: null,
       user_id: null,
       fullname: null,
+      avatar_url: null,
     };
   }
   const email = window.localStorage.getItem("account_email");
   const username = window.localStorage.getItem("account_username");
   const user_id = window.localStorage.getItem("account_id");
   const fullname = window.localStorage.getItem("fullname");
+  const avatar_url = window.localStorage.getItem("avatar_url");
   return {
     email,
     username,
     user_id,
     fullname,
+    avatar_url,
   };
 };
 

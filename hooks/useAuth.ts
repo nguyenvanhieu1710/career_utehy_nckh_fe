@@ -2,13 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { authAPI, setTokenCookie, setUserStorage } from "@/services/auth";
-
-export interface User {
-  email: string;
-  username: string;
-  user_id: string;
-  fullname: string;
-}
+import { User } from "@/types/user";
 
 export function useAuth() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -26,16 +20,18 @@ export function useAuth() {
           res.data.email,
           res.data.user_name,
           res.data.user_id,
-          res.data.fullname
+          res.data.fullname,
+          res.data.avatar_url
         );
 
         // Set user state
         setUser({
+          id: res.data.user_id,
           email: res.data.email,
           username: res.data.user_name,
-          user_id: res.data.user_id,
           fullname: res.data.fullname,
-        });
+          avatar_url: res.data.avatar_url,
+        } as User);
 
         setIsAuthenticated(true);
       } catch (error) {
