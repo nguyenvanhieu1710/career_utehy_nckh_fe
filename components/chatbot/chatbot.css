@@ -1,0 +1,65 @@
+/* Chatbot slide up animation */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Chatbot typing cursor animation */
+@keyframes blink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.typing-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  background-color: currentColor;
+  margin-left: 2px;
+  animation: blink 1s infinite;
+  vertical-align: text-bottom;
+}
+
+/* CSS-only smooth streaming effect */
+.chatbot-message-content {
+  /* Force GPU acceleration for smoother rendering */
+  transform: translateZ(0);
+  will-change: contents;
+
+  /* Isolate rendering to prevent layout shifts */
+  contain: layout style paint;
+
+  /* Smooth text rendering */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+
+  /* Prevent flickering */
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+
+  /* Smooth transitions for content changes */
+  transition: opacity 0.05s ease-out;
+}
+
+/* Optimize message container */
+.chatbot-message-bubble {
+  /* Prevent layout shifts when content grows */
+  contain: layout style;
+
+  /* Force new layer for better performance */
+  transform: translateZ(0);
+  will-change: transform;
+}
