@@ -33,12 +33,6 @@ export const config = {
     itemsPerPage: 10,
     maxRoleDisplay: 2,
   },
-
-  // Development flags
-  dev: {
-    enableDebugLogs: process.env.NODE_ENV === "development",
-    enableApiLogs: process.env.NODE_ENV === "development",
-  },
 } as const;
 
 // Helper functions
@@ -60,16 +54,4 @@ export const getUploadsUrl = (path: string = ""): string => {
 
   // Otherwise, prepend uploads path
   return getBackendUrl(`${config.backend.uploadsPath}/${path}`);
-};
-
-export const debugLog = (message: string, ...args: unknown[]): void => {
-  if (config.dev.enableDebugLogs) {
-    console.log(`🔍 [DEBUG] ${message}`, ...args);
-  }
-};
-
-export const apiLog = (message: string, ...args: unknown[]): void => {
-  if (config.dev.enableApiLogs) {
-    console.log(`📡 [API] ${message}`, ...args);
-  }
 };

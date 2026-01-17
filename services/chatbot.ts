@@ -1,5 +1,6 @@
 import api from "@/cores/api";
 import { config } from "@/lib/config";
+import { logger } from "@/lib/logger";
 import { getTokenCookie } from "@/services/auth";
 
 export const chatAPI = {
@@ -10,7 +11,11 @@ export const chatAPI = {
   async *sendMessageStream(
     message: string
   ): AsyncGenerator<string, void, unknown> {
+    const startTime = performance.now();
+
     try {
+      logger.info("Chatbot stream started", { messageLength: message.length });
+
       const token = getTokenCookie();
       const headers: HeadersInit = {
         "Content-Type": "application/json",
@@ -27,16 +32,26 @@ export const chatAPI = {
       });
 
       if (!response.ok) {
+        logger.error(
+          "Chatbot stream failed",
+          new Error(`HTTP ${response.status}`),
+          {
+            status: response.status,
+            messageLength: message.length,
+          }
+        );
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const reader = response.body?.getReader();
       if (!reader) {
+        logger.error("Chatbot stream failed: No response body");
         throw new Error("No response body");
       }
 
       const decoder = new TextDecoder();
       let buffer = "";
+      let chunkCount = 0;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -54,8 +69,16 @@ export const chatAPI = {
               yield buffer;
             }
           }
+
+          const duration = performance.now() - startTime;
+          logger.info("Chatbot stream completed", {
+            chunks: chunkCount,
+            duration: `${duration.toFixed(0)}ms`,
+          });
           break;
         }
+
+        chunkCount++;
 
         // Decode chunk and add to buffer
         buffer += decoder.decode(value, { stream: true });
@@ -79,7 +102,11 @@ export const chatAPI = {
         }
       }
     } catch (error) {
-      console.error("Chat streaming error:", error);
+      const duration = performance.now() - startTime;
+      logger.error("Chatbot stream error", error, {
+        messageLength: message.length,
+        duration: `${duration.toFixed(0)}ms`,
+      });
       throw error;
     }
   },
@@ -90,10 +117,14 @@ export const chatAPI = {
    */
   async sendMessage(message: string): Promise<string> {
     try {
+      logger.info("Chatbot request sent", { messageLength: message.length });
       const response = await api.post("/chat", { message });
+      logger.success("Chatbot response received");
       return response.data.answer || "";
     } catch (error) {
-      console.error("Chat error:", error);
+      logger.error("Chatbot request failed", error, {
+        messageLength: message.length,
+      });
       throw error;
     }
   },

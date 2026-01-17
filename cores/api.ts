@@ -1,5 +1,6 @@
 import { getTokenCookie } from "@/services/auth";
-import { config, apiLog } from "@/lib/config";
+import { config } from "@/lib/config";
+import { apiLogger } from "@/lib/logger";
 import axios from "axios";
 
 const api = axios.create({
@@ -7,40 +8,76 @@ const api = axios.create({
   timeout: config.api.timeout,
 });
 
-// Interceptor để thêm token động vào mỗi request
+// Request interceptor - Add auth token
 api.interceptors.request.use(
   (config) => {
     const token = getTokenCookie();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    // Log outgoing requests (info level - only in dev)
+    apiLogger.info(`${config.method?.toUpperCase()} ${config.url}`);
+
     return config;
   },
   (error) => {
+    apiLogger.error("Request setup failed", error);
     return Promise.reject(error);
   }
 );
 
-// Interceptor để xử lý response errors
+// Response interceptor - Handle errors professionally
 api.interceptors.response.use(
   (response) => {
-    apiLog("Response received:", {
-      url: response.config?.url,
-      method: response.config?.method,
-      status: response.status,
-    });
+    // Success response - log only in development
+    apiLogger.debug(
+      `${response.status} ${response.config.method?.toUpperCase()} ${
+        response.config.url
+      }`
+    );
     return response;
   },
   (error) => {
+    // Error handling with proper logging
     if (error.response) {
-      // Log lỗi để debug
-      console.error("API Error:", {
+      const { status, config: reqConfig, data } = error.response;
+
+      // Log based on error severity
+      if (status >= 500) {
+        // Server errors - always log (critical)
+        apiLogger.critical("Server error", error, {
+          url: reqConfig?.url,
+          method: reqConfig?.method,
+          status,
+          message: data?.detail || data?.message,
+        });
+      } else if (status === 401) {
+        // Auth errors - warning level
+        apiLogger.warn("Authentication failed", {
+          url: reqConfig?.url,
+          method: reqConfig?.method,
+        });
+      } else if (status >= 400) {
+        // Client errors - error level
+        apiLogger.error("Request failed", error, {
+          url: reqConfig?.url,
+          method: reqConfig?.method,
+          status,
+          message: data?.detail || data?.message,
+        });
+      }
+    } else if (error.request) {
+      // Network errors - critical
+      apiLogger.critical("Network error - no response received", error, {
         url: error.config?.url,
         method: error.config?.method,
-        status: error.response.status,
-        data: error.response.data,
       });
+    } else {
+      // Other errors
+      apiLogger.error("Request error", error);
     }
+
     return Promise.reject(error);
   }
 );

@@ -1,18 +1,25 @@
 import api from "@/cores/api";
+import { authLogger } from "@/lib/logger";
 
 export const authAPI = {
-  login: (email: string, password: string) =>
-    api.post(`/auth/login`, { email: email, password: password }),
+  login: (email: string, password: string) => {
+    authLogger.info("Login attempt", { email });
+    return api.post(`/auth/login`, { email: email, password: password });
+  },
   verify: () => api.get("/auth/verify"),
   getByEmail: (email: string) => api.get(`/user/get-by-email/${email}`),
-  updatePassword: (token: string, new_password: string) =>
-    api.patch(`/auth/update-password?token=${token}`, {
+  updatePassword: (token: string, new_password: string) => {
+    authLogger.info("Password update requested");
+    return api.patch(`/auth/update-password?token=${token}`, {
       password: new_password,
-    }),
-  changePassword: (currentPassword: string, newPassword: string) =>
-    api.patch(
+    });
+  },
+  changePassword: (currentPassword: string, newPassword: string) => {
+    authLogger.info("Password change requested");
+    return api.patch(
       `/auth/change-password?current_password=${currentPassword}&new_password=${newPassword}`
-    ),
+    );
+  },
 };
 
 export const isEmail = (email: string) => {
@@ -22,7 +29,9 @@ export const isEmail = (email: string) => {
       /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|.(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
     );
 };
+
 export const logout = () => {
+  authLogger.info("User logout");
   deleteTokenCookie();
   window.localStorage.removeItem("account_email");
   window.localStorage.removeItem("account_username");
@@ -39,6 +48,7 @@ export const setUserStorage = (
   fullname: string,
   avatar_url?: string
 ) => {
+  authLogger.info("User session stored", { userId: id, username });
   window.localStorage.setItem("account_email", email);
   window.localStorage.setItem("account_username", username);
   window.localStorage.setItem("account_id", id);
@@ -77,11 +87,13 @@ export function setTokenCookie(token: string, days = 1) {
   date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000);
   const expires = "expires=" + date.toUTCString();
   window.document.cookie = `access_token=${token}; ${expires}; path=/; Secure; SameSite=Strict`;
+  authLogger.info("Auth token set", { expiresIn: `${days} days` });
 }
 
 export function deleteTokenCookie() {
   window.document.cookie =
     "access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; Secure; SameSite=Strict";
+  authLogger.info("Auth token deleted");
 }
 
 export function getTokenCookie() {

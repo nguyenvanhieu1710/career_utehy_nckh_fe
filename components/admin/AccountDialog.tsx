@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/Select";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+// import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Upload, X, Eye, EyeOff, Image as ImageIcon } from "lucide-react";
 import { userAPI } from "@/services/user";
 import { User, Role } from "@/types/user";
@@ -177,8 +177,6 @@ export const AccountDialog = ({
       const uploadedUrl = await uploadAvatar(user.id.toString(), avatarFile);
       if (uploadedUrl) {
         finalAvatarUrl = uploadedUrl;
-        // Use the uploaded URL for future reference
-        console.log("Avatar uploaded successfully:", finalAvatarUrl);
       }
     }
 
@@ -188,6 +186,9 @@ export const AccountDialog = ({
       role,
       status,
       roles: role ? [role] : [], // Convert single role to array for backend
+      // Include avatar URL for edit mode
+      ...(mode === "edit" && finalAvatarUrl ? { avatar: finalAvatarUrl } : {}),
+      // Include avatar file for add mode
       ...(mode === "add" && avatarFile ? { avatarFile } : {}),
     });
   };
@@ -457,10 +458,10 @@ export const AccountDialog = ({
                             statusOption.color === "green"
                               ? "bg-green-500"
                               : statusOption.color === "yellow"
-                              ? "bg-yellow-500"
-                              : statusOption.color === "red"
-                              ? "bg-red-500"
-                              : "bg-gray-500"
+                                ? "bg-yellow-500"
+                                : statusOption.color === "red"
+                                  ? "bg-red-500"
+                                  : "bg-gray-500"
                           }`}
                         />
                         {statusOption.label}

@@ -1,5 +1,5 @@
 import api from "@/cores/api";
-import { config, getUploadsUrl, debugLog } from "@/lib/config";
+import { config, getUploadsUrl } from "@/lib/config";
 import { GetSchema } from "@/types/base";
 import {
   User,
@@ -67,22 +67,10 @@ export const userAPI = {
 
   // Helper method to get avatar URL with fallback
   getAvatarUrl: (user: User, defaultUrl?: string): string => {
-    debugLog("Getting avatar URL for user:", {
-      userId: user.id,
-      userName: user.username,
-      avatar_url: user.avatar_url,
-    });
-
     if (user.avatar_url) {
-      const finalUrl = getUploadsUrl(user.avatar_url);
-      debugLog("Avatar URL generated:", finalUrl);
-      return finalUrl;
+      return getUploadsUrl(user.avatar_url);
     }
-
-    // Return default avatar or fallback
-    const fallbackUrl = defaultUrl || config.ui.defaultAvatar;
-    debugLog("No avatar_url, using fallback:", fallbackUrl);
-    return fallbackUrl;
+    return defaultUrl || config.ui.defaultAvatar;
   },
 
   // Helper method to validate avatar file
