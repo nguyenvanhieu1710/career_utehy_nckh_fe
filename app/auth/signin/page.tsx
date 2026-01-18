@@ -7,7 +7,12 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast, Toaster } from "sonner";
 import axios from "axios";
-import { authAPI, setTokenCookie, setUserStorage } from "@/services/auth";
+import {
+  authAPI,
+  setTokenCookie,
+  setRefreshTokenCookie,
+  setUserStorage,
+} from "@/services/auth";
 
 export default function LoginPage() {
   const [authForm, setAuthForm] = useState({
@@ -22,7 +27,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const handleEmailChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
     const value = e.target.value.trim();
     setAuthForm((prev) => ({ ...prev, email: value }));
@@ -50,7 +55,7 @@ export default function LoginPage() {
   };
 
   const handlePasswordChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
     const value = e.target.value;
     setAuthForm((prev) => ({ ...prev, password: value }));
@@ -82,44 +87,57 @@ export default function LoginPage() {
     if (emailError || passwordError) {
       setErrors({
         email: emailError,
-        password: passwordError
+        password: passwordError,
       });
       return;
     }
 
     setIsLoading(true);
-    authAPI.login(authForm.email, authForm.password).then(res => {
-      setTokenCookie(res.data.access_token);
-      setUserStorage(res.data.email, res.data.user_name, res.data.user_id, res.data.fullname)
-      toast.success('Đăng nhập thành công!');
-      window.location.href = "/"
-    }).catch(err => {
-      let errorMessage = 'Đã có lỗi xảy ra khi đăng nhập';
-      if (axios.isAxiosError(err)) {
-        const status = err.response?.status;
-        const data = err.response?.data;
-        if (data?.detail) {
-          errorMessage = data?.detail
-        } else {
-          if (status === 401) {
-            errorMessage = data?.detail || 'Email hoặc mật khẩu không chính xác';
-          } else if (status === 403) {
-            errorMessage = 'Tài khoản của bạn đã bị khóa hoặc vô hiệu hóa';
-          } else if (status === 400) {
-            errorMessage = 'Dữ liệu không hợp lệ';
-          } else if (status === 429) {
-            errorMessage = 'Quá nhiều lần thử đăng nhập. Vui lòng thử lại sau ít phút';
-          } else if (status === 500) {
-            errorMessage = 'Máy chủ đang gặp sự cố. Vui lòng thử lại sau';
+    authAPI
+      .login(authForm.email, authForm.password)
+      .then((res) => {
+        setTokenCookie(res.data.access_token);
+        if (res.data.refresh_token) {
+          setRefreshTokenCookie(res.data.refresh_token);
+        }
+        setUserStorage(
+          res.data.email,
+          res.data.user_name,
+          res.data.user_id,
+          res.data.fullname,
+        );
+        toast.success("Đăng nhập thành công!");
+        window.location.href = "/";
+      })
+      .catch((err) => {
+        let errorMessage = "Đã có lỗi xảy ra khi đăng nhập";
+        if (axios.isAxiosError(err)) {
+          const status = err.response?.status;
+          const data = err.response?.data;
+          if (data?.detail) {
+            errorMessage = data?.detail;
+          } else {
+            if (status === 401) {
+              errorMessage =
+                data?.detail || "Email hoặc mật khẩu không chính xác";
+            } else if (status === 403) {
+              errorMessage = "Tài khoản của bạn đã bị khóa hoặc vô hiệu hóa";
+            } else if (status === 400) {
+              errorMessage = "Dữ liệu không hợp lệ";
+            } else if (status === 429) {
+              errorMessage =
+                "Quá nhiều lần thử đăng nhập. Vui lòng thử lại sau ít phút";
+            } else if (status === 500) {
+              errorMessage = "Máy chủ đang gặp sự cố. Vui lòng thử lại sau";
+            }
           }
         }
-      }
 
-      toast.error(errorMessage);
-    }).finally(() => {
-      setIsLoading(false);
-
-    })
+        toast.error(errorMessage);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
   };
 
   return (
@@ -193,20 +211,22 @@ export default function LoginPage() {
               <div className="flex justify-between items-start mt-1">
                 {errors.password ? (
                   <p className="text-sm text-red-600">{errors.password}</p>
-                ) : <div />}
-                <Link 
+                ) : (
+                  <div />
+                )}
+                <Link
                   href={"/auth/forgot-password"}
                   className="inline-flex items-center text-sm text-blue-500 hover:text-blue-600 hover:underline transition-colors"
-                >                  
+                >
                   Quên mật khẩu?
                 </Link>
               </div>
             </div>
             <Button
               type="submit"
-              value={isLoading ? 'Đang xử lý...' : 'Đăng nhập'}
+              value={isLoading ? "Đang xử lý..." : "Đăng nhập"}
               disable={isLoading}
-            />            
+            />
           </form>
 
           <div className="flex items-center justify-center m-4 text-gray-500">
