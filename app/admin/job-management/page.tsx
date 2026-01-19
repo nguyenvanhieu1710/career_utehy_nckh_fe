@@ -212,8 +212,16 @@ export default function JobManagementPage() {
       label: "Hành động",
       render: (job) => (
         <div className="flex gap-2">
-          <ActionButtons type="view" onClick={() => handleViewDetail(job)} />
-          <ActionButtons type="delete" onClick={() => handleDelete(job)} />
+          <ActionButtons
+            type="view"
+            permission="job.view"
+            onClick={() => handleViewDetail(job)}
+          />
+          <ActionButtons
+            type="delete"
+            permission="job.delete"
+            onClick={() => handleDelete(job)}
+          />
         </div>
       ),
     },

@@ -3,6 +3,7 @@
 import { ThemeProvider } from "next-themes";
 import { RolesProvider } from "@/contexts/RolesContext";
 import { StatusProvider } from "@/contexts/StatusContext";
+import { PermissionProvider } from "@/contexts/PermissionContext";
 import { useTokenRefresh } from "@/hooks/useTokenRefresh";
 import { ReactNode } from "react";
 
@@ -22,8 +23,10 @@ export function Providers({ children }: { children: ReactNode }) {
     >
       <RolesProvider>
         <StatusProvider>
-          <TokenRefreshManager />
-          {children}
+          <PermissionProvider>
+            <TokenRefreshManager />
+            {children}
+          </PermissionProvider>
         </StatusProvider>
       </RolesProvider>
     </ThemeProvider>

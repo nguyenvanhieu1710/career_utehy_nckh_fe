@@ -1,13 +1,22 @@
 "use client";
 
 import { Ban, Edit, Trash2, View } from "lucide-react";
+import { usePermissions } from "@/contexts/PermissionContext";
 
 interface ActionTypeProps {
   type: "edit" | "view" | "delete" | "ban";
   onClick?: () => void;
+  permission: string;
 }
 
-export function ActionButtons({ type, onClick }: ActionTypeProps) {
+export function ActionButtons({ type, onClick, permission }: ActionTypeProps) {
+  const { hasPermission } = usePermissions();
+
+  // Check if user has permission
+  if (!hasPermission(permission)) {
+    return null; // Hide button if no permission
+  }
+
   const getVariant = () => {
     switch (type) {
       case "edit":
@@ -22,21 +31,27 @@ export function ActionButtons({ type, onClick }: ActionTypeProps) {
     }
   };
 
+  const getIcon = () => {
+    switch (type) {
+      case "edit":
+        return <Edit size={16} />;
+      case "delete":
+        return <Trash2 size={16} />;
+      case "ban":
+        return <Ban size={16} />;
+      case "view":
+      default:
+        return <View size={16} />;
+    }
+  };
+
   return (
     <button
       type="button"
       onClick={onClick}
       className={`p-2 rounded-md text-white cursor-pointer transition-colors ${getVariant()}`}
     >
-      {type === "edit" ? (
-        <Edit size={16} />
-      ) : type === "delete" ? (
-        <Trash2 size={16} />
-      ) : type === "ban" ? (
-        <Ban size={16} />
-      ) : (
-        <View size={16} />
-      )}
+      {getIcon()}
     </button>
   );
 }

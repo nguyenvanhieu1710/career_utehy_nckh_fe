@@ -20,7 +20,7 @@ export default function CategoryManagementPage() {
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(
-    null
+    null,
   );
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -94,12 +94,12 @@ export default function CategoryManagementPage() {
           await categoryAPI.uploadAvatar(
             createResult.data.data.id.toString(),
             data.avatarFile,
-            true
+            true,
           );
         } catch (avatarError) {
           console.warn(
             "Avatar upload failed, but category was created:",
-            avatarError
+            avatarError,
           );
         }
       }
@@ -247,8 +247,16 @@ export default function CategoryManagementPage() {
       label: "Hành động",
       render: (category) => (
         <div className="flex gap-2">
-          <ActionButtons type="edit" onClick={() => handleEdit(category)} />
-          <ActionButtons type="delete" onClick={() => handleDelete(category)} />
+          <ActionButtons
+            type="edit"
+            permission="category.update"
+            onClick={() => handleEdit(category)}
+          />
+          <ActionButtons
+            type="delete"
+            permission="category.delete"
+            onClick={() => handleDelete(category)}
+          />
         </div>
       ),
     },
@@ -262,6 +270,7 @@ export default function CategoryManagementPage() {
           Quản lý danh mục ngành
         </h1>
         <AddButton
+          permission="category.create"
           onClick={() => {
             setSelectedCategory(null);
             setIsAddDialogOpen(true);

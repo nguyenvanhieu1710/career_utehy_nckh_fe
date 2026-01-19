@@ -246,7 +246,7 @@ export default function DataManagementPage() {
                 ? "active"
                 : "inactive") as DataSource["status"],
             }
-          : ds
+          : ds,
       );
 
       setDataSources(updatedDataSources);
@@ -280,7 +280,7 @@ export default function DataManagementPage() {
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
       const updatedDataSources = dataSources.filter(
-        (ds) => ds.id !== selectedDataSource.id
+        (ds) => ds.id !== selectedDataSource.id,
       );
       setDataSources(updatedDataSources);
 
@@ -395,7 +395,7 @@ export default function DataManagementPage() {
 
   const paginatedData = filteredData.slice(
     (filters.page - 1) * filters.row,
-    filters.page * filters.row
+    filters.page * filters.row,
   );
 
   const columns: Column<DataSource>[] = [
@@ -452,7 +452,7 @@ export default function DataManagementPage() {
           {getStatusIcon(dataSource.status)}
           <span
             className={`text-sm font-medium px-2 py-1 rounded-full ${getStatusColor(
-              dataSource.status
+              dataSource.status,
             )}`}
           >
             {getStatusText(dataSource.status)}
@@ -489,9 +489,14 @@ export default function DataManagementPage() {
       label: "Hành động",
       render: (dataSource) => (
         <div className="flex gap-2">
-          <ActionButtons type="edit" onClick={() => handleEdit(dataSource)} />
+          <ActionButtons
+            type="edit"
+            permission="data_source.update"
+            onClick={() => handleEdit(dataSource)}
+          />
           <ActionButtons
             type="delete"
+            permission="data_source.delete"
             onClick={() => handleDelete(dataSource)}
           />
         </div>
@@ -509,6 +514,7 @@ export default function DataManagementPage() {
           </h1>
         </div>
         <AddButton
+          permission="data_source.create"
           onClick={() => {
             setSelectedDataSource(null);
             setIsAddDialogOpen(true);

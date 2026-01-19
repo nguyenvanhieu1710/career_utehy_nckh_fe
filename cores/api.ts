@@ -67,6 +67,11 @@ api.interceptors.response.use(
 
     // Handle 401 errors with token refresh
     if (error.response?.status === 401 && !originalRequest._retry) {
+      // Don't try to refresh for auth endpoints to avoid infinite loops
+      if (originalRequest.url?.includes("/auth/")) {
+        return Promise.reject(error);
+      }
+
       if (isRefreshing) {
         // If already refreshing, queue this request
         return new Promise((resolve, reject) => {
@@ -119,9 +124,19 @@ api.interceptors.response.use(
           isRefreshing = false;
         }
       } else {
-        // No refresh token - logout user
-        apiLogger.warn("No refresh token available, logging out user");
-        logout();
+        // No refresh token - logout user only if not on public pages
+        const currentPath = window.location.pathname;
+        const publicPaths = [
+          "/",
+          "/auth/signin",
+          "/auth/signup",
+          "/auth/forgot-password",
+        ];
+
+        if (!publicPaths.includes(currentPath)) {
+          apiLogger.warn("No refresh token available, logging out user");
+          logout();
+        }
         return Promise.reject(error);
       }
     }
