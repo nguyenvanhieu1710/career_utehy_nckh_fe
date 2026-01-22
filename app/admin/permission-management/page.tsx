@@ -41,7 +41,7 @@ export default function RoleManagementPage() {
     permAPI
       .getPerms()
       .then((res) => {
-        setPerms(res.data);
+        setPerms(res.data.data);
       })
       .catch(() => {
         setDialogState({

@@ -3,7 +3,8 @@ import { GetSchema } from "@/types/base";
 import { Role, RoleCreate, RoleUpdate } from "@/types/permission";
 
 export const permAPI = {
-  getPerms: () => api.get<string[]>("/permission/get-perms"),
+  getPerms: () =>
+    api.get<{ status: string; data: string[] }>("/permission/get-perms"),
 
   getRoles: (filters: GetSchema) =>
     api.post<{
@@ -17,17 +18,17 @@ export const permAPI = {
   createRole: (data: RoleCreate) =>
     api.post<{ status: string; message: string; data: Role }>(
       "/permission/create",
-      data
+      data,
     ),
 
   updateRole: (roleId: string, data: RoleUpdate) =>
     api.put<{ status: string; message: string; data: Role }>(
       `/permission/update/${roleId}`,
-      data
+      data,
     ),
 
   deleteRole: (roleId: string) =>
     api.delete<{ status: string; message: string }>(
-      `/permission/delete/${roleId}`
+      `/permission/delete/${roleId}`,
     ),
 };
