@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  ReactNode,
-} from "react";
+import { createContext, useContext, useState, ReactNode } from "react";
 import { ChatMessage, ChatbotContextType } from "@/types/chatbot";
 import { chatAPI } from "@/services/chatbot";
 
@@ -16,39 +10,9 @@ export function ChatbotProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isTyping, setIsTyping] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
-
-  // Handle body scroll lock on mobile
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const isMobile = window.innerWidth < 768;
-
-    if (isOpen && isMobile) {
-      // Lock body scroll
-      document.body.style.overflow = "hidden";
-      document.body.style.position = "fixed";
-      document.body.style.width = "100%";
-    } else {
-      // Restore body scroll
-      document.body.style.overflow = "";
-      document.body.style.position = "";
-      document.body.style.width = "";
-    }
-
-    // Cleanup on unmount
-    return () => {
-      document.body.style.overflow = "";
-      document.body.style.position = "";
-      document.body.style.width = "";
-    };
-  }, [isOpen]);
 
   const toggleChat = () => {
     setIsOpen((prev) => !prev);
-    if (!isOpen) {
-      setUnreadCount(0);
-    }
   };
 
   const sendMessage = async (content: string) => {
@@ -76,32 +40,32 @@ export function ChatbotProvider({ children }: { children: ReactNode }) {
     setIsTyping(true);
 
     try {
-      // Simple streaming - let CSS handle smoothness
       for await (const chunk of chatAPI.sendMessageStream(content)) {
         setMessages((prev) => {
-          const updated = [...prev];
-          const lastMessage = updated[updated.length - 1];
-          if (lastMessage && lastMessage.id === botMessageId) {
-            lastMessage.content += chunk;
-          }
-          return updated;
+          return prev.map((msg) => {
+            if (msg.id === botMessageId) {
+              return {
+                ...msg,
+                content: msg.content + chunk,
+              };
+            }
+            return msg;
+          });
         });
-      }
-
-      if (!isOpen) {
-        setUnreadCount((prev) => prev + 1);
       }
     } catch (error) {
       console.error("Failed to send message:", error);
 
       setMessages((prev) => {
-        const updated = [...prev];
-        const lastMessage = updated[updated.length - 1];
-        if (lastMessage && lastMessage.id === botMessageId) {
-          lastMessage.content =
-            "Xin lỗi, đã có lỗi xảy ra. Vui lòng thử lại sau.";
-        }
-        return updated;
+        return prev.map((msg) => {
+          if (msg.id === botMessageId) {
+            return {
+              ...msg,
+              content: "Xin lỗi, đã có lỗi xảy ra. Vui lòng thử lại sau.",
+            };
+          }
+          return msg;
+        });
       });
     } finally {
       setIsTyping(false);
@@ -118,7 +82,6 @@ export function ChatbotProvider({ children }: { children: ReactNode }) {
         isOpen,
         messages,
         isTyping,
-        unreadCount,
         toggleChat,
         sendMessage,
         clearMessages,

@@ -3,45 +3,24 @@
 import { useEffect, useRef } from "react";
 import { useChatbot } from "@/contexts/ChatbotContext";
 import { ChatbotWelcome } from "./ChatbotWelcome";
-import { ChatbotTyping } from "./ChatbotTyping";
 import "./chatbot.css";
 
 export function ChatbotMessages() {
   const { messages, isTyping } = useChatbot();
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
-  // Smooth scroll to bottom
-  const scrollToBottom = () => {
+  // Auto-scroll when messages change
+  useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({
         behavior: "smooth",
         block: "end",
       });
     }
-  };
-
-  // Auto-scroll when messages change or typing
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      scrollToBottom();
-    }, 100); // Small delay for smooth rendering
-
-    return () => clearTimeout(timer);
   }, [messages, isTyping]);
 
-  // Force scroll on new message
-  useEffect(() => {
-    if (messages.length > 0) {
-      scrollToBottom();
-    }
-  }, [messages.length]);
-
   return (
-    <div
-      ref={messagesContainerRef}
-      className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 scroll-smooth"
-    >
+    <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 scroll-smooth">
       {messages.length === 0 ? (
         <ChatbotWelcome />
       ) : (
@@ -82,8 +61,6 @@ export function ChatbotMessages() {
               </div>
             );
           })}
-
-          {isTyping && messages.length === 0 && <ChatbotTyping />}
         </>
       )}
       <div ref={messagesEndRef} className="h-4" />
