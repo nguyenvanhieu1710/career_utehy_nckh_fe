@@ -1,6 +1,12 @@
 "use client";
 
-import { createContext, useContext, useState, ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from "react";
 import { ChatMessage, ChatbotContextType } from "@/types/chatbot";
 import { chatAPI } from "@/services/chatbot";
 
@@ -11,6 +17,32 @@ export function ChatbotProvider({ children }: { children: ReactNode }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+
+  // Handle body scroll lock on mobile
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const isMobile = window.innerWidth < 768;
+
+    if (isOpen && isMobile) {
+      // Lock body scroll
+      document.body.style.overflow = "hidden";
+      document.body.style.position = "fixed";
+      document.body.style.width = "100%";
+    } else {
+      // Restore body scroll
+      document.body.style.overflow = "";
+      document.body.style.position = "";
+      document.body.style.width = "";
+    }
+
+    // Cleanup on unmount
+    return () => {
+      document.body.style.overflow = "";
+      document.body.style.position = "";
+      document.body.style.width = "";
+    };
+  }, [isOpen]);
 
   const toggleChat = () => {
     setIsOpen((prev) => !prev);

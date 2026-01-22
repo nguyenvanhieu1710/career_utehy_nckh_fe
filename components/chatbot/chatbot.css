@@ -2,11 +2,21 @@
 @keyframes slideUp {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(20px) scale(0.95);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Chatbot fade in animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }
 
@@ -62,4 +72,34 @@
   /* Force new layer for better performance */
   transform: translateZ(0);
   will-change: transform;
+}
+
+/* Chatbot button hover effects */
+.chatbot-button {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.chatbot-button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 10px 25px rgba(34, 197, 94, 0.3);
+}
+
+/* Responsive chatbot positioning */
+@media (max-width: 768px) {
+  .chatbot-window-mobile {
+    animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+/* Backdrop blur effect */
+.chatbot-backdrop {
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Prevent body scroll when chatbot is open on mobile */
+.chatbot-open-mobile {
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
 }
