@@ -349,10 +349,9 @@ export default function DataManagementPage() {
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Quản lý dữ liệu</h1>
-          <p className="text-gray-600 mt-1">
-            Quản lý nguồn dữ liệu và cấu hình crawl
-          </p>
+          <h1 className="text-2xl font-bold text-gray-900">
+            Quản lý nguồn dữ liệu
+          </h1>
         </div>
         <AddButton permission="data_source.create" onClick={handleAddClick} />
       </div>

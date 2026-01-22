@@ -284,10 +284,10 @@ export default function CategoryManagementPage() {
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
           <Input
             type="text"
-            placeholder="Tìm kiếm danh mục ngành..."
+            placeholder="Nhập tên ngành nghề để tìm kiếm..."
             value={filters.searchKeyword || ""}
             onChange={(e) => handleSearchChange(e.target.value)}
-            className="pl-10 border-green-200 focus:border-green-500 focus:ring-green-500"
+            className="pl-10 border-gray-200 focus:border-gray-500 focus:ring-gray-500"
           />
         </div>
       </div>
