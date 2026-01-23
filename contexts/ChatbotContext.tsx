@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, ReactNode } from "react";
 import { ChatMessage, ChatbotContextType } from "@/types/chatbot";
 import { chatAPI } from "@/services/chatbot";
+import { logger } from "@/lib/logger";
 
 const ChatbotContext = createContext<ChatbotContextType | null>(null);
 
@@ -54,7 +55,7 @@ export function ChatbotProvider({ children }: { children: ReactNode }) {
         });
       }
     } catch (error) {
-      console.error("Failed to send message:", error);
+      logger.error("Failed to send message", error);
 
       setMessages((prev) => {
         return prev.map((msg) => {

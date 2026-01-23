@@ -18,6 +18,7 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { GetSchema } from "@/types/base";
 import { User } from "@/types/user";
 import { DialogState, AccountDialogSubmitData } from "@/types/dialog";
+import { logger } from "@/lib/logger";
 
 export default function UserManagementPage() {
   const [loading, setLoading] = useState(true);
@@ -133,10 +134,7 @@ export default function UserManagementPage() {
             true,
           );
         } catch (avatarError) {
-          console.warn(
-            "Avatar upload failed, but user was created:",
-            avatarError,
-          );
+          logger.warn("Avatar upload failed, but user was created", avatarError);
         }
       }
 
@@ -257,7 +255,7 @@ export default function UserManagementPage() {
         currentRoleId, // Add this for dialog initialization
       } as User & { currentRoleId: string });
     } catch {
-      console.error("Failed to load user roles");
+      logger.error("Failed to load user roles");
     }
 
     setIsAddDialogOpen(true);

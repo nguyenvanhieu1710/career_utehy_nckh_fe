@@ -27,6 +27,7 @@ import {
   WORK_ARRANGEMENT_OPTIONS,
   VIETNAM_CITIES,
 } from "@/constants/job";
+import { logger } from "@/lib/logger";
 
 interface Company {
   id: string;
@@ -91,7 +92,7 @@ export const JobDialog = ({
           setCompanies(response.data);
         }
       } catch (error) {
-        console.error("Failed to load companies:", error);
+        logger.error("Failed to load companies", error);
       }
     };
 

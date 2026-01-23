@@ -12,6 +12,7 @@ import TextField from "@/components/ui/TextField";
 import { authAPI } from "@/services/auth";
 import { useParams } from "next/navigation";
 import { toast } from "sonner";
+import { authLogger } from "@/lib/logger";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -77,7 +78,7 @@ export default function ForgotPasswordPage() {
       toast.success("Đổi mật khẩu thành công");
       window.location.href = "/auth/signin"
     } catch (error) {
-      console.error("Lỗi khi gửi yêu cầu:", error);
+      authLogger.error("Reset password request failed", error);
       setMessage("Đã xảy ra lỗi. Vui lòng thử lại sau.");
     } finally {
       setIsLoading(false);

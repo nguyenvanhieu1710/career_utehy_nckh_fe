@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Image from "next/image";
 import { AddButton } from "@/components/admin/AddButton";
 import { Column, Table } from "@/components/admin/Table";
 import { Pagination } from "@/components/admin/Pagination";
@@ -15,6 +14,7 @@ import { Category } from "@/types/category";
 import { DialogState } from "@/types/dialog";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
+import { logger } from "@/lib/logger";
 
 export default function CategoryManagementPage() {
   const [loading, setLoading] = useState(true);
@@ -97,8 +97,8 @@ export default function CategoryManagementPage() {
             true,
           );
         } catch (avatarError) {
-          console.warn(
-            "Avatar upload failed, but category was created:",
+          logger.warn(
+            "Avatar upload failed, but category was created",
             avatarError,
           );
         }

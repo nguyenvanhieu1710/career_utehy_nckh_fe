@@ -16,12 +16,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/Select";
-// import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Upload, X, Eye, EyeOff, Image as ImageIcon } from "lucide-react";
 import { userAPI } from "@/services/user";
 import { User, Role } from "@/types/user";
 import { EntityStatus } from "@/types/status";
 import { useStatus } from "@/contexts/StatusContext";
+import { logger } from "@/lib/logger";
 import type {
   AccountDialogData,
   AccountDialogSubmitData,
@@ -127,7 +127,7 @@ export const AccountDialog = ({
       const result = await userAPI.uploadAvatar(userId, file, true);
       return result.data.avatar_info.file_url;
     } catch (error) {
-      console.error("Avatar upload failed:", error);
+      logger.error("Avatar upload failed", error);
       setErrors({ ...errors, avatar: "Tải lên avatar thất bại" });
       return null;
     } finally {

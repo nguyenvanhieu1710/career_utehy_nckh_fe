@@ -21,6 +21,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { logger } from "@/lib/logger";
 
 interface QuickApplyModalProps {
   job: Job | null;
@@ -159,7 +160,7 @@ export const QuickApplyModal = ({
       onSubmit?.(formData);
       setStep("success");
     } catch (error) {
-      console.error("Application submission failed:", error);
+      logger.error("Application submission failed", error);
     } finally {
       setLoading(false);
     }

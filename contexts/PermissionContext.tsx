@@ -10,6 +10,7 @@ import React, {
 } from "react";
 import { userAPI } from "@/services/user";
 import { useAuth } from "@/hooks/useAuth";
+import { logger } from "@/lib/logger";
 
 interface PermissionContextType {
   permissions: string[];
@@ -61,11 +62,13 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
       // Extract role names
       const userRoles = userData.roles?.map((role) => role.name) || [];
       setRoles(userRoles);
-    } catch (err: any) {
-      console.error("Failed to fetch user permissions:", err);
+    } catch (err: unknown) {
+      logger.error("Failed to fetch user permissions", err);
 
+      const status = (err as { response?: { status?: number } })?.response
+        ?.status;
       // Only set error if it's not a 401 (which means user is not authenticated)
-      if (err.response?.status !== 401) {
+      if (status !== 401) {
         setError("Không thể tải quyền người dùng");
       }
 

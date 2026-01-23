@@ -64,7 +64,6 @@ function SuitableJobDetailContent() {
 
   const handleApply = () => {
     // TODO: Implement apply functionality
-    console.log("Apply for job:", jobId);
   };
 
   return (

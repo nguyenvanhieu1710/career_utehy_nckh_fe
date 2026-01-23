@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Mail } from "lucide-react";
 import Button from "@/components/ui/Button";
@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { sendForgotPasswordEmail } from "@/services/email";
 import Loader from "@/components/ui/Loader";
+import { authLogger } from "@/lib/logger";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -20,8 +21,6 @@ export default function ForgotPasswordPage() {
     setIsLoading(true);
 
     try {
-      console.log("Email gửi yêu cầu:", email);
-
       const response = await sendForgotPasswordEmail(email);
       setSendState(response.data?.status)
 
@@ -30,7 +29,7 @@ export default function ForgotPasswordPage() {
       );
       setEmail("");
     } catch (error) {
-      console.error("Lỗi khi gửi yêu cầu:", error);
+      authLogger.error("Forgot password request failed", error);
       setMessage("Đã xảy ra lỗi. Vui lòng thử lại sau.");
     } finally {
       setIsLoading(false);

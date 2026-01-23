@@ -280,7 +280,6 @@ export default function JobsPage() {
           setSelectedJob(null);
         }}
         onSubmit={(applicationData) => {
-          console.log("Application submitted:", applicationData);
           // Handle application submission
         }}
       />
@@ -298,30 +297,24 @@ export default function JobsPage() {
         isOpen={showJobAlerts}
         onClose={() => setShowJobAlerts(false)}
         onMarkAsRead={(notificationId) => {
-          console.log("Mark as read:", notificationId);
           // Decrease unread count
           setUnreadNotificationCount((prev) => Math.max(0, prev - 1));
         }}
         onMarkAllAsRead={() => {
-          console.log("Mark all as read");
           // Reset unread count
           setUnreadNotificationCount(0);
         }}
         onViewJob={(jobId) => {
-          console.log("View job:", jobId);
           // Handle viewing job from notification
           handleJobView(jobId);
         }}
         onRefresh={() => {
-          console.log("Refresh notifications");
           // Simulate refresh - could add new notifications
         }}
         onDeleteNotification={(notificationId) => {
-          console.log("Delete notification:", notificationId);
           // Handle notification deletion
         }}
         onDeleteAllRead={() => {
-          console.log("Delete all read notifications");
           // Handle bulk deletion of read notifications
         }}
       />

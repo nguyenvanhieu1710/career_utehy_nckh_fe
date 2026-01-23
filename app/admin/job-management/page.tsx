@@ -8,6 +8,7 @@ import { NotificationDialog } from "@/components/admin/NotificationDialog";
 import { ActionButtons } from "@/components/admin/ActionButtons";
 import { jobMongoAPI, JobMongo } from "@/services/jobMongo";
 import { DialogState } from "@/types/dialog";
+import { logger } from "@/lib/logger";
 
 export default function JobManagementPage() {
   const [loading, setLoading] = useState(true);
@@ -51,7 +52,7 @@ export default function JobManagementPage() {
       setTotal(response.pagination.total || 0);
       setTotalPages(response.pagination.total_pages || 1);
     } catch (error) {
-      console.error("Failed to load jobs:", error);
+      logger.error("Failed to load jobs", error);
       setJobs([]);
       setDialogState({
         isOpen: true,

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 // import { Badge } from "@/components/ui/badge";
 import { userAPI } from "@/services/user";
 import { Role } from "@/types/user";
+import { logger } from "@/lib/logger";
 
 interface UserRoleDisplayProps {
   userId: string;
@@ -37,7 +38,7 @@ export function UserRoleDisplay({
         setRoles(userRoles);
         setError(false);
       } catch (err) {
-        console.error(`❌ Failed to load user ${userId} roles:`, err);
+        logger.error(`Failed to load user ${userId} roles`, err);
         setError(true);
       } finally {
         setLoading(false);
