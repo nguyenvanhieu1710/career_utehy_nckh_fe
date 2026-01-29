@@ -33,20 +33,6 @@ export interface CrawlHistoryListResponse {
   max_page: number;
 }
 
-export interface CrawlStatistics {
-  period_days: number;
-  total_crawls: number;
-  successful_crawls: number;
-  failed_crawls: number;
-  running_crawls: number;
-  success_rate: number;
-  total_jobs_found: number;
-  total_jobs_created: number;
-  total_jobs_updated: number;
-  avg_duration_seconds: number;
-  last_crawl?: string;
-}
-
 export interface CrawlHistoryFilters {
   source_id?: string;
   status?: string;

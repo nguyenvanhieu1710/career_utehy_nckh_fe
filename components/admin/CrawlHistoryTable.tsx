@@ -1,11 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Badge } from "@/components/ui/badge";
 import Loader from "@/components/ui/Loader";
 import { crawlHistoryAPI } from "@/services/crawlHistory";
 import { CrawlHistory, CrawlHistoryFilters } from "@/types/crawl-history";
-import { Eye, StopCircle } from "lucide-react";
+import { ActionButtons } from "./ActionButtons";
 import { usePermissions } from "@/contexts/PermissionContext";
 import { formatDuration, formatDate } from "@/utils/formatters";
 import { getCrawlStatusBadge } from "@/utils/crawl-helpers";
@@ -162,12 +161,6 @@ export function CrawlHistoryTable({
                 Duration
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Jobs
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Success Rate
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Actions
               </th>
             </tr>
@@ -196,44 +189,20 @@ export function CrawlHistoryTable({
                 <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
                   {formatDuration(crawl.duration_seconds)}
                 </td>
-                <td className="px-4 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">
-                    <div>Found: {crawl.total_jobs_found}</div>
-                    <div className="text-xs text-gray-500">
-                      Created: {crawl.jobs_created} | Updated:{" "}
-                      {crawl.jobs_updated}
-                    </div>
-                  </div>
-                </td>
-                <td className="px-4 py-4 whitespace-nowrap">
-                  <div className="text-sm font-medium text-gray-900">
-                    {crawl.success_rate.toFixed(1)}%
-                  </div>
-                  {crawl.error_count > 0 && (
-                    <div className="text-xs text-red-500">
-                      {crawl.error_count} errors
-                    </div>
-                  )}
-                </td>
                 <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
                   <div className="flex items-center gap-2">
-                    <button
+                    <ActionButtons
+                      type="view"
                       onClick={() => onViewDetails?.(crawl)}
-                      className="text-blue-600 hover:text-blue-900"
-                      title="View Details"
-                    >
-                      <Eye className="h-4 w-4" />
-                    </button>
-                    {crawl.status === "running" &&
-                      hasPermission("crawl_history.cancel") && (
-                        <button
-                          onClick={() => handleCancelCrawl(crawl.id)}
-                          className="text-red-600 hover:text-red-900"
-                          title="Cancel Crawl"
-                        >
-                          <StopCircle className="h-4 w-4" />
-                        </button>
-                      )}
+                      permission="crawl_history.view"
+                    />
+                    {crawl.status === "running" && (
+                      <ActionButtons
+                        type="cancel"
+                        onClick={() => handleCancelCrawl(crawl.id)}
+                        permission="crawl_history.cancel"
+                      />
+                    )}
                   </div>
                 </td>
               </tr>

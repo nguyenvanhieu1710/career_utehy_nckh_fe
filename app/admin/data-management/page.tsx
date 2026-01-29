@@ -19,8 +19,8 @@ import {
   getDataSourceStatusText,
   getDataSourceStatusColor,
 } from "@/utils/crawl-helpers";
-import { formatDate, formatNumber } from "@/utils/formatters";
-import { Download, CheckCircle, Clock, History } from "lucide-react";
+import { formatDate } from "@/utils/formatters";
+import { CheckCircle, Clock } from "lucide-react";
 
 interface DataSourceDialogData {
   name?: string;
@@ -218,10 +218,7 @@ export default function DataManagementPage() {
       label: "URL",
       render: (dataSource) => (
         <div className="max-w-xs">
-          <div
-            className="text-sm text-blue-600 truncate"
-            title={dataSource.base_url || ""}
-          >
+          <div title={dataSource.base_url || ""}>
             {dataSource.base_url || "N/A"}
           </div>
         </div>
@@ -245,59 +242,17 @@ export default function DataManagementPage() {
     {
       label: "Cấu hình Crawl",
       render: (dataSource) => (
-        <div className="text-sm space-y-1">
-          <div className="flex items-center gap-1">
-            <Clock className="w-3 h-3 text-gray-400" />
-            <span>
-              {dataSource.crawl_frequency === "hourly" && "⏰ Mỗi giờ"}
-              {dataSource.crawl_frequency === "daily" && "📅 Hàng ngày"}
-              {dataSource.crawl_frequency === "weekly" && "📆 Hàng tuần"}
-              {!dataSource.crawl_frequency && "📅 Hàng ngày"}
-            </span>
-          </div>
-          <div className="flex items-center gap-1">
-            {dataSource.crawl_enabled ? (
-              <>
-                <CheckCircle className="w-3 h-3 text-green-500" />
-                <span className="text-green-600">✅ Kích hoạt</span>
-              </>
-            ) : (
-              <>
-                <div className="w-3 h-3 rounded-full bg-red-500" />
-                <span className="text-red-600">❌ Tắt</span>
-              </>
-            )}
-          </div>
-          {dataSource.next_run_at && (
-            <div className="flex items-center gap-1">
-              <Clock className="w-3 h-3 text-blue-400" />
-              <span className="text-xs text-blue-600">
-                Tiếp theo: {formatDate(dataSource.next_run_at)}
-              </span>
-            </div>
-          )}
-        </div>
-      ),
-    },
-    {
-      label: "Thống kê",
-      render: (dataSource) => (
-        <div className="text-sm space-y-1">
-          <div className="flex items-center gap-1">
-            <Download className="w-3 h-3 text-gray-400" />
-            <span>{formatNumber(dataSource.total_records || 0)} bản ghi</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <CheckCircle className="w-3 h-3 text-green-500" />
-            <span>{dataSource.success_rate || 0}% thành công</span>
-          </div>
-          {dataSource.last_crawled_at && (
-            <div className="flex items-center gap-1">
-              <Clock className="w-3 h-3 text-gray-400" />
-              <span className="text-xs text-gray-500">
-                Cuối: {formatDate(dataSource.last_crawled_at)}
-              </span>
-            </div>
+        <div className="flex items-center gap-1">
+          {dataSource.crawl_enabled ? (
+            <>
+              <CheckCircle className="w-3 h-3 text-green-500" />
+              <span className="text-green-600">Kích hoạt</span>
+            </>
+          ) : (
+            <>
+              <div className="w-3 h-3 rounded-full bg-red-500" />
+              <span className="text-red-600">Tắt</span>
+            </>
           )}
         </div>
       ),
@@ -306,13 +261,11 @@ export default function DataManagementPage() {
       label: "Hành động",
       render: (dataSource) => (
         <div className="flex gap-2">
-          <button
+          <ActionButtons
+            type="history"
+            permission="crawl_history.view"
             onClick={() => handleViewHistory(dataSource)}
-            className="text-blue-600 hover:text-blue-900 p-1 rounded"
-            title="Xem lịch sử crawl"
-          >
-            <History className="h-4 w-4" />
-          </button>
+          />
           <ActionButtons
             type="edit"
             permission="data_source.update"

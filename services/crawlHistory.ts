@@ -2,7 +2,6 @@ import api from "@/cores/api";
 import {
   CrawlHistory,
   CrawlHistoryListResponse,
-  CrawlStatistics,
   CrawlHistoryFilters,
   CrawlControlResponse,
 } from "@/types/crawl-history";
@@ -55,22 +54,6 @@ export const crawlHistoryAPI = {
     const response = await api.get(
       `/data-sources/${sourceId}/crawl-histories?${params.toString()}`,
     );
-    return response.data;
-  },
-
-  /**
-   * Get crawl statistics
-   */
-  getCrawlStatistics: async (
-    sourceId?: string,
-    days: number = 30,
-  ): Promise<CrawlStatistics> => {
-    const params = new URLSearchParams();
-
-    if (sourceId) params.append("source_id", sourceId);
-    params.append("days", days.toString());
-
-    const response = await api.get(`/crawl-statistics?${params.toString()}`);
     return response.data;
   },
 

@@ -1,10 +1,10 @@
 "use client";
 
-import { Ban, Edit, Trash2, View } from "lucide-react";
+import { Ban, Edit, Trash2, View, StopCircle, History } from "lucide-react";
 import { usePermissions } from "@/contexts/PermissionContext";
 
 interface ActionTypeProps {
-  type: "edit" | "view" | "delete" | "ban";
+  type: "edit" | "view" | "delete" | "ban" | "cancel" | "history";
   onClick?: () => void;
   permission: string;
 }
@@ -23,8 +23,11 @@ export function ActionButtons({ type, onClick, permission }: ActionTypeProps) {
         return "bg-green-600 hover:bg-green-700";
       case "view":
         return "bg-blue-600 hover:bg-blue-700";
+      case "history":
+        return "bg-gray-600 hover:bg-gray-700";
       case "delete":
       case "ban":
+      case "cancel":
         return "bg-red-600 hover:bg-red-700";
       default:
         return "bg-green-600 hover:bg-green-700";
@@ -39,6 +42,10 @@ export function ActionButtons({ type, onClick, permission }: ActionTypeProps) {
         return <Trash2 size={16} />;
       case "ban":
         return <Ban size={16} />;
+      case "cancel":
+        return <StopCircle size={16} />;
+      case "history":
+        return <History size={16} />;
       case "view":
       default:
         return <View size={16} />;
