@@ -11,9 +11,17 @@ export function ChatbotProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isTyping, setIsTyping] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const toggleChat = () => {
-    setIsOpen((prev) => !prev);
+    setIsOpen((prev) => {
+      const newIsOpen = !prev;
+      // Clear unread count when opening chat
+      if (newIsOpen) {
+        setUnreadCount(0);
+      }
+      return newIsOpen;
+    });
   };
 
   const sendMessage = async (content: string) => {
@@ -70,11 +78,17 @@ export function ChatbotProvider({ children }: { children: ReactNode }) {
       });
     } finally {
       setIsTyping(false);
+
+      // Increment unread count if chat is closed
+      if (!isOpen) {
+        setUnreadCount((prev) => prev + 1);
+      }
     }
   };
 
   const clearMessages = () => {
     setMessages([]);
+    setUnreadCount(0);
   };
 
   return (
@@ -83,6 +97,7 @@ export function ChatbotProvider({ children }: { children: ReactNode }) {
         isOpen,
         messages,
         isTyping,
+        unreadCount,
         toggleChat,
         sendMessage,
         clearMessages,

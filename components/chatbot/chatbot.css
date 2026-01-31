@@ -42,6 +42,49 @@
   vertical-align: text-bottom;
 }
 
+/* Draggable chatbot styles */
+.drag-handle {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  transition: all 0.2s ease;
+}
+
+.drag-handle:hover {
+  background-color: rgba(34, 197, 94, 0.15);
+  transform: scale(1.02);
+}
+
+.drag-handle:active {
+  cursor: grabbing !important;
+  background-color: rgba(34, 197, 94, 0.25);
+  transform: scale(0.98);
+}
+
+/* Dragging state styles */
+.chatbot-dragging {
+  box-shadow:
+    0 20px 40px rgba(34, 197, 94, 0.4),
+    0 10px 20px rgba(0, 0, 0, 0.2);
+  transform: rotate(2deg);
+  transition: none;
+}
+
+/* Snap animation */
+@keyframes snapToEdge {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(var(--snap-distance, 0));
+  }
+}
+
+.chatbot-snapping {
+  animation: snapToEdge 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 /* CSS-only smooth streaming effect */
 .chatbot-message-content {
   /* Force GPU acceleration for smoother rendering */
@@ -102,4 +145,48 @@
   overflow: hidden;
   position: fixed;
   width: 100%;
+}
+
+/* Draggable button styles */
+.button-dragging {
+  box-shadow:
+    0 15px 30px rgba(34, 197, 94, 0.4),
+    0 8px 16px rgba(0, 0, 0, 0.2) !important;
+  transform: scale(1.1) rotate(5deg) !important;
+  transition: none !important;
+}
+
+/* Button drag hint animation */
+@keyframes dragHint {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(3px);
+  }
+  75% {
+    transform: translateX(-3px);
+  }
+}
+
+.drag-hint {
+  animation: dragHint 0.5s ease-in-out infinite;
+}
+
+/* Snap position indicators (optional - for debugging) */
+.snap-indicator {
+  position: fixed;
+  width: 8px;
+  height: 8px;
+  background: rgba(34, 197, 94, 0.5);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 999;
+  transition: all 0.2s ease;
+}
+
+.snap-indicator.active {
+  background: rgba(34, 197, 94, 1);
+  transform: scale(1.5);
 }

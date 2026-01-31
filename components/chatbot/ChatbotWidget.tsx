@@ -1,13 +1,13 @@
 "use client";
 
-import { ChatbotButton } from "./ChatbotButton";
-import { ChatbotWindow } from "./ChatbotWindow";
+import { DraggableButton } from "./DraggableButton";
+import { DraggableChatbot } from "./DraggableChatbot";
 
 export function ChatbotWidget() {
   return (
     <>
-      <ChatbotButton />
-      <ChatbotWindow />
+      <DraggableButton />
+      <DraggableChatbot />
     </>
   );
 }

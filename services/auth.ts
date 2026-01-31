@@ -9,7 +9,7 @@ export const authAPI = {
   verify: () => api.get("/auth/verify"),
   refresh: (refreshToken: string) => {
     authLogger.info("Token refresh attempt");
-    return api.post("/auth/refresh", { refresh_token: refreshToken });
+    return api.post("/auth/refresh-token", { refresh_token: refreshToken });
   },
   getByEmail: (email: string) => api.get(`/user/get-by-email/${email}`),
   updatePassword: (token: string, new_password: string) => {
