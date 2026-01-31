@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Image from "next/image";
 import { AddButton } from "@/components/admin/AddButton";
 import { Column, Table } from "@/components/admin/Table";
 import { Pagination } from "@/components/admin/Pagination";
@@ -15,12 +14,13 @@ import { Category } from "@/types/category";
 import { DialogState } from "@/types/dialog";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
+import { logger } from "@/lib/logger";
 
 export default function CategoryManagementPage() {
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(
-    null
+    null,
   );
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -94,12 +94,12 @@ export default function CategoryManagementPage() {
           await categoryAPI.uploadAvatar(
             createResult.data.data.id.toString(),
             data.avatarFile,
-            true
+            true,
           );
         } catch (avatarError) {
-          console.warn(
-            "Avatar upload failed, but category was created:",
-            avatarError
+          logger.warn(
+            "Avatar upload failed, but category was created",
+            avatarError,
           );
         }
       }
@@ -247,8 +247,16 @@ export default function CategoryManagementPage() {
       label: "Hành động",
       render: (category) => (
         <div className="flex gap-2">
-          <ActionButtons type="edit" onClick={() => handleEdit(category)} />
-          <ActionButtons type="delete" onClick={() => handleDelete(category)} />
+          <ActionButtons
+            type="edit"
+            permission="category.update"
+            onClick={() => handleEdit(category)}
+          />
+          <ActionButtons
+            type="delete"
+            permission="category.delete"
+            onClick={() => handleDelete(category)}
+          />
         </div>
       ),
     },
@@ -262,6 +270,7 @@ export default function CategoryManagementPage() {
           Quản lý danh mục ngành
         </h1>
         <AddButton
+          permission="category.create"
           onClick={() => {
             setSelectedCategory(null);
             setIsAddDialogOpen(true);
@@ -275,10 +284,10 @@ export default function CategoryManagementPage() {
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
           <Input
             type="text"
-            placeholder="Tìm kiếm danh mục ngành..."
+            placeholder="Nhập tên ngành nghề để tìm kiếm..."
             value={filters.searchKeyword || ""}
             onChange={(e) => handleSearchChange(e.target.value)}
-            className="pl-10 border-green-200 focus:border-green-500 focus:ring-green-500"
+            className="pl-10 border-gray-200 focus:border-gray-500 focus:ring-gray-500"
           />
         </div>
       </div>

@@ -14,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Upload, X, Eye, EyeOff, Image as ImageIcon } from "lucide-react";
 import { categoryAPI } from "@/services/category";
 import { Category } from "@/types/category";
+import { logger } from "@/lib/logger";
 
 interface CategoryDialogData {
   name?: string;
@@ -113,7 +114,7 @@ export const CategoryDialog = ({
       const result = await categoryAPI.uploadAvatar(categoryId, file, true);
       return result.data.avatar_info.file_url;
     } catch (error) {
-      console.error("Avatar upload failed:", error);
+      logger.error("Avatar upload failed", error);
       setErrors({ ...errors, avatar: "Tải lên avatar thất bại" });
       return null;
     } finally {

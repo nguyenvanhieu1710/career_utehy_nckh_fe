@@ -22,20 +22,20 @@ export const roleAPI = {
   createRole: (data: CreateGroupRequest) =>
     api.post<{ status: string; message: string; data: PermissionGroup }>(
       "/permission/create",
-      data
+      data,
     ),
 
   // Update existing role
   updateRole: (roleId: string, data: UpdateGroupRequest) =>
     api.put<{ status: string; message: string; data: PermissionGroup }>(
       `/permission/update/${roleId}`,
-      data
+      data,
     ),
 
   // Delete role
   deleteRole: (roleId: string) =>
     api.delete<{ status: string; message: string }>(
-      `/permission/delete/${roleId}`
+      `/permission/delete/${roleId}`,
     ),
 
   // Get all available permissions

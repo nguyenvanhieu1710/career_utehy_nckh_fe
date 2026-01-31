@@ -10,10 +10,6 @@ export const statusAPI = {
   // Get status options from backend
   getStatusOptions: () => api.get<StatusResponse>("/common/status-options"),
 
-  // Get status options with authentication
-  getStatusOptionsAuth: () =>
-    api.get<StatusResponse>("/common/status-options-auth"),
-
   // Local helper methods (fallback if API fails)
   getLocalStatusOptions: (): StatusOption[] => STATUS_OPTIONS,
 
@@ -47,7 +43,7 @@ export const statusAPI = {
 
   // Format status for display
   formatStatus: (
-    status: string
+    status: string,
   ): { label: string; color: string; value: string } => {
     const option = statusAPI.getStatusOption(status);
     return {

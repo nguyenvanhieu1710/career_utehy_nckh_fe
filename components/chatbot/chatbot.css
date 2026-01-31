@@ -1,0 +1,192 @@
+/* Chatbot slide up animation */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Chatbot fade in animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Chatbot typing cursor animation */
+@keyframes blink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.typing-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  background-color: currentColor;
+  margin-left: 2px;
+  animation: blink 1s infinite;
+  vertical-align: text-bottom;
+}
+
+/* Draggable chatbot styles */
+.drag-handle {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  transition: all 0.2s ease;
+}
+
+.drag-handle:hover {
+  background-color: rgba(34, 197, 94, 0.15);
+  transform: scale(1.02);
+}
+
+.drag-handle:active {
+  cursor: grabbing !important;
+  background-color: rgba(34, 197, 94, 0.25);
+  transform: scale(0.98);
+}
+
+/* Dragging state styles */
+.chatbot-dragging {
+  box-shadow:
+    0 20px 40px rgba(34, 197, 94, 0.4),
+    0 10px 20px rgba(0, 0, 0, 0.2);
+  transform: rotate(2deg);
+  transition: none;
+}
+
+/* Snap animation */
+@keyframes snapToEdge {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(var(--snap-distance, 0));
+  }
+}
+
+.chatbot-snapping {
+  animation: snapToEdge 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* CSS-only smooth streaming effect */
+.chatbot-message-content {
+  /* Force GPU acceleration for smoother rendering */
+  transform: translateZ(0);
+  will-change: contents;
+
+  /* Isolate rendering to prevent layout shifts */
+  contain: layout style paint;
+
+  /* Smooth text rendering */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+
+  /* Prevent flickering */
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+
+  /* Smooth transitions for content changes */
+  transition: opacity 0.05s ease-out;
+}
+
+/* Optimize message container */
+.chatbot-message-bubble {
+  /* Prevent layout shifts when content grows */
+  contain: layout style;
+
+  /* Force new layer for better performance */
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+/* Chatbot button hover effects */
+.chatbot-button {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.chatbot-button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 10px 25px rgba(34, 197, 94, 0.3);
+}
+
+/* Responsive chatbot positioning */
+@media (max-width: 768px) {
+  .chatbot-window-mobile {
+    animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+/* Backdrop blur effect */
+.chatbot-backdrop {
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Prevent body scroll when chatbot is open on mobile */
+.chatbot-open-mobile {
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+}
+
+/* Draggable button styles */
+.button-dragging {
+  box-shadow:
+    0 15px 30px rgba(34, 197, 94, 0.4),
+    0 8px 16px rgba(0, 0, 0, 0.2) !important;
+  transform: scale(1.1) rotate(5deg) !important;
+  transition: none !important;
+}
+
+/* Button drag hint animation */
+@keyframes dragHint {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(3px);
+  }
+  75% {
+    transform: translateX(-3px);
+  }
+}
+
+.drag-hint {
+  animation: dragHint 0.5s ease-in-out infinite;
+}
+
+/* Snap position indicators (optional - for debugging) */
+.snap-indicator {
+  position: fixed;
+  width: 8px;
+  height: 8px;
+  background: rgba(34, 197, 94, 0.5);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 999;
+  transition: all 0.2s ease;
+}
+
+.snap-indicator.active {
+  background: rgba(34, 197, 94, 1);
+  transform: scale(1.5);
+}

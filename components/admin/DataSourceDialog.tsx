@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -9,6 +9,7 @@ import {
 import Button from "@/components/ui/Button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -16,39 +17,25 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/Select";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Calendar,
-  Clock,
-  Database,
-  Download,
-  RefreshCw,
-  CheckCircle,
-  XCircle,
-  AlertCircle,
-  Eye,
-  Trash2,
-} from "lucide-react";
-import { format, subDays, subMonths, subYears } from "date-fns";
-
-interface CrawlHistoryItem {
-  id: string;
-  date: string;
-  status: "success" | "failed" | "in_progress";
-  recordsCount: number;
-  duration: string;
-  source: string;
-  errorMessage?: string;
-}
+import { Database } from "lucide-react";
 
 interface DataSourceDialogData {
   name?: string;
   description?: string;
-  url?: string;
-  timePeriod?: string;
-  startDate?: string;
-  endDate?: string;
+  base_url?: string;
   isActive?: boolean;
+  // Essential crawl config fields
+  crawl_frequency?: string;
+  crawl_enabled?: boolean;
+  max_pages?: number;
+  max_depth?: number;
+  user_agent?: string;
+  headers?: string;
+  respect_robots_txt?: boolean;
+  // Selector configuration
+  include_patterns?: string;
+  exclude_patterns?: string;
+  custom_selectors?: string;
 }
 
 interface DataSourceDialogProps {
@@ -68,114 +55,63 @@ export function DataSourceDialog({
 }: DataSourceDialogProps) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [url, setUrl] = useState("");
-  const [timePeriod, setTimePeriod] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [baseUrl, setBaseUrl] = useState("");
   const [isActive, setIsActive] = useState(true);
+
+  // Essential crawl settings
+  const [crawlFrequency, setCrawlFrequency] = useState("daily");
+  const [crawlEnabled, setCrawlEnabled] = useState(true);
+  const [maxPages, setMaxPages] = useState(100);
+  const [maxDepth, setMaxDepth] = useState(3);
+  const [userAgent, setUserAgent] = useState(
+    "Mozilla/5.0 (compatible; CareerBot/1.0)",
+  );
+  const [headers, setHeaders] = useState("");
+  const [respectRobotsTxt, setRespectRobotsTxt] = useState(true);
+
+  // Selector configuration
+  const [includePatterns, setIncludePatterns] = useState("");
+  const [excludePatterns, setExcludePatterns] = useState("");
+  const [customSelectors, setCustomSelectors] = useState("");
+
   const [isLoading, setIsLoading] = useState(false);
-  const [crawlHistory, setCrawlHistory] = useState<CrawlHistoryItem[]>([]);
   const [errors, setErrors] = useState<{
     name?: string;
-    url?: string;
-    timePeriod?: string;
-    dateRange?: string;
+    base_url?: string;
   }>({});
-
-  // Mock crawl history data - memoized to prevent re-creation on every render
-  const mockCrawlHistory = useMemo<CrawlHistoryItem[]>(
-    () => [
-      {
-        id: "1",
-        date: "2024-12-16 10:30:00",
-        status: "success",
-        recordsCount: 1250,
-        duration: "2m 15s",
-        source: "JobStreet API",
-      },
-      {
-        id: "2",
-        date: "2024-12-15 14:20:00",
-        status: "success",
-        recordsCount: 980,
-        duration: "1m 45s",
-        source: "VietnamWorks API",
-      },
-      {
-        id: "3",
-        date: "2024-12-15 09:15:00",
-        status: "failed",
-        recordsCount: 0,
-        duration: "0m 30s",
-        source: "TopCV API",
-        errorMessage: "API rate limit exceeded",
-      },
-      {
-        id: "4",
-        date: "2024-12-14 16:45:00",
-        status: "in_progress",
-        recordsCount: 0,
-        duration: "Running...",
-        source: "CareerBuilder API",
-      },
-    ],
-    []
-  );
 
   // Reset form when dialog opens
   useEffect(() => {
     if (open) {
       setName(initialData?.name ?? "");
       setDescription(initialData?.description ?? "");
-      setUrl(initialData?.url ?? "");
-      setTimePeriod(initialData?.timePeriod ?? "");
-      setStartDate(initialData?.startDate ?? "");
-      setEndDate(initialData?.endDate ?? "");
+      setBaseUrl(initialData?.base_url ?? "");
       setIsActive(initialData?.isActive ?? true);
-      setCrawlHistory(mockCrawlHistory);
+      setCrawlFrequency(initialData?.crawl_frequency ?? "daily");
+      setCrawlEnabled(initialData?.crawl_enabled ?? true);
+
+      // Essential settings
+      setMaxPages(initialData?.max_pages ?? 100);
+      setMaxDepth(initialData?.max_depth ?? 3);
+      setUserAgent(
+        initialData?.user_agent ?? "Mozilla/5.0 (compatible; CareerBot/1.0)",
+      );
+      setHeaders(initialData?.headers ?? "");
+      setRespectRobotsTxt(initialData?.respect_robots_txt ?? true);
+
+      // Selector configuration
+      setIncludePatterns(initialData?.include_patterns ?? "");
+      setExcludePatterns(initialData?.exclude_patterns ?? "");
+      setCustomSelectors(initialData?.custom_selectors ?? "");
+
       setErrors({});
     }
-  }, [open, initialData, mockCrawlHistory]);
-
-  // Handle time period change and auto-set dates
-  const handleTimePeriodChange = (period: string) => {
-    setTimePeriod(period);
-    const today = new Date();
-    let start = new Date();
-
-    switch (period) {
-      case "7_days":
-        start = subDays(today, 7);
-        break;
-      case "30_days":
-        start = subDays(today, 30);
-        break;
-      case "3_months":
-        start = subMonths(today, 3);
-        break;
-      case "6_months":
-        start = subMonths(today, 6);
-        break;
-      case "1_year":
-        start = subYears(today, 1);
-        break;
-      case "custom":
-        // Don't auto-set dates for custom period
-        return;
-      default:
-        return;
-    }
-
-    setStartDate(format(start, "yyyy-MM-dd"));
-    setEndDate(format(today, "yyyy-MM-dd"));
-  };
+  }, [open, initialData]);
 
   const validateForm = (): boolean => {
     const newErrors: {
       name?: string;
-      url?: string;
-      timePeriod?: string;
-      dateRange?: string;
+      base_url?: string;
     } = {};
 
     if (!name.trim()) {
@@ -184,25 +120,11 @@ export function DataSourceDialog({
       newErrors.name = "Tên nguồn dữ liệu phải có ít nhất 3 ký tự";
     }
 
-    if (!url.trim()) {
-      newErrors.url = "URL không được để trống";
-    } else {
+    if (baseUrl.trim()) {
       try {
-        new URL(url.trim());
+        new URL(baseUrl.trim());
       } catch {
-        newErrors.url = "URL không hợp lệ";
-      }
-    }
-
-    if (!timePeriod) {
-      newErrors.timePeriod = "Vui lòng chọn khoảng thời gian";
-    }
-
-    if (timePeriod === "custom") {
-      if (!startDate || !endDate) {
-        newErrors.dateRange = "Vui lòng chọn ngày bắt đầu và kết thúc";
-      } else if (new Date(startDate) > new Date(endDate)) {
-        newErrors.dateRange = "Ngày bắt đầu phải trước ngày kết thúc";
+        newErrors.base_url = "URL không hợp lệ";
       }
     }
 
@@ -215,64 +137,32 @@ export function DataSourceDialog({
 
     setIsLoading(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 500)); // Simulate API call
 
       onSubmit?.({
         name: name.trim(),
         description: description.trim() || undefined,
-        url: url.trim(),
-        timePeriod,
-        startDate: startDate || undefined,
-        endDate: endDate || undefined,
+        base_url: baseUrl.trim() || undefined,
         isActive,
+        crawl_frequency: crawlFrequency,
+        crawl_enabled: crawlEnabled,
+        max_pages: maxPages,
+        max_depth: maxDepth,
+        user_agent: userAgent.trim() || undefined,
+        headers: headers.trim() || undefined,
+        respect_robots_txt: respectRobotsTxt,
+        include_patterns: includePatterns.trim() || undefined,
+        exclude_patterns: excludePatterns.trim() || undefined,
+        custom_selectors: customSelectors.trim() || undefined,
       });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "success":
-        return <CheckCircle className="w-4 h-4 text-green-600" />;
-      case "failed":
-        return <XCircle className="w-4 h-4 text-red-600" />;
-      case "in_progress":
-        return <RefreshCw className="w-4 h-4 text-blue-600 animate-spin" />;
-      default:
-        return <AlertCircle className="w-4 h-4 text-gray-600" />;
-    }
-  };
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case "success":
-        return "Thành công";
-      case "failed":
-        return "Thất bại";
-      case "in_progress":
-        return "Đang xử lý";
-      default:
-        return "Không xác định";
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "success":
-        return "text-green-600 bg-green-50";
-      case "failed":
-        return "text-red-600 bg-red-50";
-      case "in_progress":
-        return "text-blue-600 bg-blue-50";
-      default:
-        return "text-gray-600 bg-gray-50";
-    }
-  };
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-4xl bg-white border-2 border-green-200 max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-6xl bg-white border-2 border-green-200 max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-green-900 flex items-center gap-2">
             <Database className="w-5 h-5" />
@@ -281,11 +171,11 @@ export function DataSourceDialog({
         </DialogHeader>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 py-4">
-          {/* Left Column - Form */}
+          {/* Left Column - Data Source Info & Basic Crawl Config */}
           <div className="space-y-6">
             <div className="space-y-4">
-              <h3 className="text-lg font-medium text-green-900">
-                Thông tin cơ bản
+              <h3 className="text-lg font-medium text-green-900 border-b pb-2">
+                Thông tin nguồn dữ liệu
               </h3>
 
               {/* Tên nguồn dữ liệu */}
@@ -316,28 +206,28 @@ export function DataSourceDialog({
 
               {/* URL */}
               <div className="space-y-2">
-                <Label htmlFor="url" className="text-green-900">
-                  URL API *
+                <Label htmlFor="base_url" className="text-green-900">
+                  URL API
                 </Label>
                 <Input
-                  id="url"
+                  id="base_url"
                   type="url"
                   className={`border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900 placeholder:text-gray-300 ${
-                    errors.url
+                    errors.base_url
                       ? "border-red-500 focus:border-red-500 focus:ring-red-500"
                       : ""
                   }`}
                   placeholder="https://api.example.com/jobs"
-                  value={url}
+                  value={baseUrl}
                   onChange={(e) => {
-                    setUrl(e.target.value);
-                    if (errors.url) {
-                      setErrors({ ...errors, url: undefined });
+                    setBaseUrl(e.target.value);
+                    if (errors.base_url) {
+                      setErrors({ ...errors, base_url: undefined });
                     }
                   }}
                 />
-                {errors.url && (
-                  <p className="text-red-500 text-sm">{errors.url}</p>
+                {errors.base_url && (
+                  <p className="text-red-500 text-sm">{errors.base_url}</p>
                 )}
               </div>
 
@@ -354,209 +244,240 @@ export function DataSourceDialog({
                   onChange={(e) => setDescription(e.target.value)}
                 />
               </div>
-            </div>
 
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium text-green-900">
-                Cấu hình thu thập
-              </h3>
-
-              {/* Khoảng thời gian */}
+              {/* Trạng thái nguồn dữ liệu */}
               <div className="space-y-2">
                 <Label className="text-green-900">
-                  Khoảng thời gian thu thập *
+                  Trạng thái nguồn dữ liệu
                 </Label>
                 <Select
-                  value={timePeriod}
-                  onValueChange={(value) => {
-                    handleTimePeriodChange(value);
-                    if (errors.timePeriod) {
-                      setErrors({ ...errors, timePeriod: undefined });
-                    }
-                  }}
+                  value={isActive ? "active" : "inactive"}
+                  onValueChange={(value) => setIsActive(value === "active")}
                 >
-                  <SelectTrigger
-                    className={`border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900 ${
-                      errors.timePeriod
-                        ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-                        : ""
-                    }`}
-                  >
-                    <SelectValue placeholder="Chọn khoảng thời gian" />
+                  <SelectTrigger className="border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900">
+                    <SelectValue placeholder="Chọn trạng thái" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="7_days">7 ngày gần đây</SelectItem>
-                    <SelectItem value="30_days">30 ngày gần đây</SelectItem>
-                    <SelectItem value="3_months">3 tháng gần đây</SelectItem>
-                    <SelectItem value="6_months">6 tháng gần đây</SelectItem>
-                    <SelectItem value="1_year">1 năm gần đây</SelectItem>
-                    <SelectItem value="custom">Tùy chỉnh</SelectItem>
+                    <SelectItem value="active">🟢 Hoạt động</SelectItem>
+                    <SelectItem value="inactive">🔴 Tạm dừng</SelectItem>
                   </SelectContent>
                 </Select>
-                {errors.timePeriod && (
-                  <p className="text-red-500 text-sm">{errors.timePeriod}</p>
-                )}
+              </div>
+            </div>
+
+            {/* Basic Crawl Configuration */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium text-green-900 border-b pb-2">
+                Cấu hình crawl cơ bản
+              </h3>
+
+              {/* Tần suất crawl */}
+              <div className="space-y-2">
+                <Label className="text-green-900">Tần suất crawl</Label>
+                <Select
+                  value={crawlFrequency}
+                  onValueChange={setCrawlFrequency}
+                >
+                  <SelectTrigger className="border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900">
+                    <SelectValue placeholder="Chọn tần suất crawl" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="hourly">⏰ Mỗi giờ</SelectItem>
+                    <SelectItem value="daily">📅 Hàng ngày</SelectItem>
+                    <SelectItem value="weekly">📆 Hàng tuần</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
-              {/* Custom date range */}
-              {timePeriod === "custom" && (
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="startDate" className="text-green-900">
-                      Từ ngày
-                    </Label>
-                    <Input
-                      id="startDate"
-                      type="date"
-                      className={`border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900 ${
-                        errors.dateRange
-                          ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-                          : ""
-                      }`}
-                      value={startDate}
-                      onChange={(e) => {
-                        setStartDate(e.target.value);
-                        if (errors.dateRange) {
-                          setErrors({ ...errors, dateRange: undefined });
-                        }
-                      }}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="endDate" className="text-green-900">
-                      Đến ngày
-                    </Label>
-                    <Input
-                      id="endDate"
-                      type="date"
-                      className={`border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900 ${
-                        errors.dateRange
-                          ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-                          : ""
-                      }`}
-                      value={endDate}
-                      onChange={(e) => {
-                        setEndDate(e.target.value);
-                        if (errors.dateRange) {
-                          setErrors({ ...errors, dateRange: undefined });
-                        }
-                      }}
-                    />
-                  </div>
-                </div>
-              )}
+              {/* Trạng thái crawl */}
+              <div className="space-y-2">
+                <Label className="text-green-900">Trạng thái crawl</Label>
+                <Select
+                  value={crawlEnabled ? "enabled" : "disabled"}
+                  onValueChange={(value) =>
+                    setCrawlEnabled(value === "enabled")
+                  }
+                >
+                  <SelectTrigger className="border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900">
+                    <SelectValue placeholder="Chọn trạng thái crawl" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="enabled">✅ Kích hoạt</SelectItem>
+                    <SelectItem value="disabled">❌ Tắt</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-              {errors.dateRange && (
-                <p className="text-red-500 text-sm">{errors.dateRange}</p>
-              )}
-
-              {/* Trạng thái hoạt động */}
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="isActive"
-                  checked={isActive}
-                  onChange={(e) => setIsActive(e.target.checked)}
-                  className="w-4 h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500 focus:ring-2"
-                />
-                <Label htmlFor="isActive" className="text-green-900">
-                  Kích hoạt thu thập tự động
+              {/* Max Pages */}
+              <div className="space-y-2">
+                <Label htmlFor="max_pages" className="text-green-900">
+                  Số trang tối đa
                 </Label>
+                <Input
+                  id="max_pages"
+                  type="number"
+                  min="1"
+                  max="10000"
+                  className="border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900"
+                  value={maxPages}
+                  onChange={(e) => setMaxPages(parseInt(e.target.value) || 100)}
+                />
+              </div>
+
+              {/* Max Depth */}
+              <div className="space-y-2">
+                <Label htmlFor="max_depth" className="text-green-900">
+                  Độ sâu tối đa
+                </Label>
+                <Input
+                  id="max_depth"
+                  type="number"
+                  min="1"
+                  max="10"
+                  className="border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900"
+                  value={maxDepth}
+                  onChange={(e) => setMaxDepth(parseInt(e.target.value) || 3)}
+                />
+              </div>
+
+              {/* User Agent */}
+              <div className="space-y-2">
+                <Label htmlFor="user_agent" className="text-green-900">
+                  User Agent
+                </Label>
+                <Input
+                  id="user_agent"
+                  className="border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900"
+                  placeholder="Mozilla/5.0 (compatible; CareerBot/1.0)"
+                  value={userAgent}
+                  onChange={(e) => setUserAgent(e.target.value)}
+                />
+              </div>
+
+              {/* Headers */}
+              <div className="space-y-2">
+                <Label htmlFor="headers" className="text-green-900">
+                  Headers (JSON)
+                </Label>
+                <Textarea
+                  id="headers"
+                  className="border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900 placeholder:text-gray-300 min-h-[60px]"
+                  placeholder='{"Authorization": "Bearer token", "Accept": "application/json"}'
+                  value={headers}
+                  onChange={(e) => setHeaders(e.target.value)}
+                />
+              </div>
+
+              {/* Respect robots.txt */}
+              <div className="space-y-2">
+                <Label className="text-green-900">Tuân thủ robots.txt</Label>
+                <Select
+                  value={respectRobotsTxt ? "enabled" : "disabled"}
+                  onValueChange={(value) =>
+                    setRespectRobotsTxt(value === "enabled")
+                  }
+                >
+                  <SelectTrigger className="border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900">
+                    <SelectValue placeholder="Chọn cấu hình robots.txt" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="enabled">✅ Có</SelectItem>
+                    <SelectItem value="disabled">❌ Không</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </div>
 
-          {/* Right Column - Crawl History */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-medium text-green-900">
-                Lịch sử thu thập
+          {/* Right Column - Selector Configuration */}
+          <div className="space-y-6">
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium text-green-900 border-b pb-2 flex items-center gap-2">
+                🎯 Cấu hình Selector
               </h3>
-              <button
-                type="button"
-                className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-green-700 bg-green-50 border border-green-200 rounded-md hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors"
-              >
-                <RefreshCw className="w-4 h-4" />
-                Làm mới
-              </button>
-            </div>
 
-            <div className="border border-green-200 rounded-lg bg-gray-50 max-h-96 overflow-y-auto">
-              {crawlHistory.length === 0 ? (
-                <div className="p-6 text-center text-gray-500">
-                  <Database className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                  <p>Chưa có lịch sử thu thập</p>
-                </div>
-              ) : (
-                <div className="divide-y divide-green-100">
-                  {crawlHistory.map((item) => (
-                    <div
-                      key={item.id}
-                      className="p-4 hover:bg-white transition-colors"
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            {getStatusIcon(item.status)}
-                            <span
-                              className={`text-sm font-medium px-2 py-1 rounded-full ${getStatusColor(
-                                item.status
-                              )}`}
-                            >
-                              {getStatusText(item.status)}
-                            </span>
-                          </div>
+              {/* Custom Selectors - MOST IMPORTANT */}
+              <div className="space-y-2">
+                <Label
+                  htmlFor="custom_selectors"
+                  className="text-green-900 font-semibold"
+                >
+                  🔧 CSS Selectors tùy chỉnh (JSON) *
+                </Label>
+                <Textarea
+                  id="custom_selectors"
+                  className="border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900 placeholder:text-gray-300 min-h-[120px] font-mono text-sm"
+                  placeholder={`{
+  "title": ".job-title, h1.title, .position-name",
+  "company": ".company-name, .employer, .company-info h2",
+  "location": ".job-location, .location, .address",
+  "salary": ".salary, .wage, .compensation",
+  "description": ".job-description, .job-content, .description",
+  "requirements": ".requirements, .qualifications",
+  "benefits": ".benefits, .perks",
+  "posted_date": ".posted-date, .date, time",
+  "job_type": ".job-type, .employment-type",
+  "experience": ".experience-level, .exp-required"
+}`}
+                  value={customSelectors}
+                  onChange={(e) => setCustomSelectors(e.target.value)}
+                />
+                <p className="text-xs text-gray-600">
+                  Định nghĩa CSS selectors để extract các trường dữ liệu từ job
+                  listings
+                </p>
+              </div>
 
-                          <div className="space-y-1 text-sm text-gray-600">
-                            <div className="flex items-center gap-2">
-                              <Calendar className="w-4 h-4" />
-                              <span>{item.date}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Database className="w-4 h-4" />
-                              <span>{item.source}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Download className="w-4 h-4" />
-                              <span>
-                                {item.recordsCount.toLocaleString("vi-VN")} bản
-                                ghi
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Clock className="w-4 h-4" />
-                              <span>{item.duration}</span>
-                            </div>
-                          </div>
+              {/* Include Patterns */}
+              <div className="space-y-2">
+                <Label
+                  htmlFor="include_patterns"
+                  className="text-green-900 font-semibold"
+                >
+                  ✅ URL patterns để crawl
+                </Label>
+                <Textarea
+                  id="include_patterns"
+                  className="border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900 placeholder:text-gray-300 min-h-[80px] font-mono text-sm"
+                  placeholder={`/jobs/*
+/careers/*
+/job-detail/*
+/positions/*
+*.html`}
+                  value={includePatterns}
+                  onChange={(e) => setIncludePatterns(e.target.value)}
+                />
+                <p className="text-xs text-gray-600">
+                  Chỉ crawl các URL khớp với patterns này (mỗi pattern một dòng)
+                </p>
+              </div>
 
-                          {item.errorMessage && (
-                            <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-sm text-red-600">
-                              <strong>Lỗi:</strong> {item.errorMessage}
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="flex items-center gap-1 ml-4">
-                          <button
-                            type="button"
-                            className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded transition-colors"
-                            title="Xem chi tiết"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
-                          <button
-                            type="button"
-                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                            title="Xóa"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+              {/* Exclude Patterns */}
+              <div className="space-y-2">
+                <Label
+                  htmlFor="exclude_patterns"
+                  className="text-green-900 font-semibold"
+                >
+                  ❌ URL patterns để bỏ qua
+                </Label>
+                <Textarea
+                  id="exclude_patterns"
+                  className="border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900 placeholder:text-gray-300 min-h-[80px] font-mono text-sm"
+                  placeholder={`/admin/*
+/login/*
+/register/*
+/api/*
+*.pdf
+*.doc
+*.zip
+/search?*`}
+                  value={excludePatterns}
+                  onChange={(e) => setExcludePatterns(e.target.value)}
+                />
+                <p className="text-xs text-gray-600">
+                  Bỏ qua các URL khớp với patterns này (mỗi pattern một dòng)
+                </p>
+              </div>
             </div>
           </div>
         </div>

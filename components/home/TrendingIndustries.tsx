@@ -6,6 +6,7 @@ import SectionTitle from "@/components/common/SectionTitle";
 import PaginationArrows from "../common/PaginationArrows";
 import { categoryAPI } from "@/services/category";
 import { PublicCategory } from "@/types/category";
+import { logger } from "@/lib/logger";
 
 export default function TrendingIndustries() {
   // Data states
@@ -27,7 +28,7 @@ export default function TrendingIndustries() {
 
         setCategories(response.data.data || []);
       } catch (err) {
-        console.error("❌ Failed to fetch categories:", err);
+        logger.error("Failed to fetch categories", err);
         setError("Failed to load categories");
       } finally {
         setLoading(false);

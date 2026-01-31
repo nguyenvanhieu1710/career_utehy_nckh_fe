@@ -1,9 +1,15 @@
 "use client";
 
-import { Building2, Briefcase, Users, Calendar, ChevronDown } from "lucide-react";
-import { format, subMonths } from 'date-fns';
-import { vi } from 'date-fns/locale';
-import { useState } from 'react';
+import {
+  Building2,
+  Briefcase,
+  Users,
+  Calendar,
+  ChevronDown,
+} from "lucide-react";
+import { format, subMonths } from "date-fns";
+import { vi } from "date-fns/locale";
+import { useState } from "react";
 import {
   LineChart,
   Line,
@@ -40,21 +46,54 @@ const stats = [
 ];
 
 const chartData = [
-  { name: "Tháng 1", visited_jobs: 4000, jobs_crawed: 2400, registered_students: 2400 },
-  { name: "Tháng 2", visited_jobs: 3000, jobs_crawed: 1398, registered_students: 2210 },
-  { name: "Tháng 3", visited_jobs: 2000, jobs_crawed: 9800, registered_students: 2290 },
-  { name: "Tháng 4", visited_jobs: 2780, jobs_crawed: 3908, registered_students: 2000 },
-  { name: "Tháng 5", visited_jobs: 1890, jobs_crawed: 4800, registered_students: 2181 },
-  { name: "Tháng 6", visited_jobs: 2390, jobs_crawed: 3800, registered_students: 2500 },
-  { name: "Tháng 7", visited_jobs: 3490, jobs_crawed: 4300, registered_students: 2100 },
+  {
+    name: "Tháng 1",
+    visited_jobs: 4000,
+    jobs_crawed: 2400,
+    registered_students: 2400,
+  },
+  {
+    name: "Tháng 2",
+    visited_jobs: 3000,
+    jobs_crawed: 1398,
+    registered_students: 2210,
+  },
+  {
+    name: "Tháng 3",
+    visited_jobs: 2000,
+    jobs_crawed: 9800,
+    registered_students: 2290,
+  },
+  {
+    name: "Tháng 4",
+    visited_jobs: 2780,
+    jobs_crawed: 3908,
+    registered_students: 2000,
+  },
+  {
+    name: "Tháng 5",
+    visited_jobs: 1890,
+    jobs_crawed: 4800,
+    registered_students: 2181,
+  },
+  {
+    name: "Tháng 6",
+    visited_jobs: 2390,
+    jobs_crawed: 3800,
+    registered_students: 2500,
+  },
+  {
+    name: "Tháng 7",
+    visited_jobs: 3490,
+    jobs_crawed: 4300,
+    registered_students: 2100,
+  },
 ];
 
 export default function DashboardPage() {
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold text-gray-800 mb-6">
-        Quản lý nguồn dữ liệu
-      </h1>
+    <div className="p-2">
+      <h1 className="text-2xl font-bold text-gray-800 mb-3">Dashboard</h1>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -83,7 +122,7 @@ export default function DashboardPage() {
           {/* Date Range Filter */}
           <div className="flex items-center gap-4 mb-6">
             <div className="relative">
-              <select 
+              <select
                 className="appearance-none bg-white border border-gray-300 rounded-lg py-2 pl-3 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 defaultValue="7days"
               >
@@ -93,13 +132,13 @@ export default function DashboardPage() {
               </select>
               <ChevronDown className="h-4 w-4 absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
             </div>
-            
+
             <div className="flex items-center gap-2">
               <div className="relative">
                 <input
                   type="date"
                   className="border border-gray-300 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer"
-                  defaultValue={format(subMonths(new Date(), 1), 'yyyy-MM-dd')}
+                  defaultValue={format(subMonths(new Date(), 1), "yyyy-MM-dd")}
                 />
               </div>
               <span>đến</span>
@@ -107,7 +146,7 @@ export default function DashboardPage() {
                 <input
                   type="date"
                   className="border border-gray-300 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer"
-                  defaultValue={format(new Date(), 'yyyy-MM-dd')}
+                  defaultValue={format(new Date(), "yyyy-MM-dd")}
                 />
               </div>
               <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer">

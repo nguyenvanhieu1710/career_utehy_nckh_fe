@@ -11,12 +11,14 @@ import { NotificationDialog } from "@/components/admin/NotificationDialog";
 import { ActionButtons } from "@/components/admin/ActionButtons";
 import { UserRoleDisplay } from "@/components/admin/UserRoleDisplay";
 import { StatusBadge } from "@/components/common/StatusBadge";
+import { UserManagementGuard } from "@/components/auth/PermissionGuard";
 import { userAPI } from "@/services/user";
 import { useRoles } from "@/contexts/RolesContext";
 import { useDebounce } from "@/hooks/useDebounce";
 import { GetSchema } from "@/types/base";
 import { User } from "@/types/user";
 import { DialogState, AccountDialogSubmitData } from "@/types/dialog";
+import { logger } from "@/lib/logger";
 
 export default function UserManagementPage() {
   const [loading, setLoading] = useState(true);
@@ -129,13 +131,10 @@ export default function UserManagementPage() {
           await userAPI.uploadAvatar(
             createResult.data.data.id.toString(),
             data.avatarFile,
-            true
+            true,
           );
         } catch (avatarError) {
-          console.warn(
-            "Avatar upload failed, but user was created:",
-            avatarError
-          );
+          logger.warn("Avatar upload failed, but user was created", avatarError);
         }
       }
 
@@ -246,7 +245,7 @@ export default function UserManagementPage() {
     // Load user roles for editing
     try {
       const userRoles = await userAPI.getUserRolesPermissions(
-        user.id.toString()
+        user.id.toString(),
       );
       const currentRoleId = userRoles.data.data.roles?.[0]?.id || "";
 
@@ -256,7 +255,7 @@ export default function UserManagementPage() {
         currentRoleId, // Add this for dialog initialization
       } as User & { currentRoleId: string });
     } catch {
-      console.error("Failed to load user roles");
+      logger.error("Failed to load user roles");
     }
 
     setIsAddDialogOpen(true);
@@ -312,103 +311,116 @@ export default function UserManagementPage() {
       label: "Hành động",
       render: (user) => (
         <div className="flex gap-2">
-          <ActionButtons type="edit" onClick={() => handleEdit(user)} />
-          <ActionButtons type="delete" onClick={() => handleDelete(user)} />
+          <ActionButtons
+            type="edit"
+            permission="user.update"
+            onClick={() => handleEdit(user)}
+          />
+          <ActionButtons
+            type="delete"
+            permission="user.delete"
+            onClick={() => handleDelete(user)}
+          />
         </div>
       ),
     },
   ] as Column<User>[];
 
   return (
-    <div className="max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Quản lý tài khoản</h1>
-        <div className="flex gap-2">
-          <AddButton
-            onClick={() => {
-              setSelectedUser(null);
-              setIsAddDialogOpen(true);
-            }}
-          />
+    <UserManagementGuard>
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">
+            Quản lý tài khoản
+          </h1>
+          <div className="flex gap-2">
+            <AddButton
+              permission="user.create"
+              onClick={() => {
+                setSelectedUser(null);
+                setIsAddDialogOpen(true);
+              }}
+            />
+          </div>
         </div>
-      </div>
 
-      {/* Filter */}
-      <Filters
-        role={roleFilter}
-        status={statusFilter}
-        searchKeyword={filters.searchKeyword || ""}
-        onRoleChange={handleRoleChange}
-        onStatusChange={handleStatusChange}
-        onSearchChange={handleSearchChange}
-        availableRoles={availableRoles}
-        rolesLoading={rolesLoading}
-      />
+        {/* Filter */}
+        <Filters
+          role={roleFilter}
+          status={statusFilter}
+          searchKeyword={filters.searchKeyword || ""}
+          onRoleChange={handleRoleChange}
+          onStatusChange={handleStatusChange}
+          onSearchChange={handleSearchChange}
+          availableRoles={availableRoles}
+          rolesLoading={rolesLoading}
+        />
 
-      {/* Table */}
-      <div className="bg-white rounded-lg shadow-sm border">
-        <div className="p-4">
-          <Table columns={columns} data={users} loading={loading} />
+        {/* Table */}
+        <div className="bg-white rounded-lg shadow-sm border">
+          <div className="p-4">
+            <Table columns={columns} data={users} loading={loading} />
+          </div>
         </div>
+
+        {/* Pagination */}
+        <Pagination
+          amountOfRecord={total}
+          currentPage={filters.page || 1}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
+        />
+
+        {/* Add/Edit Account Dialog */}
+        <AccountDialog
+          open={isAddDialogOpen}
+          onOpenChange={setIsAddDialogOpen}
+          initialData={
+            selectedUser
+              ? {
+                  fullname: selectedUser.fullname,
+                  email: selectedUser.email,
+                  role:
+                    (selectedUser as User & { currentRoleId: string })
+                      .currentRoleId || "", // Use loaded role ID
+                  status:
+                    selectedUser.action_status === "active"
+                      ? "active"
+                      : "inactive",
+                  avatar: selectedUser.avatar_url,
+                }
+              : undefined
+          }
+          user={selectedUser || undefined}
+          mode={selectedUser ? "edit" : "add"}
+          onSubmit={(data) =>
+            selectedUser ? handleUpdateUser(data) : handleAddUser(data)
+          }
+          availableRoles={availableRoles}
+          rolesLoading={rolesLoading}
+        />
+
+        {/* Delete Confirmation Dialog */}
+        <DeleteConfirmationDialog
+          open={isDeleteDialogOpen}
+          onOpenChange={setIsDeleteDialogOpen}
+          onConfirm={handleDeleteUser}
+          title="Xác nhận xóa người dùng"
+          description={`Bạn có chắc chắn muốn xóa người dùng ${selectedUser?.fullname}?`}
+        />
+
+        {/* Notification Dialog */}
+        <NotificationDialog
+          open={dialogState.isOpen}
+          onOpenChange={(open) =>
+            setDialogState({ ...dialogState, isOpen: open })
+          }
+          title={dialogState.title}
+          message={dialogState.message}
+          type={dialogState.type}
+        />
       </div>
-
-      {/* Pagination */}
-      <Pagination
-        amountOfRecord={total}
-        currentPage={filters.page || 1}
-        totalPages={totalPages}
-        onPageChange={handlePageChange}
-      />
-
-      {/* Add/Edit Account Dialog */}
-      <AccountDialog
-        open={isAddDialogOpen}
-        onOpenChange={setIsAddDialogOpen}
-        initialData={
-          selectedUser
-            ? {
-                fullname: selectedUser.fullname,
-                email: selectedUser.email,
-                role:
-                  (selectedUser as User & { currentRoleId: string })
-                    .currentRoleId || "", // Use loaded role ID
-                status:
-                  selectedUser.action_status === "active"
-                    ? "active"
-                    : "inactive",
-                avatar: selectedUser.avatar_url,
-              }
-            : undefined
-        }
-        user={selectedUser || undefined}
-        mode={selectedUser ? "edit" : "add"}
-        onSubmit={(data) =>
-          selectedUser ? handleUpdateUser(data) : handleAddUser(data)
-        }
-        availableRoles={availableRoles}
-        rolesLoading={rolesLoading}
-      />
-
-      {/* Delete Confirmation Dialog */}
-      <DeleteConfirmationDialog
-        open={isDeleteDialogOpen}
-        onOpenChange={setIsDeleteDialogOpen}
-        onConfirm={handleDeleteUser}
-        title="Xác nhận xóa người dùng"
-        description={`Bạn có chắc chắn muốn xóa người dùng ${selectedUser?.fullname}?`}
-      />
-
-      {/* Notification Dialog */}
-      <NotificationDialog
-        open={dialogState.isOpen}
-        onOpenChange={(open) =>
-          setDialogState({ ...dialogState, isOpen: open })
-        }
-        title={dialogState.title}
-        message={dialogState.message}
-        type={dialogState.type}
-      />
-    </div>
+    </UserManagementGuard>
   );
 }

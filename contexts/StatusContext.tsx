@@ -9,6 +9,7 @@ import React, {
 } from "react";
 import { statusAPI } from "@/services/status";
 import { StatusOption } from "@/types/status";
+import { logger } from "@/lib/logger";
 
 interface StatusContextType {
   statusOptions: StatusOption[];
@@ -37,8 +38,9 @@ export function StatusProvider({ children }: StatusProviderProps) {
       const response = await statusAPI.getStatusOptions();
       setStatusOptions(response.data?.data || []);
     } catch (err: unknown) {
-      console.warn(
-        "Failed to fetch status options from backend, using local fallback"
+      logger.warn(
+        "Failed to fetch status options from backend, using local fallback",
+        err
       );
 
       // Fallback to local status options

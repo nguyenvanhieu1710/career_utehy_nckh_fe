@@ -1,308 +1,77 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Filters } from "@/components/admin/Filters";
-import { AddButton } from "@/components/admin/AddButton";
 import { Column, Table } from "@/components/admin/Table";
 import { Pagination } from "@/components/admin/Pagination";
+import { ActionButtons } from "@/components/admin/ActionButtons";
+import { AddButton } from "@/components/admin/AddButton";
 import { DataSourceDialog } from "@/components/admin/DataSourceDialog";
+import { DeleteConfirmationDialog } from "@/components/admin/DeleteConfirmationDialog";
+import { NotificationDialog } from "@/components/admin/NotificationDialog";
+import { CrawlDetailDialog } from "@/components/admin/CrawlDetailDialog";
+import { useDataSources } from "@/hooks/useDataSources";
+import { DataSource } from "@/types/data-source";
+import { CrawlHistory } from "@/types/crawl-history";
+import { DialogState } from "@/types/dialog";
+import {
+  getDataSourceStatusIcon,
+  getDataSourceStatusText,
+  getDataSourceStatusColor,
+} from "@/utils/crawl-helpers";
+import { formatDate } from "@/utils/formatters";
+import { CheckCircle, Clock } from "lucide-react";
 
 interface DataSourceDialogData {
   name?: string;
+  base_url?: string;
+  status?: "active" | "inactive";
   description?: string;
-  url?: string;
   timePeriod?: string;
   startDate?: string;
   endDate?: string;
   isActive?: boolean;
+  // Crawl config fields
+  crawl_frequency?: string;
+  crawl_enabled?: boolean;
 }
-import { DeleteConfirmationDialog } from "@/components/admin/DeleteConfirmationDialog";
-import { NotificationDialog } from "@/components/admin/NotificationDialog";
-import { ActionButtons } from "@/components/admin/ActionButtons";
-import {
-  Database,
-  CheckCircle,
-  XCircle,
-  RefreshCw,
-  AlertTriangle,
-  Clock,
-  Download,
-} from "lucide-react";
-import { format } from "date-fns";
-
-interface DataSource {
-  id: string;
-  name: string;
-  description?: string;
-  url: string;
-  timePeriod: string;
-  startDate?: string;
-  endDate?: string;
-  isActive: boolean;
-  status: "active" | "inactive" | "error" | "crawling";
-  lastCrawl?: string;
-  totalRecords: number;
-  successRate: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface DialogState {
-  isOpen: boolean;
-  title: string;
-  message: string;
-  type: "success" | "error" | "warning";
-}
-
-// Mock data for data sources
-const mockDataSources: DataSource[] = [
-  {
-    id: "1",
-    name: "JobStreet API",
-    description: "Thu thập dữ liệu việc làm từ JobStreet",
-    url: "https://api.jobstreet.com/jobs",
-    timePeriod: "30_days",
-    startDate: "2024-11-16",
-    endDate: "2024-12-16",
-    isActive: true,
-    status: "active",
-    lastCrawl: "2024-12-16 10:30:00",
-    totalRecords: 15420,
-    successRate: 98.5,
-    createdAt: "2024-11-01 09:00:00",
-    updatedAt: "2024-12-16 10:30:00",
-  },
-  {
-    id: "2",
-    name: "VietnamWorks API",
-    description: "Thu thập dữ liệu việc làm từ VietnamWorks",
-    url: "https://api.vietnamworks.com/jobs",
-    timePeriod: "7_days",
-    startDate: "2024-12-09",
-    endDate: "2024-12-16",
-    isActive: true,
-    status: "crawling",
-    lastCrawl: "2024-12-16 14:15:00",
-    totalRecords: 8950,
-    successRate: 95.2,
-    createdAt: "2024-11-15 14:30:00",
-    updatedAt: "2024-12-16 14:15:00",
-  },
-  {
-    id: "3",
-    name: "TopCV API",
-    description: "Thu thập dữ liệu việc làm từ TopCV",
-    url: "https://api.topcv.vn/jobs",
-    timePeriod: "custom",
-    startDate: "2024-12-01",
-    endDate: "2024-12-31",
-    isActive: false,
-    status: "error",
-    lastCrawl: "2024-12-15 09:15:00",
-    totalRecords: 3200,
-    successRate: 78.3,
-    createdAt: "2024-12-01 10:00:00",
-    updatedAt: "2024-12-15 09:15:00",
-  },
-  {
-    id: "4",
-    name: "CareerBuilder API",
-    description: "Thu thập dữ liệu việc làm từ CareerBuilder",
-    url: "https://api.careerbuilder.vn/jobs",
-    timePeriod: "3_months",
-    startDate: "2024-09-16",
-    endDate: "2024-12-16",
-    isActive: true,
-    status: "inactive",
-    lastCrawl: "2024-12-14 16:45:00",
-    totalRecords: 12750,
-    successRate: 92.8,
-    createdAt: "2024-09-01 11:20:00",
-    updatedAt: "2024-12-14 16:45:00",
-  },
-];
 
 export default function DataManagementPage() {
-  const [loading, setLoading] = useState(false);
-  const [dataSources, setDataSources] = useState<DataSource[]>(mockDataSources);
+  // Dialog states
   const [selectedDataSource, setSelectedDataSource] =
     useState<DataSource | null>(null);
+  const [selectedCrawlHistory, setSelectedCrawlHistory] =
+    useState<CrawlHistory | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isCrawlDetailOpen, setIsCrawlDetailOpen] = useState(false);
   const [dialogState, setDialogState] = useState<DialogState>({
     isOpen: false,
     title: "",
     message: "",
     type: "success",
   });
-  const [filters, setFilters] = useState({
-    searchKeyword: "",
-    page: 1,
-    row: 10,
-  });
-  const [totalPages, setTotalPages] = useState(1);
-  const [total, setTotal] = useState(0);
-  const [statusFilter, setStatusFilter] = useState<string>("all");
 
-  useEffect(() => {
-    // Simulate API call
-    const filteredData = dataSources.filter((ds) => {
-      const matchesSearch =
-        !filters.searchKeyword ||
-        ds.name.toLowerCase().includes(filters.searchKeyword.toLowerCase()) ||
-        ds.description
-          ?.toLowerCase()
-          .includes(filters.searchKeyword.toLowerCase());
+  // Data sources hook
+  const {
+    dataSources,
+    loading,
+    error,
+    pagination,
+    filters,
+    handleStatusChange,
+    handleSearchChange,
+    handlePageChange,
+    refreshData,
+    createDataSource,
+    updateDataSource,
+    deleteDataSource,
+  } = useDataSources();
 
-      const matchesStatus =
-        statusFilter === "all" || ds.status === statusFilter;
-
-      return matchesSearch && matchesStatus;
-    });
-
-    setTotal(filteredData.length);
-    setTotalPages(Math.ceil(filteredData.length / filters.row));
-  }, [dataSources, filters, statusFilter]);
-
-  const handleStatusChange = (value: string) => {
-    setStatusFilter(value);
-    setFilters({ ...filters, page: 1 });
-  };
-
-  const handleSearchChange = (value: string) => {
-    setFilters({ ...filters, searchKeyword: value, page: 1 });
-  };
-
-  const handlePageChange = (page: number) => {
-    setFilters({ ...filters, page });
-  };
-
-  const handleAddDataSource = async (data: DataSourceDialogData) => {
-    try {
-      setLoading(true);
-
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      const newDataSource: DataSource = {
-        id: (dataSources.length + 1).toString(),
-        name: data.name || "",
-        description: data.description,
-        url: data.url || "",
-        timePeriod: data.timePeriod || "",
-        startDate: data.startDate,
-        endDate: data.endDate,
-        isActive: data.isActive || false,
-        status: (data.isActive ? "active" : "inactive") as DataSource["status"],
-        totalRecords: 0,
-        successRate: 0,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-
-      setDataSources([...dataSources, newDataSource]);
-      setDialogState({
-        isOpen: true,
-        title: "Thêm nguồn dữ liệu thành công",
-        message: `Nguồn dữ liệu ${data.name} đã được thêm!`,
-        type: "success",
-      });
-      setIsAddDialogOpen(false);
-    } catch {
-      setDialogState({
-        isOpen: true,
-        title: "Thêm nguồn dữ liệu thất bại",
-        message: "Có lỗi xảy ra khi thêm nguồn dữ liệu!",
-        type: "error",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleUpdateDataSource = async (data: DataSourceDialogData) => {
-    if (!selectedDataSource) return;
-
-    try {
-      setLoading(true);
-
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      const updatedDataSources = dataSources.map((ds) =>
-        ds.id === selectedDataSource.id
-          ? {
-              ...ds,
-              name: data.name || ds.name,
-              description: data.description,
-              url: data.url || ds.url,
-              timePeriod: data.timePeriod || ds.timePeriod,
-              startDate: data.startDate,
-              endDate: data.endDate,
-              isActive:
-                data.isActive !== undefined ? data.isActive : ds.isActive,
-              updatedAt: new Date().toISOString(),
-              status: (data.isActive
-                ? "active"
-                : "inactive") as DataSource["status"],
-            }
-          : ds
-      );
-
-      setDataSources(updatedDataSources);
-      setDialogState({
-        isOpen: true,
-        title: "Cập nhật thành công",
-        message: "Thông tin nguồn dữ liệu đã được cập nhật!",
-        type: "success",
-      });
-      setIsAddDialogOpen(false);
-      setSelectedDataSource(null);
-    } catch {
-      setDialogState({
-        isOpen: true,
-        title: "Cập nhật thất bại",
-        message: "Có lỗi xảy ra khi cập nhật nguồn dữ liệu!",
-        type: "error",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDeleteDataSource = async () => {
-    if (!selectedDataSource) return;
-
-    try {
-      setLoading(true);
-
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      const updatedDataSources = dataSources.filter(
-        (ds) => ds.id !== selectedDataSource.id
-      );
-      setDataSources(updatedDataSources);
-
-      setIsDeleteDialogOpen(false);
-      setDialogState({
-        isOpen: true,
-        title: "Xóa nguồn dữ liệu thành công",
-        message: `Nguồn dữ liệu ${selectedDataSource.name} đã được xóa!`,
-        type: "success",
-      });
-      setSelectedDataSource(null);
-    } catch {
-      setDialogState({
-        isOpen: true,
-        title: "Xóa thất bại",
-        message: "Có lỗi xảy ra khi xóa nguồn dữ liệu!",
-        type: "error",
-      });
-      setIsDeleteDialogOpen(false);
-    } finally {
-      setLoading(false);
-    }
+  // Handlers
+  const handleAddClick = () => {
+    setSelectedDataSource(null);
+    setIsAddDialogOpen(true);
   };
 
   const handleEdit = (dataSource: DataSource) => {
@@ -315,93 +84,122 @@ export default function DataManagementPage() {
     setIsDeleteDialogOpen(true);
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "active":
-        return <CheckCircle className="w-4 h-4 text-green-600" />;
-      case "inactive":
-        return <XCircle className="w-4 h-4 text-gray-600" />;
-      case "error":
-        return <AlertTriangle className="w-4 h-4 text-red-600" />;
-      case "crawling":
-        return <RefreshCw className="w-4 h-4 text-blue-600 animate-spin" />;
-      default:
-        return <Database className="w-4 h-4 text-gray-600" />;
+  const handleViewHistory = (dataSource: DataSource) => {
+    // TODO: Fetch crawl history for this data source
+    // For now, just open the dialog with mock data
+    setSelectedCrawlHistory({
+      id: "mock-1",
+      source_id: dataSource.id,
+      source_name: dataSource.name,
+      status: "completed",
+      started_at: new Date().toISOString(),
+      completed_at: new Date().toISOString(),
+      duration_seconds: 120,
+      total_jobs_found: 150,
+      jobs_created: 100,
+      jobs_updated: 45,
+      jobs_failed: 5,
+      jobs_skipped: 0,
+      success_rate: 96.7,
+      error_count: 5,
+      crawler_version: "1.0.0",
+    });
+    setIsCrawlDetailOpen(true);
+  };
+
+  const handleAddDataSource = async (data: DataSourceDialogData) => {
+    try {
+      const apiData = {
+        name: data.name || "",
+        description: data.description,
+        base_url: data.base_url,
+        status: data.isActive ? "active" : "inactive",
+        crawl_frequency: data.crawl_frequency || "daily",
+        crawl_enabled: data.crawl_enabled !== false,
+      };
+
+      await createDataSource(apiData);
+
+      setDialogState({
+        isOpen: true,
+        title: "Thêm nguồn dữ liệu thành công",
+        message: `Nguồn dữ liệu ${data.name} đã được thêm!`,
+        type: "success",
+      });
+      setIsAddDialogOpen(false);
+    } catch (error: any) {
+      setDialogState({
+        isOpen: true,
+        title: "Thêm nguồn dữ liệu thất bại",
+        message: error.message || "Có lỗi xảy ra khi thêm nguồn dữ liệu!",
+        type: "error",
+      });
     }
   };
 
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case "active":
-        return "Hoạt động";
-      case "inactive":
-        return "Tạm dừng";
-      case "error":
-        return "Lỗi";
-      case "crawling":
-        return "Đang thu thập";
-      default:
-        return "Không xác định";
+  const handleUpdateDataSource = async (data: DataSourceDialogData) => {
+    if (!selectedDataSource) return;
+
+    try {
+      const apiData = {
+        name: data.name || selectedDataSource.name,
+        description: data.description,
+        base_url: data.base_url,
+        status: data.isActive ? "active" : "inactive",
+        crawl_frequency: data.crawl_frequency,
+        crawl_enabled: data.crawl_enabled,
+      };
+
+      await updateDataSource(selectedDataSource.id, apiData);
+
+      setDialogState({
+        isOpen: true,
+        title: "Cập nhật thành công",
+        message: "Thông tin nguồn dữ liệu đã được cập nhật!",
+        type: "success",
+      });
+      setIsAddDialogOpen(false);
+      setSelectedDataSource(null);
+    } catch (error: any) {
+      setDialogState({
+        isOpen: true,
+        title: "Cập nhật thất bại",
+        message: error.message || "Có lỗi xảy ra khi cập nhật nguồn dữ liệu!",
+        type: "error",
+      });
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "active":
-        return "text-green-600 bg-green-50";
-      case "inactive":
-        return "text-gray-600 bg-gray-50";
-      case "error":
-        return "text-red-600 bg-red-50";
-      case "crawling":
-        return "text-blue-600 bg-blue-50";
-      default:
-        return "text-gray-600 bg-gray-50";
+  const handleDeleteDataSource = async () => {
+    if (!selectedDataSource) return;
+
+    try {
+      await deleteDataSource(selectedDataSource.id);
+
+      setIsDeleteDialogOpen(false);
+      setDialogState({
+        isOpen: true,
+        title: "Xóa nguồn dữ liệu thành công",
+        message: `Nguồn dữ liệu ${selectedDataSource.name} đã được xóa!`,
+        type: "success",
+      });
+      setSelectedDataSource(null);
+    } catch (error: any) {
+      setDialogState({
+        isOpen: true,
+        title: "Xóa thất bại",
+        message: error.message || "Có lỗi xảy ra khi xóa nguồn dữ liệu!",
+        type: "error",
+      });
+      setIsDeleteDialogOpen(false);
     }
   };
 
-  const getTimePeriodText = (timePeriod: string) => {
-    switch (timePeriod) {
-      case "7_days":
-        return "7 ngày";
-      case "30_days":
-        return "30 ngày";
-      case "3_months":
-        return "3 tháng";
-      case "6_months":
-        return "6 tháng";
-      case "1_year":
-        return "1 năm";
-      case "custom":
-        return "Tùy chỉnh";
-      default:
-        return "Không xác định";
-    }
-  };
-
-  // Filter data for current page
-  const filteredData = dataSources.filter((ds) => {
-    const matchesSearch =
-      !filters.searchKeyword ||
-      ds.name.toLowerCase().includes(filters.searchKeyword.toLowerCase()) ||
-      ds.description
-        ?.toLowerCase()
-        .includes(filters.searchKeyword.toLowerCase());
-
-    const matchesStatus = statusFilter === "all" || ds.status === statusFilter;
-
-    return matchesSearch && matchesStatus;
-  });
-
-  const paginatedData = filteredData.slice(
-    (filters.page - 1) * filters.row,
-    filters.page * filters.row
-  );
-
+  // Table columns
   const columns: Column<DataSource>[] = [
     {
       label: "#",
-      render: (_, i) => ((filters.page || 1) - 1) * (filters.row || 10) + i + 1,
+      render: (_, i) => (pagination.page - 1) * pagination.limit + i + 1,
     },
     {
       label: "Tên nguồn dữ liệu",
@@ -420,28 +218,9 @@ export default function DataManagementPage() {
       label: "URL",
       render: (dataSource) => (
         <div className="max-w-xs">
-          <div
-            className="text-sm text-blue-600 truncate"
-            title={dataSource.url}
-          >
-            {dataSource.url}
+          <div title={dataSource.base_url || ""}>
+            {dataSource.base_url || "N/A"}
           </div>
-        </div>
-      ),
-    },
-    {
-      label: "Khoảng thời gian",
-      render: (dataSource) => (
-        <div className="text-sm">
-          <div className="font-medium">
-            {getTimePeriodText(dataSource.timePeriod)}
-          </div>
-          {dataSource.startDate && dataSource.endDate && (
-            <div className="text-gray-500 text-xs mt-1">
-              {format(new Date(dataSource.startDate), "dd/MM/yyyy")} -{" "}
-              {format(new Date(dataSource.endDate), "dd/MM/yyyy")}
-            </div>
-          )}
         </div>
       ),
     },
@@ -449,38 +228,31 @@ export default function DataManagementPage() {
       label: "Trạng thái",
       render: (dataSource) => (
         <div className="flex items-center gap-2">
-          {getStatusIcon(dataSource.status)}
+          {getDataSourceStatusIcon(dataSource.status)}
           <span
-            className={`text-sm font-medium px-2 py-1 rounded-full ${getStatusColor(
-              dataSource.status
+            className={`text-sm font-medium px-2 py-1 rounded-full ${getDataSourceStatusColor(
+              dataSource.status,
             )}`}
           >
-            {getStatusText(dataSource.status)}
+            {getDataSourceStatusText(dataSource.status)}
           </span>
         </div>
       ),
     },
     {
-      label: "Thống kê",
+      label: "Cấu hình Crawl",
       render: (dataSource) => (
-        <div className="text-sm space-y-1">
-          <div className="flex items-center gap-1">
-            <Download className="w-3 h-3 text-gray-400" />
-            <span>
-              {dataSource.totalRecords.toLocaleString("vi-VN")} bản ghi
-            </span>
-          </div>
-          <div className="flex items-center gap-1">
-            <CheckCircle className="w-3 h-3 text-green-500" />
-            <span>{dataSource.successRate}% thành công</span>
-          </div>
-          {dataSource.lastCrawl && (
-            <div className="flex items-center gap-1">
-              <Clock className="w-3 h-3 text-gray-400" />
-              <span className="text-xs text-gray-500">
-                {format(new Date(dataSource.lastCrawl), "dd/MM HH:mm")}
-              </span>
-            </div>
+        <div className="flex items-center gap-1">
+          {dataSource.crawl_enabled ? (
+            <>
+              <CheckCircle className="w-3 h-3 text-green-500" />
+              <span className="text-green-600">Kích hoạt</span>
+            </>
+          ) : (
+            <>
+              <div className="w-3 h-3 rounded-full bg-red-500" />
+              <span className="text-red-600">Tắt</span>
+            </>
           )}
         </div>
       ),
@@ -489,15 +261,41 @@ export default function DataManagementPage() {
       label: "Hành động",
       render: (dataSource) => (
         <div className="flex gap-2">
-          <ActionButtons type="edit" onClick={() => handleEdit(dataSource)} />
+          <ActionButtons
+            type="history"
+            permission="crawl_history.view"
+            onClick={() => handleViewHistory(dataSource)}
+          />
+          <ActionButtons
+            type="edit"
+            permission="data_source.update"
+            onClick={() => handleEdit(dataSource)}
+          />
           <ActionButtons
             type="delete"
+            permission="data_source.delete"
             onClick={() => handleDelete(dataSource)}
           />
         </div>
       ),
     },
   ] as Column<DataSource>[];
+
+  if (error) {
+    return (
+      <div className="max-w-7xl mx-auto">
+        <div className="text-center p-8">
+          <p className="text-red-500 mb-4">{error}</p>
+          <button
+            onClick={refreshData}
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            Thử lại
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -508,77 +306,13 @@ export default function DataManagementPage() {
             Quản lý nguồn dữ liệu
           </h1>
         </div>
-        <AddButton
-          onClick={() => {
-            setSelectedDataSource(null);
-            setIsAddDialogOpen(true);
-          }}
-        />
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white p-4 rounded-lg border shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <Database className="w-5 h-5 text-green-600" />
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-gray-900">
-                {dataSources.length}
-              </div>
-              <div className="text-sm text-gray-600">Tổng nguồn dữ liệu</div>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-lg border shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <CheckCircle className="w-5 h-5 text-blue-600" />
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-gray-900">
-                {dataSources.filter((ds) => ds.status === "active").length}
-              </div>
-              <div className="text-sm text-gray-600">Đang hoạt động</div>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-lg border shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-yellow-100 rounded-lg">
-              <RefreshCw className="w-5 h-5 text-yellow-600" />
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-gray-900">
-                {dataSources.filter((ds) => ds.status === "crawling").length}
-              </div>
-              <div className="text-sm text-gray-600">Đang thu thập</div>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-lg border shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-red-100 rounded-lg">
-              <AlertTriangle className="w-5 h-5 text-red-600" />
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-gray-900">
-                {dataSources.filter((ds) => ds.status === "error").length}
-              </div>
-              <div className="text-sm text-gray-600">Có lỗi</div>
-            </div>
-          </div>
-        </div>
+        <AddButton permission="data_source.create" onClick={handleAddClick} />
       </div>
 
       {/* Filter */}
       <Filters
-        status={statusFilter}
-        searchKeyword={filters.searchKeyword || ""}
+        status={filters.status || "all"}
+        searchKeyword={filters.search_keyword || ""}
         onStatusChange={handleStatusChange}
         onSearchChange={handleSearchChange}
         hideRoleFilter={true}
@@ -588,15 +322,15 @@ export default function DataManagementPage() {
       {/* Table */}
       <div className="bg-white rounded-lg shadow-sm border">
         <div className="p-4">
-          <Table columns={columns} data={paginatedData} loading={loading} />
+          <Table columns={columns} data={dataSources} loading={loading} />
         </div>
       </div>
 
       {/* Pagination */}
       <Pagination
-        amountOfRecord={total}
-        currentPage={filters.page || 1}
-        totalPages={totalPages}
+        amountOfRecord={pagination.total}
+        currentPage={pagination.page}
+        totalPages={pagination.max_page}
         onPageChange={handlePageChange}
       />
 
@@ -609,11 +343,11 @@ export default function DataManagementPage() {
             ? {
                 name: selectedDataSource.name,
                 description: selectedDataSource.description,
-                url: selectedDataSource.url,
-                timePeriod: selectedDataSource.timePeriod,
-                startDate: selectedDataSource.startDate,
-                endDate: selectedDataSource.endDate,
-                isActive: selectedDataSource.isActive,
+                base_url: selectedDataSource.base_url || "",
+                isActive: selectedDataSource.status === "active",
+                // TODO: Load crawl config from API
+                crawl_frequency: "daily",
+                crawl_enabled: true,
               }
             : undefined
         }
@@ -632,6 +366,13 @@ export default function DataManagementPage() {
         onConfirm={handleDeleteDataSource}
         title="Xác nhận xóa nguồn dữ liệu"
         description={`Bạn có chắc chắn muốn xóa nguồn dữ liệu ${selectedDataSource?.name}? Hành động này không thể hoàn tác.`}
+      />
+
+      {/* Crawl Detail Dialog */}
+      <CrawlDetailDialog
+        open={isCrawlDetailOpen}
+        onOpenChange={setIsCrawlDetailOpen}
+        crawlHistory={selectedCrawlHistory}
       />
 
       {/* Notification Dialog */}

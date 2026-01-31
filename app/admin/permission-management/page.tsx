@@ -41,7 +41,7 @@ export default function RoleManagementPage() {
     permAPI
       .getPerms()
       .then((res) => {
-        setPerms(res.data);
+        setPerms(res.data.data);
       })
       .catch(() => {
         setDialogState({
@@ -214,8 +214,16 @@ export default function RoleManagementPage() {
       label: "Action",
       render: (role) => (
         <div className="flex gap-2">
-          <ActionButtons type="edit" onClick={() => handleEdit(role)} />
-          <ActionButtons type="delete" onClick={() => handleDelete(role)} />
+          <ActionButtons
+            type="edit"
+            permission="role.update"
+            onClick={() => handleEdit(role)}
+          />
+          <ActionButtons
+            type="delete"
+            permission="role.delete"
+            onClick={() => handleDelete(role)}
+          />
         </div>
       ),
     },
@@ -227,6 +235,7 @@ export default function RoleManagementPage() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Quản lý vai trò</h1>
         <AddButton
+          permission="role.create"
           onClick={() => {
             setSelectedRole(null);
             setIsAddDialogOpen(true);

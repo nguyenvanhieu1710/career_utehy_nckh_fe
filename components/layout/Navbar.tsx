@@ -7,6 +7,7 @@ import { Menu, X } from "lucide-react";
 import { MobileNavLink } from "./MobileNavLink";
 import { ProfileDropdown } from "./ProfileDropdown";
 import { useAuth } from "@/hooks/useAuth";
+import { userAPI } from "@/services/user";
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -79,9 +80,13 @@ export function Navbar() {
                   <div className="text-xs text-gray-500">@{user.username}</div>
                 </div>
                 <img
-                  src="/avatars/avatar-1.jpeg"
-                  alt="Avatar"
+                  src={userAPI.getAvatarUrl(user)}
+                  alt={`${user.fullname} avatar`}
                   className="w-10 h-10 rounded-full object-cover border"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.src = "/default-avatar.jpg";
+                  }}
                 />
               </button>
 

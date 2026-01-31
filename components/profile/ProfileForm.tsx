@@ -6,6 +6,7 @@ import { getUserStorage } from "@/services/auth";
 import { userAPI } from "@/services/user";
 import { NotificationDialog } from "@/components/admin/NotificationDialog";
 import { DialogState } from "@/types/dialog";
+import { logger } from "@/lib/logger";
 
 export default function ProfileForm() {
   const [form, setForm] = useState({
@@ -64,7 +65,7 @@ export default function ProfileForm() {
           gender: userData.gender || "",
         });
       } catch (error: unknown) {
-        console.error("Error loading user data:", error);
+        logger.error("Error loading user data", error);
         setDialogState({
           isOpen: true,
           title: "Lỗi tải dữ liệu",
@@ -242,6 +243,7 @@ export default function ProfileForm() {
           type: "success",
         });
       } catch (error: unknown) {
+        logger.error("Error updating user profile", error);
         setDialogState({
           isOpen: true,
           title: "Cập nhật thất bại",
@@ -598,6 +600,7 @@ function Input({
           name={name}
           value={value}
           onChange={onChange}
+          onBlur={onBlur}
           required={required}
           className="w-full border-2 border-gray-300 bg-white rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-[#0C6A4E] focus:border-[#0C6A4E] transition-all duration-200"
           placeholder={placeholder}
