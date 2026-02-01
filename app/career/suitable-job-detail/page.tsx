@@ -1,8 +1,6 @@
 "use client";
 
 import { useState, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
-import Link from "next/link";
 
 import { useAuth } from "@/hooks/useAuth";
 import { LoginRequired } from "@/components/auth/LoginRequired";
@@ -10,24 +8,19 @@ import {
   JobOverviewCard,
   SkillsAnalysis,
   MatchVisualization,
-  RadarChart,
   ImprovementSuggestions,
   EnhancedMatchScoreCard,
-  TabbedSection,
 } from "@/components/job-match";
 import {
   mockJobData,
   mockMatchData,
   mockSkillsData,
   mockChartData,
-  mockRadarData,
   mockSuggestions,
 } from "@/mocks/mockSuitableJobData";
 
 function SuitableJobDetailContent() {
   const { isAuthenticated, isLoading } = useAuth();
-  const searchParams = useSearchParams();
-  const jobId = searchParams.get("id");
 
   const [isSaved, setIsSaved] = useState(false);
 
@@ -69,6 +62,10 @@ function SuitableJobDetailContent() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-6xl mx-auto px-4 py-6">
+        <h1 className="text-center text-3xl sm:text-4xl font-bold tracking-wide text-indigo-600 mb-6">
+          PHÂN TÍCH ĐỘ PHÙ HỢP
+        </h1>
+
         {/* Job Overview Card */}
         <JobOverviewCard
           job={mockJobData}
@@ -89,71 +86,17 @@ function SuitableJobDetailContent() {
           className="mb-6 bg-white"
         />
 
-        <TabbedSection
-          tabs={[
-            {
-              id: "overview",
-              label: "Tổng quan",
-              content: (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <SkillsAnalysis
-                    skills={mockSkillsData}
-                    className="bg-white"
-                  />
-                  <RadarChart data={mockRadarData} className="bg-white" />
-                </div>
-              ),
-            },
-            {
-              id: "detailed",
-              label: "Chi tiết",
-              content: (
-                <MatchVisualization
-                  data={mockChartData}
-                  title="Biểu đồ phân tích trực quan"
-                  className="bg-white"
-                />
-              ),
-            },
-            {
-              id: "suggestions",
-              label: "Gợi ý",
-              badge: (
-                <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
-                  {mockSuggestions.length}
-                </span>
-              ),
-              content: (
-                <ImprovementSuggestions
-                  suggestions={mockSuggestions}
-                  className="bg-white"
-                />
-              ),
-            },
-          ]}
-          defaultTab="overview"
-          className="mb-6"
-        />
+        <div className="space-y-6 mb-6">
+          <SkillsAnalysis skills={mockSkillsData} className="bg-white" />
 
-        {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <button
-            className={`px-8 py-3 border-2 font-medium rounded-lg transition-colors cursor-pointer ${
-              isSaved
-                ? "border-green-600 text-green-600 hover:bg-green-50"
-                : "border-gray-300 text-gray-700 hover:bg-gray-50"
-            }`}
-            onClick={handleSaveJob}
-          >
-            {isSaved ? "Đã lưu" : "Lưu công việc"}
-          </button>
-          <Link
-            href={`/career/jobs/${jobId || "demo"}`}
-            className="px-8 py-3 border-2 border-gray-300 text-gray-700 hover:bg-gray-50 font-medium rounded-lg transition-colors text-center"
-          >
-            Xem chi tiết công việc
-          </Link>
-        </div>
+          <ImprovementSuggestions suggestions={mockSuggestions} className="bg-white" />
+
+          <MatchVisualization
+            data={mockChartData}
+            title="Biểu đồ phân tích trực quan"
+            className="bg-white"
+          />
+        </div>        
       </div>
     </div>
   );

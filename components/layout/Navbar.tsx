@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import Button from "@/components/ui/Button";
 import { Menu, X } from "lucide-react";
 import { MobileNavLink } from "./MobileNavLink";
@@ -14,6 +15,15 @@ export function Navbar() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const { isAuthenticated, user, isLoading } = useAuth();
+  const pathname = usePathname();
+
+  // Helper function to check if link is active
+  const isActiveLink = (href: string) => {
+    if (href === "/career/jobs") {
+      return pathname.startsWith("/career/jobs");
+    }
+    return pathname.startsWith(href);
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -45,20 +55,32 @@ export function Navbar() {
 
             <div className="hidden md:flex items-center gap-6 text-sm font-medium">
               <Link
-                href="/"
-                className="hover:text-green-600 transition font-bold text-[#000000]"
+                href="/career/jobs"
+                className={`hover:text-green-600 transition font-bold ${
+                  isActiveLink("/career/jobs")
+                    ? "text-green-600 border-b-2 border-green-600 pb-1"
+                    : "text-[#000000]"
+                }`}
               >
                 Việc làm
               </Link>
               <Link
                 href="/cv"
-                className="hover:text-green-600 transition font-bold text-[#000000]"
+                className={`hover:text-green-600 transition font-bold ${
+                  isActiveLink("/cv")
+                    ? "text-green-600 border-b-2 border-green-600 pb-1"
+                    : "text-[#000000]"
+                }`}
               >
                 Tạo CV
               </Link>
               <Link
                 href="/career/about-us"
-                className="hover:text-green-600 transition font-bold text-[#000000]"
+                className={`hover:text-green-600 transition font-bold ${
+                  isActiveLink("/career/about-us")
+                    ? "text-green-600 border-b-2 border-green-600 pb-1"
+                    : "text-[#000000]"
+                }`}
               >
                 Về chúng tôi
               </Link>
@@ -125,25 +147,35 @@ export function Navbar() {
           }`}
         >
           <div className="pt-2 pb-4 px-4 space-y-2 bg-white border-t">
-            <MobileNavLink href="/career/" onClick={() => setIsOpen(false)}>
+            <MobileNavLink href="/career/jobs" onClick={() => setIsOpen(false)}>
               Việc làm
             </MobileNavLink>
-            <MobileNavLink href="/career/cv" onClick={() => setIsOpen(false)}>
+            <MobileNavLink href="/cv" onClick={() => setIsOpen(false)}>
               Tạo CV
             </MobileNavLink>
             <MobileNavLink
-              href="/career/about"
+              href="/career/about-us"
               onClick={() => setIsOpen(false)}
             >
               Về chúng tôi
             </MobileNavLink>
-            <div className="border-t my-2"></div>
-            <MobileNavLink href="/auth/signin" onClick={() => setIsOpen(false)}>
-              Đăng nhập
-            </MobileNavLink>
-            <MobileNavLink href="/auth/signup" onClick={() => setIsOpen(false)}>
-              Đăng ký
-            </MobileNavLink>
+            {!isAuthenticated && (
+              <>
+                <div className="border-t my-2"></div>
+                <MobileNavLink
+                  href="/auth/signin"
+                  onClick={() => setIsOpen(false)}
+                >
+                  Đăng nhập
+                </MobileNavLink>
+                <MobileNavLink
+                  href="/auth/signup"
+                  onClick={() => setIsOpen(false)}
+                >
+                  Đăng ký
+                </MobileNavLink>
+              </>
+            )}
           </div>
         </div>
       </div>

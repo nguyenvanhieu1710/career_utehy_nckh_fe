@@ -43,7 +43,7 @@ export default function TrustedSources() {
       <div className="container mx-auto px-4">
         <SectionTitle title="NGUỒN TIN UY TÍN TỪ" />
 
-        <div className="flex flex-wrap justify-center items-center gap-10 md:gap-16 max-w-5xl mx-auto">
+        <div className="flex flex-wrap justify-center items-center gap-8 md:gap-12 lg:gap-16 max-w-6xl mx-auto">
           {partners.map((partner, index) => (
             <motion.div
               key={partner.name}
@@ -51,8 +51,8 @@ export default function TrustedSources() {
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
               viewport={{ once: true }}
-              whileHover={{ y: -6 }}
-              className="grayscale hover:grayscale-0 transition-all duration-300 cursor-pointer"
+              whileHover={{ y: -6, scale: 1.05 }}
+              className="transition-all duration-300 cursor-pointer hover:brightness-110 p-1 rounded-lg hover:bg-gray-50"
             >
               <Image
                 src={partner.logo}

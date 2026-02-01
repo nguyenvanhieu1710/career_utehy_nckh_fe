@@ -84,7 +84,7 @@ export function EnhancedMatchScoreCard({
             className="flex items-center justify-center gap-2"
           >
             <span className="text-green-900 font-bold text-3xl">
-              PHÂN TÍCH ĐỘ PHÙ HỢP
+              CHI TIẾT PHÂN TÍCH
             </span>
             <InteractiveTooltip
               content={

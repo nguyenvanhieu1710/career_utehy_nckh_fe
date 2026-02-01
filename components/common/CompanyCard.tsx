@@ -29,7 +29,7 @@ export default function CompanyCard({
         moveX: [-5, 0, 5][i],
         moveX2: [-10, 0, 10][i],
       })),
-    []
+    [],
   );
 
   return (
@@ -52,7 +52,7 @@ export default function CompanyCard({
     >
       {/* Animated background gradient on hover */}
       <motion.div
-        className="absolute inset-0 bg-gradient-to-br from-blue-50 via-transparent to-green-50"
+        className="absolute inset-0 bg-gradient-to-br from-green-50 via-transparent to-emerald-50"
         initial={{ opacity: 0 }}
         animate={{ opacity: isHovered ? 1 : 0 }}
         transition={{ duration: 0.3 }}
@@ -69,7 +69,7 @@ export default function CompanyCard({
           }}
         >
           <motion.div
-            className="absolute inset-0 bg-gradient-to-r from-blue-100 to-green-100 rounded-xl"
+            className="absolute inset-0 bg-gradient-to-r from-green-100 to-emerald-100 rounded-xl"
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{
               opacity: isHovered ? 0.3 : 0,
@@ -89,7 +89,7 @@ export default function CompanyCard({
         <motion.h3
           className={`text-xl font-bold transition-all duration-300 text-center mb-4 ${
             isHovered
-              ? "bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent"
+              ? "bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent"
               : "text-gray-900"
           }`}
           animate={{ scale: isHovered ? 1.05 : 1 }}
@@ -102,7 +102,7 @@ export default function CompanyCard({
         <motion.div
           className={`flex items-center justify-center gap-1 w-36 px-4 py-2 rounded-lg transition-all duration-300 mb-3 ${
             isHovered
-              ? "bg-gradient-to-r from-blue-100 to-green-100 shadow-md"
+              ? "bg-gradient-to-r from-green-100 to-emerald-100 shadow-md"
               : "bg-gray-100"
           }`}
           whileHover={{ scale: 1.05 }}
@@ -111,7 +111,7 @@ export default function CompanyCard({
         >
           <motion.span
             className={`font-semibold transition-colors duration-300 ${
-              isHovered ? "text-blue-600" : "text-gray-600"
+              isHovered ? "text-green-600" : "text-gray-600"
             }`}
             animate={{ scale: isHovered ? 1.1 : 1 }}
           >
@@ -119,7 +119,7 @@ export default function CompanyCard({
           </motion.span>
           <span
             className={`text-sm transition-colors duration-300 ${
-              isHovered ? "text-green-600" : "text-gray-500"
+              isHovered ? "text-emerald-600" : "text-gray-500"
             }`}
           >
             việc làm
@@ -130,7 +130,7 @@ export default function CompanyCard({
         <motion.button
           className={`flex items-center justify-center gap-2 w-36 px-4 py-2 rounded-lg cursor-pointer transition-all duration-300 ${
             isHovered
-              ? "bg-gradient-to-r from-green-500 to-blue-500 text-white shadow-lg"
+              ? "bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg"
               : "bg-gray-100 text-gray-600"
           }`}
           whileHover={{
@@ -164,7 +164,7 @@ export default function CompanyCard({
           {particlePositions.map((particle, i) => (
             <motion.div
               key={i}
-              className="absolute w-1 h-1 bg-blue-400 rounded-full"
+              className="absolute w-1 h-1 bg-green-400 rounded-full"
               initial={{
                 opacity: 0,
                 x: particle.initialX,

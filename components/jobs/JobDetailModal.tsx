@@ -72,7 +72,7 @@ export const JobDetailModal = ({
     const date = new Date(dateString);
     const now = new Date();
     const diffInDays = Math.floor(
-      (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24)
+      (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24),
     );
 
     if (diffInDays === 0) return "Hôm nay";
@@ -121,9 +121,9 @@ export const JobDetailModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden p-0 bg-white">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden p-0 bg-white flex flex-col">
         {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 z-10">
+        <div className="flex-shrink-0 bg-white border-b border-gray-200 z-10">
           <div className="flex items-start justify-between p-6">
             <div className="flex-1 pr-4">
               <div className="flex items-center gap-3 mb-2">
@@ -175,14 +175,14 @@ export const JobDetailModal = ({
             <div className="flex items-center gap-2">
               <button
                 onClick={handleShare}
-                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
                 title="Chia sẻ"
               >
                 <Share2 className="h-5 w-5" />
               </button>
               <button
                 onClick={handleFavorite}
-                className={`p-2 rounded-lg transition-colors ${
+                className={`p-2 rounded-lg transition-colors cursor-pointer ${
                   isFavorited
                     ? "text-red-600 bg-red-50 hover:bg-red-100"
                     : "text-gray-500 hover:text-red-600 hover:bg-gray-100"
@@ -195,7 +195,7 @@ export const JobDetailModal = ({
               </button>
               <button
                 onClick={onClose}
-                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -211,10 +211,10 @@ export const JobDetailModal = ({
                   key={tab.id}
                   onClick={() =>
                     setActiveTab(
-                      tab.id as "overview" | "company" | "requirements"
+                      tab.id as "overview" | "company" | "requirements",
                     )
                   }
-                  className={`flex items-center gap-2 px-6 py-3 text-sm font-medium transition-colors relative ${
+                  className={`flex items-center gap-2 px-6 py-3 text-sm font-medium transition-colors relative cursor-pointer ${
                     activeTab === tab.id
                       ? "text-green-600 border-b-2 border-green-600"
                       : "text-gray-500 hover:text-gray-700"
@@ -229,7 +229,7 @@ export const JobDetailModal = ({
         </div>
 
         {/* Content */}
-        <div className="overflow-y-auto max-h-[calc(90vh-200px)]">
+        <div className="flex-1 overflow-y-auto">
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTab}
@@ -240,7 +240,7 @@ export const JobDetailModal = ({
               className="p-6"
             >
               {activeTab === "overview" && (
-                <div className="space-y-6">
+                <div className="space-y-8">
                   {/* Job Description */}
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900 mb-3">
@@ -308,7 +308,7 @@ export const JobDetailModal = ({
               )}
 
               {activeTab === "company" && (
-                <div className="space-y-6">
+                <div className="space-y-8">
                   {/* Company Info */}
                   <div className="bg-gray-50 rounded-lg p-6">
                     <div className="flex items-start gap-4">
@@ -400,7 +400,7 @@ export const JobDetailModal = ({
               )}
 
               {activeTab === "requirements" && (
-                <div className="space-y-6">
+                <div className="space-y-8">
                   {/* Requirements */}
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900 mb-3">
@@ -480,35 +480,17 @@ export const JobDetailModal = ({
         </div>
 
         {/* Footer Actions */}
-        <div className="sticky bottom-0 bg-white border-t border-gray-200 p-6">
+        <div className="flex-shrink-0 bg-white border-t border-gray-200 p-6">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="text-sm text-gray-600">
-                {job.application_count} người đã ứng tuyển
-              </div>
-              <div className="text-sm text-gray-600">
-                Đăng {formatPostedDate(job.posted_date)}
-              </div>
+            <div className="text-sm text-gray-600">
+              <span className="font-medium">{job.application_count}</span> người
+              đã ứng tuyển
             </div>
 
             <div className="flex items-center gap-3">
               <button
-                onClick={handleFavorite}
-                className={`px-4 py-2 border rounded-lg font-medium transition-colors flex items-center gap-2 ${
-                  isFavorited
-                    ? "border-red-200 text-red-600 bg-red-50 hover:bg-red-100"
-                    : "border-gray-300 text-gray-700 bg-white hover:bg-gray-50"
-                }`}
-              >
-                <Heart
-                  className={`h-4 w-4 ${isFavorited ? "fill-current" : ""}`}
-                />
-                {isFavorited ? "Đã lưu" : "Lưu"}
-              </button>
-
-              <button
                 onClick={handleApply}
-                className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center gap-2"
+                className="bg-green-600 text-white px-8 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center gap-2 cursor-pointer"
               >
                 <ExternalLink className="h-4 w-4" />
                 Ứng tuyển ngay
