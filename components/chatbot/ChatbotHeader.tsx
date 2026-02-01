@@ -7,7 +7,6 @@ interface ChatbotHeaderProps {
   onMinimize: () => void;
   onClose: () => void;
   isDraggable?: boolean;
-  isDragging?: boolean;
 }
 
 export function ChatbotHeader({
@@ -15,14 +14,12 @@ export function ChatbotHeader({
   onMinimize,
   onClose,
   isDraggable = false,
-  isDragging = false,
 }: ChatbotHeaderProps) {
   return (
     <div
       className={`bg-gradient-to-r from-green-500 to-green-600 text-white 
                     px-4 py-3 rounded-t-lg flex items-center justify-between
                     ${isDraggable ? "drag-handle cursor-move" : ""}
-                    ${isDragging ? "cursor-grabbing" : ""}
                     transition-all duration-200`}
     >
       <div className="flex items-center gap-3">

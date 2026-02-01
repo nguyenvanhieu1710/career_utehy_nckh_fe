@@ -42,6 +42,27 @@
   vertical-align: text-bottom;
 }
 
+/* Waiting dots animation */
+@keyframes waitingDots {
+  0% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.4;
+  }
+}
+
+.waiting-dots {
+  display: inline-block;
+  margin-left: 4px;
+  animation: waitingDots 1.5s infinite;
+  font-weight: bold;
+  color: #6b7280;
+}
+
 /* Draggable chatbot styles */
 .drag-handle {
   user-select: none;

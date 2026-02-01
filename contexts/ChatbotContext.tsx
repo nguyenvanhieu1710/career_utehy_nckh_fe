@@ -11,6 +11,7 @@ export function ChatbotProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isTyping, setIsTyping] = useState(false);
+  const [isWaiting, setIsWaiting] = useState(false); // New state for waiting
   const [unreadCount, setUnreadCount] = useState(0);
 
   const toggleChat = () => {
@@ -46,10 +47,20 @@ export function ChatbotProvider({ children }: { children: ReactNode }) {
     };
     setMessages((prev) => [...prev, botMessage]);
 
-    setIsTyping(true);
+    // Set waiting state (shows ... dots)
+    setIsWaiting(true);
+    setIsTyping(false);
 
     try {
+      let isFirstChunk = true;
       for await (const chunk of chatAPI.sendMessageStream(content)) {
+        // On first chunk, switch from waiting to typing
+        if (isFirstChunk) {
+          setIsWaiting(false);
+          setIsTyping(true);
+          isFirstChunk = false;
+        }
+
         setMessages((prev) => {
           return prev.map((msg) => {
             if (msg.id === botMessageId) {
@@ -77,6 +88,7 @@ export function ChatbotProvider({ children }: { children: ReactNode }) {
         });
       });
     } finally {
+      setIsWaiting(false);
       setIsTyping(false);
 
       // Increment unread count if chat is closed
@@ -89,6 +101,8 @@ export function ChatbotProvider({ children }: { children: ReactNode }) {
   const clearMessages = () => {
     setMessages([]);
     setUnreadCount(0);
+    setIsWaiting(false);
+    setIsTyping(false);
   };
 
   return (
@@ -97,6 +111,7 @@ export function ChatbotProvider({ children }: { children: ReactNode }) {
         isOpen,
         messages,
         isTyping,
+        isWaiting,
         unreadCount,
         toggleChat,
         sendMessage,
