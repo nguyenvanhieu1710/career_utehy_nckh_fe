@@ -1,8 +1,9 @@
 // components/navbar/ProfileDropdown.tsx
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { LogOut, User, Heart, Briefcase, FileText } from "lucide-react";
+import { LogOut, User, Heart, Briefcase, FileText, Settings } from "lucide-react";
 import { logout } from "@/services/auth";
+import { usePermissions } from "@/contexts/PermissionContext";
 
 interface ProfileDropdownProps {
   onClose?: () => void;
@@ -13,6 +14,7 @@ export function ProfileDropdown({
 }: ProfileDropdownProps) {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const { hasPermission } = usePermissions();
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -30,12 +32,24 @@ export function ProfileDropdown({
     window.location.href = "/auth/signin";
   };
 
-  const menuItems = [
+  // Check if user has admin access
+  const isAdmin = hasPermission("*");
+
+  // Base menu items for all users
+  const baseMenuItems = [
     { label: "Cập nhật tài khoản", href: "/career/profile", icon: User },
     { label: "Công việc yêu thích", href: "/career/favorite-jobs", icon: Heart },
     { label: "Công việc đã xem", href: "/career/viewed-jobs", icon: Briefcase },
     { label: "Quản lý CV", href: "/cv", icon: FileText },
   ];
+
+  // Admin menu items
+  const adminMenuItems = isAdmin ? [
+    { label: "Quản trị hệ thống", href: "/admin", icon: Settings },
+  ] : [];
+
+  // Combine menu items - admin items first
+  const menuItems = [...adminMenuItems, ...baseMenuItems];
 
   return (
     <div

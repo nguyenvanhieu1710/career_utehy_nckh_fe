@@ -19,8 +19,8 @@ import {
   getDataSourceStatusText,
   getDataSourceStatusColor,
 } from "@/utils/crawl-helpers";
-import { formatDate } from "@/utils/formatters";
-import { CheckCircle, Clock } from "lucide-react";
+import { schedulerAPI } from "@/services/scheduler";
+import { Switch } from "@/components/ui/switch";
 
 interface DataSourceDialogData {
   name?: string;
@@ -105,6 +105,67 @@ export default function DataManagementPage() {
       crawler_version: "1.0.0",
     });
     setIsCrawlDetailOpen(true);
+  };
+
+  const handleToggleCrawl = async (dataSource: DataSource) => {
+    const newStatus = dataSource.crawl_enabled ? "disabled" : "enabled";
+
+    try {
+      // Step 1: Update schedule immediately (enable/disable cron job)
+      await schedulerAPI.updateSchedule(dataSource.id, {
+        status: newStatus,
+        frequency: dataSource.crawl_frequency || "daily",
+      });
+
+      // Step 2: Show success immediately
+      if (newStatus === "enabled") {
+        setDialogState({
+          isOpen: true,
+          title: "Kích hoạt crawl thành công",
+          message: `Cron job cho ${dataSource.name} đã được kích hoạt! Đang bắt đầu crawl...`,
+          type: "success",
+        });
+      } else {
+        setDialogState({
+          isOpen: true,
+          title: "Tắt crawl thành công",
+          message: `Cron job cho ${dataSource.name} đã được tắt!`,
+          type: "success",
+        });
+      }
+
+      // Step 3: Refresh UI immediately to show new state
+      refreshData();
+
+      // Step 4: If enabling, trigger crawl in background (don't wait)
+      if (newStatus === "enabled") {
+        schedulerAPI.triggerCrawl(dataSource.id).catch((error) => {
+          // If crawl fails, revert the switch and show error
+          schedulerAPI
+            .updateSchedule(dataSource.id, {
+              status: "disabled",
+              frequency: dataSource.crawl_frequency || "daily",
+            })
+            .then(() => {
+              setDialogState({
+                isOpen: true,
+                title: "Lỗi khi crawl",
+                message: `Không thể crawl ${dataSource.name}: ${error.message}. Đã tắt cron job.`,
+                type: "error",
+              });
+              refreshData();
+            });
+        });
+      }
+    } catch (error: any) {
+      setDialogState({
+        isOpen: true,
+        title: "Cập nhật thất bại",
+        message:
+          error.message || "Có lỗi xảy ra khi cập nhật trạng thái crawl!",
+        type: "error",
+      });
+    }
   };
 
   const handleAddDataSource = async (data: DataSourceDialogData) => {
@@ -242,18 +303,17 @@ export default function DataManagementPage() {
     {
       label: "Cấu hình Crawl",
       render: (dataSource) => (
-        <div className="flex items-center gap-1">
-          {dataSource.crawl_enabled ? (
-            <>
-              <CheckCircle className="w-3 h-3 text-green-500" />
-              <span className="text-green-600">Kích hoạt</span>
-            </>
-          ) : (
-            <>
-              <div className="w-3 h-3 rounded-full bg-red-500" />
-              <span className="text-red-600">Tắt</span>
-            </>
-          )}
+        <div className="flex items-center gap-3">
+          <Switch
+            checked={dataSource.crawl_enabled}
+            onCheckedChange={() => handleToggleCrawl(dataSource)}
+            className="data-[state=checked]:bg-green-500"
+          />
+          <span
+            className={`text-sm font-medium ${dataSource.crawl_enabled ? "text-green-600" : "text-gray-400"}`}
+          >
+            {dataSource.crawl_enabled ? "Đang chạy" : "Đã tắt"}
+          </span>
         </div>
       ),
     },

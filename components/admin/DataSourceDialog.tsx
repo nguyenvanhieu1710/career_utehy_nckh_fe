@@ -9,7 +9,7 @@ import {
 import Button from "@/components/ui/Button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -28,13 +28,7 @@ interface DataSourceDialogData {
   crawl_frequency?: string;
   crawl_enabled?: boolean;
   max_pages?: number;
-  max_depth?: number;
-  user_agent?: string;
-  headers?: string;
-  respect_robots_txt?: boolean;
   // Selector configuration
-  include_patterns?: string;
-  exclude_patterns?: string;
   custom_selectors?: string;
 }
 
@@ -62,17 +56,19 @@ export function DataSourceDialog({
   const [crawlFrequency, setCrawlFrequency] = useState("daily");
   const [crawlEnabled, setCrawlEnabled] = useState(true);
   const [maxPages, setMaxPages] = useState(100);
-  const [maxDepth, setMaxDepth] = useState(3);
-  const [userAgent, setUserAgent] = useState(
-    "Mozilla/5.0 (compatible; CareerBot/1.0)",
-  );
-  const [headers, setHeaders] = useState("");
-  const [respectRobotsTxt, setRespectRobotsTxt] = useState(true);
 
   // Selector configuration
-  const [includePatterns, setIncludePatterns] = useState("");
-  const [excludePatterns, setExcludePatterns] = useState("");
-  const [customSelectors, setCustomSelectors] = useState("");
+  // Individual selector fields
+  const [titleSelector, setTitleSelector] = useState("");
+  const [companySelector, setCompanySelector] = useState("");
+  const [locationSelector, setLocationSelector] = useState("");
+  const [salarySelector, setSalarySelector] = useState("");
+  const [descriptionSelector, setDescriptionSelector] = useState("");
+  const [requirementsSelector, setRequirementsSelector] = useState("");
+  const [benefitsSelector, setBenefitsSelector] = useState("");
+  const [postedDateSelector, setPostedDateSelector] = useState("");
+  const [jobTypeSelector, setJobTypeSelector] = useState("");
+  const [experienceSelector, setExperienceSelector] = useState("");
 
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<{
@@ -92,17 +88,19 @@ export function DataSourceDialog({
 
       // Essential settings
       setMaxPages(initialData?.max_pages ?? 100);
-      setMaxDepth(initialData?.max_depth ?? 3);
-      setUserAgent(
-        initialData?.user_agent ?? "Mozilla/5.0 (compatible; CareerBot/1.0)",
-      );
-      setHeaders(initialData?.headers ?? "");
-      setRespectRobotsTxt(initialData?.respect_robots_txt ?? true);
 
-      // Selector configuration
-      setIncludePatterns(initialData?.include_patterns ?? "");
-      setExcludePatterns(initialData?.exclude_patterns ?? "");
-      setCustomSelectors(initialData?.custom_selectors ?? "");
+      // Parse and set individual selectors from JSON
+      const selectors = initialData?.custom_selectors ? JSON.parse(initialData.custom_selectors) : {};
+      setTitleSelector(selectors.title || "");
+      setCompanySelector(selectors.company || "");
+      setLocationSelector(selectors.location || "");
+      setSalarySelector(selectors.salary || "");
+      setDescriptionSelector(selectors.description || "");
+      setRequirementsSelector(selectors.requirements || "");
+      setBenefitsSelector(selectors.benefits || "");
+      setPostedDateSelector(selectors.posted_date || "");
+      setJobTypeSelector(selectors.job_type || "");
+      setExperienceSelector(selectors.experience || "");
 
       setErrors({});
     }
@@ -139,6 +137,29 @@ export function DataSourceDialog({
     try {
       await new Promise((resolve) => setTimeout(resolve, 500)); // Simulate API call
 
+      // Build selectors JSON from individual fields
+      const selectors = {
+        title: titleSelector.trim(),
+        company: companySelector.trim(),
+        location: locationSelector.trim(),
+        salary: salarySelector.trim(),
+        description: descriptionSelector.trim(),
+        requirements: requirementsSelector.trim(),
+        benefits: benefitsSelector.trim(),
+        posted_date: postedDateSelector.trim(),
+        job_type: jobTypeSelector.trim(),
+        experience: experienceSelector.trim(),
+      };
+
+      // Filter out empty selectors
+      const filteredSelectors = Object.fromEntries(
+        Object.entries(selectors).filter(([, value]) => value !== "")
+      );
+
+      const selectorsJson = Object.keys(filteredSelectors).length > 0 
+        ? JSON.stringify(filteredSelectors, null, 2)
+        : "";
+
       onSubmit?.({
         name: name.trim(),
         description: description.trim() || undefined,
@@ -147,13 +168,7 @@ export function DataSourceDialog({
         crawl_frequency: crawlFrequency,
         crawl_enabled: crawlEnabled,
         max_pages: maxPages,
-        max_depth: maxDepth,
-        user_agent: userAgent.trim() || undefined,
-        headers: headers.trim() || undefined,
-        respect_robots_txt: respectRobotsTxt,
-        include_patterns: includePatterns.trim() || undefined,
-        exclude_patterns: excludePatterns.trim() || undefined,
-        custom_selectors: customSelectors.trim() || undefined,
+        custom_selectors: selectorsJson || undefined,
       });
     } finally {
       setIsLoading(false);
@@ -171,312 +186,283 @@ export function DataSourceDialog({
         </DialogHeader>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 py-4">
-          {/* Left Column - Data Source Info & Basic Crawl Config */}
-          <div className="space-y-6">
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium text-green-900 border-b pb-2">
-                Thông tin nguồn dữ liệu
-              </h3>
+          {/* Left Column - Data Source Info */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium text-green-900 border-b pb-2">
+              Thông tin nguồn dữ liệu
+            </h3>
 
-              {/* Tên nguồn dữ liệu */}
-              <div className="space-y-2">
-                <Label htmlFor="name" className="text-green-900">
-                  Tên nguồn dữ liệu *
-                </Label>
-                <Input
-                  id="name"
-                  className={`border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900 placeholder:text-gray-300 ${
-                    errors.name
-                      ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-                      : ""
-                  }`}
-                  placeholder="Ví dụ: JobStreet API"
-                  value={name}
-                  onChange={(e) => {
-                    setName(e.target.value);
-                    if (errors.name) {
-                      setErrors({ ...errors, name: undefined });
-                    }
-                  }}
-                />
-                {errors.name && (
-                  <p className="text-red-500 text-sm">{errors.name}</p>
-                )}
-              </div>
-
-              {/* URL */}
-              <div className="space-y-2">
-                <Label htmlFor="base_url" className="text-green-900">
-                  URL API
-                </Label>
-                <Input
-                  id="base_url"
-                  type="url"
-                  className={`border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900 placeholder:text-gray-300 ${
-                    errors.base_url
-                      ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-                      : ""
-                  }`}
-                  placeholder="https://api.example.com/jobs"
-                  value={baseUrl}
-                  onChange={(e) => {
-                    setBaseUrl(e.target.value);
-                    if (errors.base_url) {
-                      setErrors({ ...errors, base_url: undefined });
-                    }
-                  }}
-                />
-                {errors.base_url && (
-                  <p className="text-red-500 text-sm">{errors.base_url}</p>
-                )}
-              </div>
-
-              {/* Mô tả */}
-              <div className="space-y-2">
-                <Label htmlFor="description" className="text-green-900">
-                  Mô tả
-                </Label>
-                <Textarea
-                  id="description"
-                  className="border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900 placeholder:text-gray-300 min-h-[80px]"
-                  placeholder="Mô tả về nguồn dữ liệu này..."
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                />
-              </div>
-
-              {/* Trạng thái nguồn dữ liệu */}
-              <div className="space-y-2">
-                <Label className="text-green-900">
-                  Trạng thái nguồn dữ liệu
-                </Label>
-                <Select
-                  value={isActive ? "active" : "inactive"}
-                  onValueChange={(value) => setIsActive(value === "active")}
-                >
-                  <SelectTrigger className="border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900">
-                    <SelectValue placeholder="Chọn trạng thái" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="active">🟢 Hoạt động</SelectItem>
-                    <SelectItem value="inactive">🔴 Tạm dừng</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            {/* Tên nguồn dữ liệu */}
+            <div className="space-y-2">
+              <Label htmlFor="name" className="text-green-900">
+                Tên nguồn dữ liệu *
+              </Label>
+              <Input
+                id="name"
+                className={`border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900 placeholder:text-gray-300 ${
+                  errors.name
+                    ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                    : ""
+                }`}
+                placeholder="Ví dụ: JobStreet API"
+                value={name}
+                onChange={(e) => {
+                  setName(e.target.value);
+                  if (errors.name) {
+                    setErrors({ ...errors, name: undefined });
+                  }
+                }}
+              />
+              {errors.name && (
+                <p className="text-red-500 text-sm">{errors.name}</p>
+              )}
             </div>
 
-            {/* Basic Crawl Configuration */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium text-green-900 border-b pb-2">
-                Cấu hình crawl cơ bản
-              </h3>
-
-              {/* Tần suất crawl */}
-              <div className="space-y-2">
-                <Label className="text-green-900">Tần suất crawl</Label>
-                <Select
-                  value={crawlFrequency}
-                  onValueChange={setCrawlFrequency}
-                >
-                  <SelectTrigger className="border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900">
-                    <SelectValue placeholder="Chọn tần suất crawl" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="hourly">⏰ Mỗi giờ</SelectItem>
-                    <SelectItem value="daily">📅 Hàng ngày</SelectItem>
-                    <SelectItem value="weekly">📆 Hàng tuần</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Trạng thái crawl */}
-              <div className="space-y-2">
-                <Label className="text-green-900">Trạng thái crawl</Label>
-                <Select
-                  value={crawlEnabled ? "enabled" : "disabled"}
-                  onValueChange={(value) =>
-                    setCrawlEnabled(value === "enabled")
+            {/* URL */}
+            <div className="space-y-2">
+              <Label htmlFor="base_url" className="text-green-900">
+                URL API
+              </Label>
+              <Input
+                id="base_url"
+                type="url"
+                className={`border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900 placeholder:text-gray-300 ${
+                  errors.base_url
+                    ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                    : ""
+                }`}
+                placeholder="https://www.vietnamworks.com/"
+                value={baseUrl}
+                onChange={(e) => {
+                  setBaseUrl(e.target.value);
+                  if (errors.base_url) {
+                    setErrors({ ...errors, base_url: undefined });
                   }
-                >
-                  <SelectTrigger className="border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900">
-                    <SelectValue placeholder="Chọn trạng thái crawl" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="enabled">✅ Kích hoạt</SelectItem>
-                    <SelectItem value="disabled">❌ Tắt</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                }}
+              />
+              {errors.base_url && (
+                <p className="text-red-500 text-sm">{errors.base_url}</p>
+              )}
+            </div>
 
-              {/* Max Pages */}
-              <div className="space-y-2">
-                <Label htmlFor="max_pages" className="text-green-900">
-                  Số trang tối đa
-                </Label>
-                <Input
-                  id="max_pages"
-                  type="number"
-                  min="1"
-                  max="10000"
-                  className="border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900"
-                  value={maxPages}
-                  onChange={(e) => setMaxPages(parseInt(e.target.value) || 100)}
-                />
-              </div>
-
-              {/* Max Depth */}
-              <div className="space-y-2">
-                <Label htmlFor="max_depth" className="text-green-900">
-                  Độ sâu tối đa
-                </Label>
-                <Input
-                  id="max_depth"
-                  type="number"
-                  min="1"
-                  max="10"
-                  className="border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900"
-                  value={maxDepth}
-                  onChange={(e) => setMaxDepth(parseInt(e.target.value) || 3)}
-                />
-              </div>
-
-              {/* User Agent */}
-              <div className="space-y-2">
-                <Label htmlFor="user_agent" className="text-green-900">
-                  User Agent
-                </Label>
-                <Input
-                  id="user_agent"
-                  className="border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900"
-                  placeholder="Mozilla/5.0 (compatible; CareerBot/1.0)"
-                  value={userAgent}
-                  onChange={(e) => setUserAgent(e.target.value)}
-                />
-              </div>
-
-              {/* Headers */}
-              <div className="space-y-2">
-                <Label htmlFor="headers" className="text-green-900">
-                  Headers (JSON)
-                </Label>
-                <Textarea
-                  id="headers"
-                  className="border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900 placeholder:text-gray-300 min-h-[60px]"
-                  placeholder='{"Authorization": "Bearer token", "Accept": "application/json"}'
-                  value={headers}
-                  onChange={(e) => setHeaders(e.target.value)}
-                />
-              </div>
-
-              {/* Respect robots.txt */}
-              <div className="space-y-2">
-                <Label className="text-green-900">Tuân thủ robots.txt</Label>
-                <Select
-                  value={respectRobotsTxt ? "enabled" : "disabled"}
-                  onValueChange={(value) =>
-                    setRespectRobotsTxt(value === "enabled")
-                  }
-                >
-                  <SelectTrigger className="border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900">
-                    <SelectValue placeholder="Chọn cấu hình robots.txt" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="enabled">✅ Có</SelectItem>
-                    <SelectItem value="disabled">❌ Không</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            {/* Trạng thái nguồn dữ liệu */}
+            <div className="space-y-2">
+              <Label className="text-green-900">Trạng thái nguồn dữ liệu</Label>
+              <Select
+                value={isActive ? "active" : "inactive"}
+                onValueChange={(value) => setIsActive(value === "active")}
+              >
+                <SelectTrigger className="border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900">
+                  <SelectValue placeholder="Chọn trạng thái" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">🟢 Hoạt động</SelectItem>
+                  <SelectItem value="inactive">🔴 Tạm dừng</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
-          {/* Right Column - Selector Configuration */}
-          <div className="space-y-6">
+          {/* Right Column - Crawl Configuration */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium text-green-900 border-b pb-2">
+              Cấu hình Crawl
+            </h3>
+
+            {/* Tần suất crawl */}
+            <div className="space-y-2">
+              <Label className="text-green-900">Tần suất crawl</Label>
+              <Select value={crawlFrequency} onValueChange={setCrawlFrequency}>
+                <SelectTrigger className="border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900">
+                  <SelectValue placeholder="Chọn tần suất crawl" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="hourly">⏰ Hàng giờ</SelectItem>
+                  <SelectItem value="daily">📅 Hàng ngày</SelectItem>
+                  <SelectItem value="weekly">📆 Hàng tuần</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Trạng thái crawl */}
+            <div className="space-y-2">
+              <Label className="text-green-900">Trạng thái crawl</Label>
+              <div className="flex items-center gap-3">
+                <Switch
+                  checked={crawlEnabled}
+                  onCheckedChange={setCrawlEnabled}
+                  className="data-[state=checked]:bg-green-500"
+                />
+                <span
+                  className={`text-sm font-medium ${crawlEnabled ? "text-green-600" : "text-gray-400"}`}
+                >
+                  {crawlEnabled ? "Đang chạy" : "Đã tắt"}
+                </span>
+              </div>
+            </div>
+
+            {/* Max Pages */}
+            <div className="space-y-2">
+              <Label htmlFor="max_pages" className="text-green-900">
+                Số trang tối đa
+              </Label>
+              <Input
+                id="max_pages"
+                type="number"
+                min="1"
+                max="10000"
+                className="border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900"
+                value={maxPages}
+                onChange={(e) => setMaxPages(parseInt(e.target.value) || 100)}
+              />
+            </div>
+
+            {/* CSS Selectors */}
             <div className="space-y-4">
-              <h3 className="text-lg font-medium text-green-900 border-b pb-2 flex items-center gap-2">
-                🎯 Cấu hình Selector
-              </h3>
+              <Label className="text-green-900 font-semibold text-lg">
+                🔧 CSS Selectors tùy chỉnh
+              </Label>
+              
+              <div className="grid grid-cols-1 gap-4">
+                {/* Title Selector */}
+                <div className="space-y-2">
+                  <Label htmlFor="title_selector" className="text-green-900 font-medium">
+                    📝 Tiêu đề công việc
+                  </Label>
+                  <Input
+                    id="title_selector"
+                    className="border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900 placeholder:text-gray-300 font-mono text-sm"
+                    placeholder=".job-title, h1.title, .position-name"
+                    value={titleSelector}
+                    onChange={(e) => setTitleSelector(e.target.value)}
+                  />
+                </div>
 
-              {/* Custom Selectors - MOST IMPORTANT */}
-              <div className="space-y-2">
-                <Label
-                  htmlFor="custom_selectors"
-                  className="text-green-900 font-semibold"
-                >
-                  🔧 CSS Selectors tùy chỉnh (JSON) *
-                </Label>
-                <Textarea
-                  id="custom_selectors"
-                  className="border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900 placeholder:text-gray-300 min-h-[120px] font-mono text-sm"
-                  placeholder={`{
-  "title": ".job-title, h1.title, .position-name",
-  "company": ".company-name, .employer, .company-info h2",
-  "location": ".job-location, .location, .address",
-  "salary": ".salary, .wage, .compensation",
-  "description": ".job-description, .job-content, .description",
-  "requirements": ".requirements, .qualifications",
-  "benefits": ".benefits, .perks",
-  "posted_date": ".posted-date, .date, time",
-  "job_type": ".job-type, .employment-type",
-  "experience": ".experience-level, .exp-required"
-}`}
-                  value={customSelectors}
-                  onChange={(e) => setCustomSelectors(e.target.value)}
-                />
-                <p className="text-xs text-gray-600">
-                  Định nghĩa CSS selectors để extract các trường dữ liệu từ job
-                  listings
-                </p>
-              </div>
+                {/* Company Selector */}
+                <div className="space-y-2">
+                  <Label htmlFor="company_selector" className="text-green-900 font-medium">
+                    🏢 Tên công ty
+                  </Label>
+                  <Input
+                    id="company_selector"
+                    className="border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900 placeholder:text-gray-300 font-mono text-sm"
+                    placeholder=".company-name, .employer, .company-info h2"
+                    value={companySelector}
+                    onChange={(e) => setCompanySelector(e.target.value)}
+                  />
+                </div>
 
-              {/* Include Patterns */}
-              <div className="space-y-2">
-                <Label
-                  htmlFor="include_patterns"
-                  className="text-green-900 font-semibold"
-                >
-                  ✅ URL patterns để crawl
-                </Label>
-                <Textarea
-                  id="include_patterns"
-                  className="border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900 placeholder:text-gray-300 min-h-[80px] font-mono text-sm"
-                  placeholder={`/jobs/*
-/careers/*
-/job-detail/*
-/positions/*
-*.html`}
-                  value={includePatterns}
-                  onChange={(e) => setIncludePatterns(e.target.value)}
-                />
-                <p className="text-xs text-gray-600">
-                  Chỉ crawl các URL khớp với patterns này (mỗi pattern một dòng)
-                </p>
-              </div>
+                {/* Location Selector */}
+                <div className="space-y-2">
+                  <Label htmlFor="location_selector" className="text-green-900 font-medium">
+                    📍 Địa điểm
+                  </Label>
+                  <Input
+                    id="location_selector"
+                    className="border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900 placeholder:text-gray-300 font-mono text-sm"
+                    placeholder=".job-location, .location, .address"
+                    value={locationSelector}
+                    onChange={(e) => setLocationSelector(e.target.value)}
+                  />
+                </div>
 
-              {/* Exclude Patterns */}
-              <div className="space-y-2">
-                <Label
-                  htmlFor="exclude_patterns"
-                  className="text-green-900 font-semibold"
-                >
-                  ❌ URL patterns để bỏ qua
-                </Label>
-                <Textarea
-                  id="exclude_patterns"
-                  className="border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900 placeholder:text-gray-300 min-h-[80px] font-mono text-sm"
-                  placeholder={`/admin/*
-/login/*
-/register/*
-/api/*
-*.pdf
-*.doc
-*.zip
-/search?*`}
-                  value={excludePatterns}
-                  onChange={(e) => setExcludePatterns(e.target.value)}
-                />
-                <p className="text-xs text-gray-600">
-                  Bỏ qua các URL khớp với patterns này (mỗi pattern một dòng)
-                </p>
+                {/* Salary Selector */}
+                <div className="space-y-2">
+                  <Label htmlFor="salary_selector" className="text-green-900 font-medium">
+                    💰 Mức lương
+                  </Label>
+                  <Input
+                    id="salary_selector"
+                    className="border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900 placeholder:text-gray-300 font-mono text-sm"
+                    placeholder=".salary, .wage, .compensation"
+                    value={salarySelector}
+                    onChange={(e) => setSalarySelector(e.target.value)}
+                  />
+                </div>
+
+                {/* Description Selector */}
+                <div className="space-y-2">
+                  <Label htmlFor="description_selector" className="text-green-900 font-medium">
+                    📄 Mô tả công việc
+                  </Label>
+                  <Input
+                    id="description_selector"
+                    className="border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900 placeholder:text-gray-300 font-mono text-sm"
+                    placeholder=".job-description, .job-content, .description"
+                    value={descriptionSelector}
+                    onChange={(e) => setDescriptionSelector(e.target.value)}
+                  />
+                </div>
+
+                {/* Requirements Selector */}
+                <div className="space-y-2">
+                  <Label htmlFor="requirements_selector" className="text-green-900 font-medium">
+                    ✅ Yêu cầu
+                  </Label>
+                  <Input
+                    id="requirements_selector"
+                    className="border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900 placeholder:text-gray-300 font-mono text-sm"
+                    placeholder=".requirements, .qualifications"
+                    value={requirementsSelector}
+                    onChange={(e) => setRequirementsSelector(e.target.value)}
+                  />
+                </div>
+
+                {/* Benefits Selector */}
+                <div className="space-y-2">
+                  <Label htmlFor="benefits_selector" className="text-green-900 font-medium">
+                    🎁 Phúc lợi
+                  </Label>
+                  <Input
+                    id="benefits_selector"
+                    className="border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900 placeholder:text-gray-300 font-mono text-sm"
+                    placeholder=".benefits, .perks"
+                    value={benefitsSelector}
+                    onChange={(e) => setBenefitsSelector(e.target.value)}
+                  />
+                </div>
+
+                {/* Posted Date Selector */}
+                <div className="space-y-2">
+                  <Label htmlFor="posted_date_selector" className="text-green-900 font-medium">
+                    📅 Ngày đăng
+                  </Label>
+                  <Input
+                    id="posted_date_selector"
+                    className="border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900 placeholder:text-gray-300 font-mono text-sm"
+                    placeholder=".posted-date, .date, time"
+                    value={postedDateSelector}
+                    onChange={(e) => setPostedDateSelector(e.target.value)}
+                  />
+                </div>
+
+                {/* Job Type Selector */}
+                <div className="space-y-2">
+                  <Label htmlFor="job_type_selector" className="text-green-900 font-medium">
+                    🏷️ Loại công việc
+                  </Label>
+                  <Input
+                    id="job_type_selector"
+                    className="border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900 placeholder:text-gray-300 font-mono text-sm"
+                    placeholder=".job-type, .employment-type"
+                    value={jobTypeSelector}
+                    onChange={(e) => setJobTypeSelector(e.target.value)}
+                  />
+                </div>
+
+                {/* Experience Selector */}
+                <div className="space-y-2">
+                  <Label htmlFor="experience_selector" className="text-green-900 font-medium">
+                    📈 Kinh nghiệm
+                  </Label>
+                  <Input
+                    id="experience_selector"
+                    className="border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900 placeholder:text-gray-300 font-mono text-sm"
+                    placeholder=".experience-level, .exp-required"
+                    value={experienceSelector}
+                    onChange={(e) => setExperienceSelector(e.target.value)}
+                  />
+                </div>
               </div>
             </div>
           </div>
