@@ -145,7 +145,7 @@ export function HeroSearch() {
       "Data Analyst",
       "Product Manager",
     ],
-    []
+    [],
   );
 
   // --- Auto change title every 3s ---
@@ -164,7 +164,7 @@ export function HeroSearch() {
     if (searchQuery.length > 2) {
       return popularSearches
         .filter((search) =>
-          search.toLowerCase().includes(searchQuery.toLowerCase())
+          search.toLowerCase().includes(searchQuery.toLowerCase()),
         )
         .slice(0, 4);
     }
@@ -199,7 +199,7 @@ export function HeroSearch() {
   // Handle filter change
   const handleFilterChange = (
     filterType: keyof typeof filters,
-    value: string
+    value: string,
   ) => {
     setFilters((prev) => ({
       ...prev,
@@ -239,7 +239,7 @@ export function HeroSearch() {
             >
               {currentTitle.data.amount.replace(
                 "{amount}",
-                titleAmountData[currentTitle.id]?.toLocaleString("vi-VN")
+                titleAmountData[currentTitle.id]?.toLocaleString("vi-VN"),
               )}
             </motion.span>
           </AnimatePresence>
@@ -399,7 +399,7 @@ export function HeroSearch() {
               className={`flex-1 sm:flex-none sm:px-8 py-3 sm:py-4 cursor-pointer rounded-lg font-semibold text-white transition-all duration-300 relative overflow-hidden group ${
                 isSearching
                   ? "bg-gray-400 cursor-not-allowed"
-                  : "bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 shadow-lg hover:shadow-xl"
+                  : "bg-green-700 hover:bg-green-800 shadow-lg hover:shadow-xl"
               }`}
               whileHover={!isSearching ? { scale: 1.05 } : {}}
               whileTap={!isSearching ? { scale: 0.98 } : {}}
@@ -499,7 +499,7 @@ export function HeroSearch() {
                     onChange={(e) =>
                       handleFilterChange(
                         filter.key as keyof typeof filters,
-                        e.target.value
+                        e.target.value,
                       )
                     }
                     className={`w-full pl-10 pr-4 py-3 rounded-lg border text-gray-600 text-sm transition-all duration-300 appearance-none cursor-pointer ${

@@ -80,13 +80,44 @@ export default function TrendingIndustries() {
           </div>
         )}
 
-        {/* Error State (with fallback data) */}
-        {error && !loading && (
-          <div className="text-center py-4 mb-6">
-            <p className="text-yellow-600 text-sm">
-              ⚠️ Không thể tải dữ liệu từ server, hiển thị dữ liệu mặc định
-            </p>
-          </div>
+        {/* Error State */}
+        {error && !loading && displayCategories.length === 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="max-w-md mx-auto text-center py-16"
+          >
+            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-8 shadow-lg border border-green-200">
+              <div className="w-20 h-20 mx-auto mb-6 bg-green-100 rounded-full flex items-center justify-center">
+                <svg
+                  className="w-10 h-10 text-green-700"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                  />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold text-gray-800 mb-3">
+                Không thể tải dữ liệu
+              </h3>
+              <p className="text-gray-600 mb-6">
+                Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng và
+                thử lại.
+              </p>
+              <button
+                onClick={() => window.location.reload()}
+                className="px-6 py-3 bg-green-700 text-white rounded-lg font-semibold hover:bg-green-800 transition-all duration-300 shadow-md hover:shadow-lg cursor-pointer"
+              >
+                Tải lại trang
+              </button>
+            </div>
+          </motion.div>
         )}
 
         {/* Categories Grid */}
@@ -150,11 +181,44 @@ export default function TrendingIndustries() {
 
         {/* Empty State */}
         {!loading && !error && displayCategories.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-gray-500">
-              Chưa có ngành nghề nào được hiển thị
-            </p>
-          </div>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="max-w-lg mx-auto text-center py-16"
+          >
+            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-12 shadow-lg">
+              <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-green-100 to-emerald-100 rounded-full flex items-center justify-center">
+                <svg
+                  className="w-12 h-12 text-green-700"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                  />
+                </svg>
+              </div>
+              <h3 className="text-2xl font-bold text-green-800 mb-4">
+                Chưa có ngành nghề nào
+              </h3>
+              <p className="text-gray-600 mb-8 leading-relaxed">
+                Hiện tại chưa có ngành nghề nào được thêm vào hệ thống. Vui lòng
+                quay lại sau hoặc liên hệ quản trị viên.
+              </p>
+              <div className="flex gap-3 justify-center">
+                <button
+                  onClick={() => window.location.reload()}
+                  className="px-6 py-3 bg-white text-green-700 rounded-lg font-semibold border-2 border-green-700 hover:bg-green-50 transition-all duration-300"
+                >
+                  Tải lại
+                </button>
+              </div>
+            </div>
+          </motion.div>
         )}
       </div>
     </section>

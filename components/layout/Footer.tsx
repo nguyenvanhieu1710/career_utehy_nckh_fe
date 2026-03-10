@@ -8,8 +8,7 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
           <div className="space-y-8">
             <div>
-              <img src={'/logo/logo.jpg'}
-                className="object-cover h-36" />
+              <img src={"/logo/logo.jpg"} className="object-cover h-36" />
             </div>
 
             <div className="space-y-6">
@@ -19,9 +18,7 @@ export function Footer() {
                   <p className="flex items-center gap-3">
                     Email: fit@utehy.edu.vn
                   </p>
-                  <p className="flex items-center gap-3">
-                    SĐT: 0123456789
-                  </p>
+                  <p className="flex items-center gap-3">SĐT: 0123456789</p>
                 </div>
               </div>
 
@@ -63,17 +60,26 @@ export function Footer() {
                   </Link>
                 </li>
                 <li>
-                  <Link href="/cv/create" className="hover:text-blue-400 transition">
+                  <Link
+                    href="/cv/create"
+                    className="hover:text-blue-400 transition"
+                  >
                     Tạo CV
                   </Link>
                 </li>
                 <li>
-                  <Link href="/saved-jobs" className="hover:text-blue-400 transition">
+                  <Link
+                    href="/saved-jobs"
+                    className="hover:text-blue-400 transition"
+                  >
                     Công việc yêu thích
                   </Link>
                 </li>
                 <li>
-                  <Link href="/applied-jobs" className="hover:text-blue-400 transition">
+                  <Link
+                    href="/applied-jobs"
+                    className="hover:text-blue-400 transition"
+                  >
                     Công việc đã ứng tuyển
                   </Link>
                 </li>
@@ -86,22 +92,34 @@ export function Footer() {
               </h4>
               <ul className="space-y-3 text-sm text-[#1F407D]">
                 <li>
-                  <Link href="/employer/post-job" className="hover:text-blue-400 transition">
+                  <Link
+                    href="/employer/post-job"
+                    className="hover:text-blue-400 transition"
+                  >
                     Đăng tin tuyển dụng
                   </Link>
                 </li>
                 <li>
-                  <Link href="/employer/dashboard" className="hover:text-blue-400 transition">
-                    Quản lý đơn hàng
+                  <Link
+                    href="/employer/dashboard"
+                    className="hover:text-blue-400 transition"
+                  >
+                    Quản lý danh mục
                   </Link>
                 </li>
                 <li>
-                  <Link href="/employer/cv-search" className="hover:text-blue-400 transition">
-                    Tìm ứng viên
+                  <Link
+                    href="/employer/cv-search"
+                    className="hover:text-blue-400 transition"
+                  >
+                    Quản lý dữ liệu
                   </Link>
                 </li>
                 <li>
-                  <Link href="/employer/reports" className="hover:text-blue-400 transition">
+                  <Link
+                    href="/employer/reports"
+                    className="hover:text-blue-400 transition"
+                  >
                     Báo cáo thống kê
                   </Link>
                 </li>
