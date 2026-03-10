@@ -43,6 +43,8 @@ export const logout = () => {
   window.localStorage.removeItem("account_id");
   window.localStorage.removeItem("fullname");
   window.localStorage.removeItem("avatar_url");
+  window.localStorage.removeItem("user_permissions");
+  window.localStorage.removeItem("user_roles");
   window.location.href = "/";
 };
 

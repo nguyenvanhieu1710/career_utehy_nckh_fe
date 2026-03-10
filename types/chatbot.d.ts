@@ -13,6 +13,7 @@ export interface ChatbotContextType {
   isOpen: boolean;
   messages: ChatMessage[];
   isTyping: boolean;
+  isWaiting: boolean;
   unreadCount: number;
   toggleChat: () => void;
   sendMessage: (content: string) => Promise<void>;

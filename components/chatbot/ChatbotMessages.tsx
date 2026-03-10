@@ -6,7 +6,7 @@ import { ChatbotWelcome } from "./ChatbotWelcome";
 import "./chatbot.css";
 
 export function ChatbotMessages() {
-  const { messages, isTyping } = useChatbot();
+  const { messages, isTyping, isWaiting } = useChatbot();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll when messages change
@@ -17,7 +17,7 @@ export function ChatbotMessages() {
         block: "end",
       });
     }
-  }, [messages, isTyping]);
+  }, [messages, isTyping, isWaiting]);
 
   return (
     <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 scroll-smooth">
@@ -27,9 +27,9 @@ export function ChatbotMessages() {
         <>
           {messages.map((msg, index) => {
             const isLastAssistantMessage =
-              index === messages.length - 1 &&
-              msg.role === "assistant" &&
-              isTyping;
+              index === messages.length - 1 && msg.role === "assistant";
+            const showTypingCursor = isLastAssistantMessage && isTyping;
+            const showWaitingDots = isLastAssistantMessage && isWaiting;
 
             return (
               <div
@@ -45,12 +45,27 @@ export function ChatbotMessages() {
                       : "bg-white text-gray-800 shadow-sm border border-gray-100"
                   }`}
                 >
-                  <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">
-                    {msg.content}
-                    {isLastAssistantMessage && (
+                  <div className="text-sm whitespace-pre-wrap break-words leading-relaxed">
+                    {msg.role === "assistant" ? (
+                      <div
+                        dangerouslySetInnerHTML={{
+                          __html: msg.content
+                            // Convert **text** to <strong>text</strong> (bold)
+                            .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+                            // Convert *text* to <em>text</em> (italic)
+                            .replace(/\*(.*?)\*/g, "<em>$1</em>"),
+                        }}
+                      />
+                    ) : (
+                      msg.content
+                    )}
+                    {showWaitingDots && (
+                      <span className="waiting-dots">...</span>
+                    )}
+                    {showTypingCursor && (
                       <span className="typing-cursor"></span>
                     )}
-                  </p>
+                  </div>
                   <span className="text-xs opacity-70 mt-2 block">
                     {msg.timestamp.toLocaleTimeString("vi-VN", {
                       hour: "2-digit",

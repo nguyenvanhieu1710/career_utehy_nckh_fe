@@ -7,9 +7,9 @@ export function ChatbotWelcome() {
   const { sendMessage } = useChatbot();
 
   const suggestions = [
-    "Tìm việc backend developer",
     "Tư vấn nghề nghiệp cho sinh viên",
     "Kỹ năng cần có cho lập trình viên",
+    "Việc làm ngành giáo dục",
   ];
 
   return (

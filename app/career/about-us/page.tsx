@@ -155,7 +155,7 @@ export default function AboutUs() {
         </div>
       </section>
 
-      <section className="py-20 bg-white">
+      <section className="pt-20 pb-5 bg-white">
         <div className="container mx-auto px-4">
           <SectionTitle title="CÙNG CAREER PHÁT TRIỂN NGHỀ NGHIỆP" />
 

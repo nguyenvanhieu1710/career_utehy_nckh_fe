@@ -51,7 +51,7 @@ export default function JobCard({
     >
       {/* Animated background gradient on hover */}
       <motion.div
-        className="absolute inset-0 bg-gradient-to-br from-red-50 via-transparent to-orange-50"
+        className="absolute inset-0 bg-gradient-to-br from-green-50 via-transparent to-emerald-50"
         initial={{ opacity: 0 }}
         animate={{ opacity: isHovered ? 1 : 0 }}
         transition={{ duration: 0.3 }}
@@ -75,7 +75,7 @@ export default function JobCard({
               transition={{ duration: 0.3 }}
             >
               <motion.div
-                className="absolute inset-0 bg-gradient-to-r from-red-100 to-orange-100 rounded-lg"
+                className="absolute inset-0 bg-gradient-to-r from-green-100 to-emerald-100 rounded-lg"
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{
                   opacity: isHovered ? 0.3 : 0,
@@ -105,7 +105,7 @@ export default function JobCard({
               <motion.h3
                 className={`font-bold text-lg line-clamp-2 leading-tight break-words transition-all duration-300 mb-2 ${
                   isHovered
-                    ? "bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent"
+                    ? "bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent"
                     : "text-[#852121]"
                 }`}
                 animate={{ scale: isHovered ? 1.02 : 1 }}
@@ -144,7 +144,7 @@ export default function JobCard({
               <motion.button
                 className={`flex-1 flex items-center justify-center gap-2 font-medium text-sm py-2.5 cursor-pointer rounded-lg transition-all duration-300 ${
                   isHovered
-                    ? "bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg"
+                    ? "bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg"
                     : "bg-[#E6E6E6] text-[#5C5C5C]"
                 }`}
                 whileHover={{ scale: 1.02 }}
@@ -169,7 +169,7 @@ export default function JobCard({
               <motion.button
                 className={`flex items-center justify-center gap-2 px-4 py-2.5 cursor-pointer rounded-lg transition-all duration-300 ${
                   isHovered
-                    ? "bg-gradient-to-r from-pink-100 to-red-100 text-red-600 shadow-md"
+                    ? "bg-gradient-to-r from-green-100 to-emerald-100 text-green-600 shadow-md"
                     : "bg-[#E6E6E6] text-[#5C5C5C]"
                 }`}
                 whileHover={{ scale: 1.02 }}
@@ -184,10 +184,10 @@ export default function JobCard({
                   <Heart
                     className={`w-5 h-5 transition-colors duration-300 ${
                       isHeartFilled
-                        ? "text-red-500 fill-red-500"
+                        ? "text-green-500 fill-green-500"
                         : isHovered
-                        ? "text-red-400 fill-red-400"
-                        : "text-[#5C5C5C] fill-[#5C5C5C]"
+                          ? "text-green-400 fill-green-400"
+                          : "text-[#5C5C5C] fill-[#5C5C5C]"
                     }`}
                   />
                 </motion.div>
@@ -203,7 +203,7 @@ export default function JobCard({
           {[0, 1, 2].map((i) => (
             <motion.div
               key={i}
-              className="absolute w-1 h-1 bg-orange-400 rounded-full"
+              className="absolute w-1 h-1 bg-green-400 rounded-full"
               initial={{
                 opacity: 0,
                 x: 60 + i * 40,
