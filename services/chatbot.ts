@@ -1,6 +1,5 @@
 import { config } from "@/lib/config";
 import { logger } from "@/lib/logger";
-import { getTokenCookie } from "@/services/auth";
 
 export const chatAPI = {
   /**
@@ -10,16 +9,11 @@ export const chatAPI = {
     message: string,
   ): AsyncGenerator<string, void, unknown> {
     try {
-      const token = getTokenCookie();
       const headers: HeadersInit = {
         "Content-Type": "application/json",
       };
 
-      if (token) {
-        headers.Authorization = `Bearer ${token}`;
-      }
-
-      const response = await fetch(`${config.api.baseUrl}/chat/stream`, {
+      const response = await fetch(`${config.chatbot.baseUrl}/chat/stream`, {
         method: "POST",
         headers,
         body: JSON.stringify({ message }),

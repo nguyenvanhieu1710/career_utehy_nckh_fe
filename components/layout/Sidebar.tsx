@@ -56,28 +56,30 @@ export function Sidebar() {
       className="relative flex flex-col bg-gradient-to-b from-emerald-800 to-emerald-900 text-white overflow-hidden"
     >
       <div className="flex h-16 items-center justify-between px-4 border-b border-emerald-700 bg-emerald-800">
-        <motion.div
-          className={cn(
-            "flex items-center gap-3 overflow-hidden",
-            collapsed ? "justify-center ml-0" : "ml-2"
-          )}
-          animate={{
-            opacity: collapsed ? 0 : 1,
-            x: collapsed ? -10 : 0,
-            width: collapsed ? 0 : "auto",
-          }}
-          transition={{ duration: 0.2, delay: collapsed ? 0 : 0.1 }}
-        >
-          <motion.span
-            className="text-xl font-bold text-white whitespace-nowrap"
-            initial={{ opacity: 1 }}
+        <Link href="/admin" className="flex-1">
+          <motion.div
+            className={cn(
+              "flex items-center gap-3 overflow-hidden cursor-pointer",
+              collapsed ? "justify-center ml-0" : "ml-2",
+            )}
+            animate={{
+              opacity: collapsed ? 0 : 1,
+              x: collapsed ? -10 : 0,
+              width: collapsed ? 0 : "auto",
+            }}
+            transition={{ duration: 0.2, delay: collapsed ? 0 : 0.1 }}
           >
-            CAREER
-          </motion.span>
-        </motion.div>
+            <motion.span
+              className="text-xl font-bold text-white whitespace-nowrap"
+              initial={{ opacity: 1 }}
+            >
+              CAREER
+            </motion.span>
+          </motion.div>
+        </Link>
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="rounded-full p-1.5 bg-emerald-700 hover:bg-emerald-600 transition-colors text-emerald-100 hover:text-white"
+          className="rounded-full p-1.5 bg-emerald-700 hover:bg-emerald-600 transition-colors text-emerald-100 cursor-pointer hover:text-white"
           aria-label={
             collapsed ? "Mở rộng thanh điều hướng" : "Thu gọn thanh điều hướng"
           }
@@ -109,7 +111,7 @@ export function Sidebar() {
                 isActive
                   ? "bg-emerald-700 text-white shadow-sm"
                   : "text-emerald-100 hover:bg-emerald-700 hover:text-white",
-                collapsed && "justify-center"
+                collapsed && "justify-center",
               )}
             >
               <motion.div

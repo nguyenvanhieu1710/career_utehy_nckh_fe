@@ -26,7 +26,8 @@ const nextConfig: NextConfig = {
   // Enable environment variables
   env: {
     NEXT_PUBLIC_API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL,
-    NEXT_PUBLIC_BACKEND_BASE_URL: process.env.NEXT_PUBLIC_BACKEND_BASE_URL,
+    NEXT_PUBLIC_STATIC_URL: process.env.NEXT_PUBLIC_STATIC_URL,
+    NEXT_PUBLIC_CHATBOT_BASE_URL: process.env.NEXT_PUBLIC_CHATBOT_BASE_URL,
   },
 };
 

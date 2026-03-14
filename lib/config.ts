@@ -6,11 +6,18 @@ export const config = {
     timeout: 30000, // 30 seconds
   },
 
-  // Backend Configuration
-  backend: {
-    baseUrl:
-      process.env.NEXT_PUBLIC_BACKEND_BASE_URL || "http://127.0.0.1:8000",
+  // Static Files & Uploads Configuration
+  static: {
+    baseUrl: process.env.NEXT_PUBLIC_STATIC_URL || "http://127.0.0.1:8000",
     uploadsPath: "/uploads",
+  },
+
+  // Chatbot Service Configuration
+  chatbot: {
+    baseUrl:
+      process.env.NEXT_PUBLIC_CHATBOT_BASE_URL ||
+      "http://127.0.0.1:8001/api/v1",
+    timeout: 60000, // 60 seconds for LLM responses
   },
 
   // File Upload Configuration
@@ -36,8 +43,8 @@ export const config = {
 } as const;
 
 // Helper functions
-export const getBackendUrl = (path: string = ""): string => {
-  const baseUrl = config.backend.baseUrl;
+export const getStaticUrl = (path: string = ""): string => {
+  const baseUrl = config.static.baseUrl;
   return path.startsWith("/") ? `${baseUrl}${path}` : `${baseUrl}/${path}`;
 };
 
@@ -49,9 +56,9 @@ export const getUploadsUrl = (path: string = ""): string => {
 
   // If path starts with /uploads/, use it directly
   if (path.startsWith("/uploads/")) {
-    return getBackendUrl(path);
+    return getStaticUrl(path);
   }
 
   // Otherwise, prepend uploads path
-  return getBackendUrl(`${config.backend.uploadsPath}/${path}`);
+  return getStaticUrl(`${config.static.uploadsPath}/${path}`);
 };
