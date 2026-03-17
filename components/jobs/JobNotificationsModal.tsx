@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import {
-  X,
   Bell,
   CheckCircle,
   Clock,
@@ -312,12 +311,6 @@ export const JobNotificationsModal = ({
                 </p>
               </div>
             </div>
-            <button
-              onClick={onClose}
-              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
-            >
-              <X className="h-5 w-5" />
-            </button>
           </div>
         </DialogHeader>
 

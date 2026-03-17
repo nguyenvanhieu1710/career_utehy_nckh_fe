@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Briefcase, Grid, List, ArrowUpDown } from "lucide-react";
+import { Briefcase, ArrowUpDown } from "lucide-react";
 import { Job } from "@/types/job";
 import { JobCard } from "./JobCard";
 
@@ -19,7 +19,7 @@ interface JobListProps {
   className?: string;
 }
 
-type ViewMode = "grid" | "list";
+
 type SortOption = "newest" | "salary" | "relevant" | "company";
 
 export const JobList = ({
@@ -34,7 +34,7 @@ export const JobList = ({
   total = 0,
   className = "",
 }: JobListProps) => {
-  const [viewMode, setViewMode] = useState<ViewMode>("list");
+
   const [sortBy, setSortBy] = useState<SortOption>("newest");
 
   const sortOptions = [
@@ -123,44 +123,14 @@ export const JobList = ({
             </select>
           </div>
 
-          {/* View Mode Toggle */}
-          <div className="flex items-center border border-gray-300 rounded-lg p-1 bg-white">
-            <button
-              onClick={() => setViewMode("list")}
-              className={`p-2 rounded transition-colors cursor-pointer ${
-                viewMode === "list"
-                  ? "bg-green-100 text-green-600"
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
-              title="Xem dạng danh sách"
-            >
-              <List className="h-4 w-4" />
-            </button>
-            <button
-              onClick={() => setViewMode("grid")}
-              className={`p-2 rounded transition-colors cursor-pointer ${
-                viewMode === "grid"
-                  ? "bg-green-100 text-green-600"
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
-              title="Xem dạng lưới"
-            >
-              <Grid className="h-4 w-4" />
-            </button>
-          </div>
+
         </div>
       </div>
 
       {/* Job Cards */}
       {loading && jobs.length === 0 ? (
         // Loading skeleton
-        <div
-          className={
-            viewMode === "grid"
-              ? "grid grid-cols-1 lg:grid-cols-2 gap-6"
-              : "space-y-4"
-          }
-        >
+        <div className="space-y-4">
           {Array.from({ length: 6 }).map((_, index) => (
             <div
               key={index}
@@ -194,13 +164,7 @@ export const JobList = ({
           ))}
         </div>
       ) : sortedJobs.length > 0 ? (
-        <div
-          className={
-            viewMode === "grid"
-              ? "grid grid-cols-1 lg:grid-cols-2 gap-6"
-              : "space-y-4"
-          }
-        >
+        <div className="space-y-4">
           {sortedJobs.map((job, index) => (
             <JobCard
               key={job.id}
@@ -210,7 +174,7 @@ export const JobList = ({
               onApply={handleApply}
               onView={handleView}
               isFavorited={favoriteJobIds.includes(job.id)}
-              className={viewMode === "grid" ? "h-full" : ""}
+              className=""
             />
           ))}
         </div>
