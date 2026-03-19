@@ -195,7 +195,7 @@ export default function AboutUs() {
             initial="hidden"
             whileInView="show"
             viewport={{ once: true }}
-            className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto"
+            className="grid md:grid-cols-2 gap-x-40 gap-y-24 max-w-5xl mx-auto"
           >
             <motion.div
               variants={listItem}
@@ -206,7 +206,7 @@ export default function AboutUs() {
                 <Target className="w-6 h-6" />
               </div>
               <div>
-                <h4 className="text-lg font-bold text-[#5959EB] mb-1">
+                <h4 className="text-xl font-bold text-[#5959EB] mb-1">
                   Định Hướng Tương Lai
                 </h4>
                 <p className="text-gray-600">
@@ -225,7 +225,7 @@ export default function AboutUs() {
                 <BookOpen className="w-6 h-6" />
               </div>
               <div>
-                <h4 className="text-lg font-bold text-[#5959EB] mb-1">
+                <h4 className="text-xl font-bold text-[#5959EB] mb-1">
                   Minh Bạch & Xác Thực
                 </h4>
                 <p className="text-gray-600">
@@ -244,7 +244,7 @@ export default function AboutUs() {
                 <Users className="w-6 h-6" />
               </div>
               <div>
-                <h4 className="text-lg font-bold text-[#5959EB] mb-1">
+                <h4 className="text-xl font-bold text-[#5959EB] mb-1">
                   Phát Triển Toàn Diện
                 </h4>
                 <p className="text-gray-600">
@@ -263,7 +263,7 @@ export default function AboutUs() {
                 <Heart className="w-6 h-6" />
               </div>
               <div>
-                <h4 className="text-lg font-bold text-[#5959EB] mb-1">
+                <h4 className="text-xl font-bold text-[#5959EB] mb-1">
                   Khởi Nghiệp Tự Tin
                 </h4>
                 <p className="text-gray-600">

@@ -3,12 +3,11 @@
 import { Footer } from '@/components/layout/Footer';
 import { Header } from '@/components/layout/Header';
 import { useEffect, useState } from 'react';
-import CVCanvas, { CVState, ImageState } from './components/Canvas';
-import { ArrowDownToLine, ArrowDownWideNarrow, FilePlus, Loader2, PlusCircle, PlusSquare } from 'lucide-react';
+import CVCanvas, { ImageState } from './components/Canvas';
+import { ArrowDownWideNarrow, FilePlus, Loader2, Upload } from 'lucide-react';
 import { cvAPI } from '@/services/cv';
 import Loader from '@/components/ui/Loader';
 import { CVProfile } from '@/types/cv';
-import { defaultSections } from './[cv_id]/page';
 import { Section, SectionItem } from './components/ToolBox';
 const guideItem = (text: string): SectionItem => ({
     text,
@@ -235,11 +234,28 @@ export default function CVManager() {
     const [searchTerm, setSearchTerm] = useState('');
     const [loading, setLoading] = useState(false);
     const [cvs, setCvs] = useState<CVProfile[]>([]);
+    const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
+    const [selectedSort, setSelectedSort] = useState('Ngày cập nhật');
+
+    // Filter and sort CVs based on search term and selected sort option
+    const sortedFilteredCvs = cvs
+        .filter(cv => cv.name.toLowerCase().includes(searchTerm.toLowerCase()))
+        .sort((a, b) => {
+            switch (selectedSort) {
+                case 'Tên CV':
+                    return a.name.localeCompare(b.name);
+                case 'Ngày cập nhật':
+                default:
+                    return new Date(b.updated_at || b.created_at).getTime() - new Date(a.updated_at || a.created_at).getTime();
+            }
+        });
 
     useEffect(() => {
         cvAPI.getForUser({}).then(res => {
             setCvs(res.data?.data)
-        }).catch(err => { })
+        }).catch(err => {
+            console.error(err);
+        })
     }, [])
     const handleCreateNewCV = () => {
         setLoading(true);
@@ -251,7 +267,7 @@ export default function CVManager() {
         }).then(res => {
             location.href = `/cv/${res.data.id}`
         }).catch(err => {
-
+            console.error(err);
         }).finally(() => {
             setLoading(false);
         })
@@ -268,42 +284,83 @@ export default function CVManager() {
                     </h1>
 
                     {/* Search and Create Section */}
-                    <div className="flex gap-4 mb-6">
+                    <div className="flex gap-4 mb-5">
                         <input
                             type="text"
                             placeholder="Nhập tên CV để tìm kiếm"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="flex-1 px-4 text-gray-700 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="flex-1 px-4 text-gray-700 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                         />
                     </div>
 
-
                     {/* Recent CVs Section */}
                     <section>
-                        <h2 className="text-2xl font-semibold text-gray-800 mb-6">Gần đây</h2>
-                        <div className='flex gap-2 items-center'>
-                            <div className='text-gray-400'>
-                                Sắp xếp theo
-                            </div>
-                            <div className="inline-flex items-center rounded-full border border-gray-300 p-1 gap-1">
-                                <div className="text-[16px] text-gray-700">
-                                    Ngày cập nhật
+                        <div className="flex items-center justify-between gap-4">
+                            <div className='flex items-center gap-3'>
+                                <span className='text-sm text-gray-500 font-medium'>
+                                    Sắp xếp theo
+                                </span>
+                                <div className="relative">
+                                    <button
+                                        type="button"
+                                        onClick={() => setSortDropdownOpen(!sortDropdownOpen)}
+                                        className="inline-flex items-center rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-sm cursor-pointer hover:bg-gray-50 transition-colors"
+                                    >
+                                        <span className="text-sm font-medium text-gray-700">
+                                            {selectedSort}
+                                        </span>
+                                        <ArrowDownWideNarrow className='ml-2 text-gray-400' size={14} />
+                                    </button>
+                                    
+                                    {sortDropdownOpen && (
+                                        <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                                            <div className="py-1">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setSelectedSort('Ngày cập nhật');
+                                                        setSortDropdownOpen(false);
+                                                    }}
+                                                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                                                >
+                                                    Ngày cập nhật
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setSelectedSort('Tên CV');
+                                                        setSortDropdownOpen(false);
+                                                    }}
+                                                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                                                >
+                                                    Tên CV
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
-                                <ArrowDownWideNarrow color='black' size={16} />
                             </div>
+                            <button
+                                type="button"
+                                className="inline-flex items-center gap-2 rounded-lg bg-[#0C6A4E] px-4 py-2 text-white cursor-pointer hover:bg-[#0a5441] transition-colors"
+                            >
+                                <Upload className="h-4 w-4" />
+                                Upload CV
+                            </button>
                         </div>
+                        <h2 className="mt-3 text-2xl font-semibold text-gray-800 mb-6">Gần đây</h2>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-1">
                             <div
                                 className="bg-white rounded-xl p-6 cursor-pointer"
                                 onClick={handleCreateNewCV}
                             >
-                                <div className='w-full h-full bg-gray-50 rounded-lg flex items-center justify-center hover:bg-gray-100'>
+                                <div className='w-full aspect-[3/4] bg-gray-50 rounded-lg flex items-center justify-center hover:bg-gray-100'>
                                     {loading ? <Loader2 color='white' fill='#89aea3ff' size={76} strokeWidth={1} /> : <FilePlus color='white' fill='#89aea3ff' size={76} strokeWidth={1} />}
                                 </div>
                             </div>
-                            {cvs?.map(cv => {
+                            {sortedFilteredCvs?.map(cv => {
                                 let sections = [];
                                 if (cv.sections == 'NONE') {
                                     sections = DEFAULT_SECTIONS_VI;
@@ -333,7 +390,7 @@ export default function CVManager() {
                                             {cv.name}
                                         </h3>
                                         <div className="text-gray-600 text-sm">
-                                            Ngày tạo: {new Date(cv.created_at).toLocaleString()}
+                                            Ngày cập nhật: {new Date(cv.updated_at || cv.created_at).toLocaleString()}
                                         </div>
                                     </div>
                                 )
