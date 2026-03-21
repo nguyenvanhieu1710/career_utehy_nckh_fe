@@ -55,19 +55,19 @@ const JobItem = ({
     >
       <Card
         className={twMerge(
-          "bg-gradient-to-br from-white to-gray-50 p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300 relative overflow-hidden group"
+          "bg-gradient-to-br from-white to-gray-50 p-4 sm:p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300 relative overflow-hidden group"
         )}
       >
         {/* Animated gradient background on hover */}
         <div className="absolute inset-0 bg-gradient-to-r from-blue-50 via-transparent to-green-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
-        <div className="relative z-10 flex items-start justify-between gap-6">
+        <div className="relative z-10 flex flex-col sm:flex-row items-start justify-between gap-4 sm:gap-6">
           {/* Logo + Info */}
-          <div className="flex items-start gap-4 flex-1">
+          <div className="flex items-start gap-4 flex-1 w-full">
             <motion.div
               whileHover={{ scale: 1.1, rotate: 5 }}
               transition={{ duration: 0.3 }}
-              className="w-25 h-25 shrink-0 rounded-xl bg-white shadow-md flex items-center justify-center p-2 border border-gray-100"
+              className="w-16 h-16 sm:w-25 sm:h-25 shrink-0 rounded-xl bg-white shadow-md flex items-center justify-center p-2 border border-gray-100"
             >
               <img
                 src={logo}
@@ -124,7 +124,7 @@ const JobItem = ({
             initial={{ opacity: 0, scale: 0.8 }}
             whileInView={{ opacity: 1, scale: 1 }}
             transition={{ delay: index * 0.2 + 0.2, duration: 0.5 }}
-            className="text-right space-y-3 shrink-0"
+            className="w-full sm:w-auto text-center sm:text-right space-y-3 shrink-0"
           >
             <motion.div
               animate={{
@@ -155,7 +155,7 @@ const JobItem = ({
               whileHover={{ scale: 1.05, y: -2 }}
               whileTap={{ scale: 0.98 }}
               className={twMerge(
-                "mt-3 rounded-lg font-medium px-4 py-2.5 text-sm flex items-center cursor-pointer transition-all duration-300 shadow-sm hover:shadow-md",
+                "mt-3 rounded-lg font-medium px-4 py-2.5 text-sm flex items-center justify-center sm:justify-start w-full sm:w-auto cursor-pointer transition-all duration-300 shadow-sm hover:shadow-md",
                 compatibility >= 50
                   ? "text-white bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
                   : "text-white bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700"
@@ -180,7 +180,7 @@ const JobItem = ({
 // Login Required Section Component
 const LoginRequiredSection = () => {
   return (
-    <section className="py-16 px-4">
+    <section className="py-16 px-7">
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -254,7 +254,7 @@ export default function SuitableJobs() {
 
   // Show suitable jobs if authenticated
   return (
-    <section className="py-16 px-4">
+    <section className="py-16 px-7">
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         whileInView={{ opacity: 1, y: 0 }}

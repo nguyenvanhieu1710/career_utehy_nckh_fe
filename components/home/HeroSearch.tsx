@@ -13,6 +13,13 @@ import {
 import { useEffect, useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import Button from "@/components/ui/Button";
 
 type TitleId = "job" | "studient" | "company";
 
@@ -114,6 +121,7 @@ const heroTitles: {
 
 export function HeroSearch() {
   const router = useRouter();
+  const MAX_QUERY_LENGTH = 255;
   const [titleDataIndex, setTitleDataIndex] = useState(0);
   const [titleAmountData] = useState<Record<TitleId, number>>({
     job: 24043,
@@ -125,6 +133,8 @@ export function HeroSearch() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
+  const [showMaxLengthDialog, setShowMaxLengthDialog] = useState(false);
+  const [isComposing, setIsComposing] = useState(false);
   const [filters, setFilters] = useState({
     location: "",
     industry: "",
@@ -177,7 +187,8 @@ export function HeroSearch() {
 
   // Handle search submission
   const handleSearch = async () => {
-    if (!searchQuery.trim() && !Object.values(filters).some((f) => f)) return;
+    const trimmedQuery = searchQuery.trim().slice(0, MAX_QUERY_LENGTH);
+    if (!trimmedQuery && !Object.values(filters).some((f) => f)) return;
 
     setIsSearching(true);
 
@@ -186,7 +197,7 @@ export function HeroSearch() {
 
     // Build query params
     const params = new URLSearchParams();
-    if (searchQuery.trim()) params.set("query", searchQuery.trim());
+    if (trimmedQuery) params.set("query", trimmedQuery);
     Object.entries(filters).forEach(([key, value]) => {
       if (value) params.set(key, value);
     });
@@ -222,8 +233,12 @@ export function HeroSearch() {
 
   const currentTitle = heroTitles[titleDataIndex];
 
+  const triggerMaxLengthWarning = () => {
+    setShowMaxLengthDialog(true);
+  };
+
   return (
-    <section className="flex gap-3 h-screen bg-white py-12 p-3">
+    <section className="flex gap-3 bg-white py-12 p-3 min-h-screen">
       <div className="flex-1 container mx-auto px-4 mb-20">
         {/* Title */}
         <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-2 md:mb-4 flex flex-wrap items-center gap-2 md:gap-3">
@@ -345,7 +360,57 @@ export function HeroSearch() {
                 <input
                   type="text"
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  maxLength={MAX_QUERY_LENGTH}
+                  onChange={(e) => {
+                    const nextValue = e.target.value;
+                    if (nextValue.length > MAX_QUERY_LENGTH) {
+                      const capped = nextValue.slice(0, MAX_QUERY_LENGTH);
+                      e.currentTarget.value = capped;
+                      setSearchQuery(capped);
+                      triggerMaxLengthWarning();
+                      return;
+                    }
+                    setSearchQuery(nextValue);
+                  }}
+                  onBeforeInput={(e) => {
+                    if (isComposing) return;
+                    if (searchQuery.length < MAX_QUERY_LENGTH) return;
+                    e.preventDefault();
+                    triggerMaxLengthWarning();
+                  }}
+                  onCompositionStart={() => setIsComposing(true)}
+                  onCompositionEnd={(e) => {
+                    setIsComposing(false);
+                    const composedValue = (e.currentTarget.value || "").slice(
+                      0,
+                      MAX_QUERY_LENGTH
+                    );
+                    if (composedValue.length < e.currentTarget.value.length) {
+                      triggerMaxLengthWarning();
+                    }
+                    setSearchQuery(composedValue);
+                  }}
+                  onPaste={(e) => {
+                    const pasted = e.clipboardData.getData("text");
+                    if (!pasted) return;
+                    const nextLength = searchQuery.length + pasted.length;
+                    if (nextLength <= MAX_QUERY_LENGTH) return;
+
+                    e.preventDefault();
+                    const remaining = Math.max(
+                      0,
+                      MAX_QUERY_LENGTH - searchQuery.length
+                    );
+                    if (remaining > 0) {
+                      setSearchQuery((prev) =>
+                        (prev + pasted.slice(0, remaining)).slice(
+                          0,
+                          MAX_QUERY_LENGTH
+                        )
+                      );
+                    }
+                    triggerMaxLengthWarning();
+                  }}
                   onFocus={() => setIsSearchFocused(true)}
                   onBlur={() =>
                     setTimeout(() => setIsSearchFocused(false), 200)
@@ -353,7 +418,7 @@ export function HeroSearch() {
                   placeholder="Nhập tên công việc, công ty..."
                   className={`w-full pl-12 pr-4 py-3 sm:py-4 rounded-lg border transition-all duration-300 focus:outline-none text-gray-700 text-sm sm:text-base ${
                     isSearchFocused
-                      ? "border-[#5959EB] ring-2 ring-[#5959EB]/20 shadow-lg bg-white"
+                      ? "border-green-700 ring-2 ring-green-700/20 shadow-lg bg-white"
                       : "border-gray-300 hover:border-gray-400"
                   }`}
                   onKeyPress={(e) => e.key === "Enter" && handleSearch()}
@@ -550,6 +615,25 @@ export function HeroSearch() {
           alt="People in career"
         />
       </div>
+
+      {/* Max Length Warning Dialog */}
+      <Dialog open={showMaxLengthDialog} onOpenChange={setShowMaxLengthDialog}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-red-600">Giới hạn ký tự</DialogTitle>
+          </DialogHeader>
+          <div className="text-sm text-gray-600">
+            Bạn chỉ có thể nhập tối đa <span className="font-semibold">{MAX_QUERY_LENGTH}</span> ký tự cho tìm kiếm.
+          </div>
+          <div className="flex justify-end mt-4">
+            <Button
+              type="button"
+              value="Đóng"
+              onClick={() => setShowMaxLengthDialog(false)}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }

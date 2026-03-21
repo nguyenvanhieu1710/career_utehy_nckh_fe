@@ -43,7 +43,7 @@ export function Navbar() {
         scrolled ? "shadow-md" : "border-b"
       }`}
     >
-      <div className="w-full px-6">
+      <div className="w-full px-7">
         <div className="flex h-16 items-center justify-between">
           <div className="flex items-center gap-6">
             <Link href="/" className="flex items-center gap-1">
@@ -87,21 +87,22 @@ export function Navbar() {
             </div>
           </div>
 
-          {isLoading ? (
-            <div className="w-8 h-8 animate-pulse bg-gray-200 rounded-full"></div>
-          ) : isAuthenticated && user ? (
-            <div className="relative">
-              <button
-                onClick={() => setIsProfileOpen(!isProfileOpen)}
-                className="flex gap-2 items-center cursor-pointer p-2 transition"
-              >
-                <div className="flex flex-col gap-0 text-left">
-                  <div className="font-bold text-sm text-gray-700">
-                    {user.fullname}
-                  </div>
-                  <div className="text-xs text-gray-500">@{user.username}</div>
-                </div>
-                <img
+          <div className="flex items-center gap-1">
+            {isLoading ? (
+              <div className="w-8 h-8 animate-pulse bg-gray-200 rounded-full"></div>
+            ) : isAuthenticated && user ? (
+              <div className="relative">
+                <button
+                  onClick={() => setIsProfileOpen(!isProfileOpen)}
+                  className="flex gap-2 items-center cursor-pointer p-2 transition"
+                >
+                  <div className="flex flex-col gap-0 text-left">
+                    <div className="font-bold text-sm text-gray-700">
+                      {user.fullname}
+                    </div>
+                    <div className="text-xs text-gray-500">@{user.username}</div>
+                  </div>                
+                  <img
                   src={userAPI.getAvatarUrl(user)}
                   alt={`${user.fullname} avatar`}
                   className="w-10 h-10 rounded-full object-cover border"
@@ -109,32 +110,33 @@ export function Navbar() {
                     const target = e.target as HTMLImageElement;
                     target.src = "/default-avatar.jpg";
                   }}
-                />
+                />  
+                </button>
+
+                {isProfileOpen && (
+                  <ProfileDropdown onClose={() => setIsProfileOpen(false)} />
+                )}
+              </div>
+            ) : (
+              <div className="hidden md:flex items-center gap-3">
+                <Link href="/auth/signin">
+                  <Button type="button" value="Đăng nhập" border="10px" />
+                </Link>
+                <Link href="/auth/signup">
+                  <Button type="button" value="Đăng ký" border="10px" />
+                </Link>
+              </div>
+            )}
+
+            <div className="md:hidden">
+              <button
+                onClick={() => setIsOpen(!isOpen)}
+                className="inline-flex items-center justify-center p-2 rounded-md text-gray-700 hover:text-gray-900 focus:outline-none"
+                aria-label="Toggle menu"
+              >
+                {isOpen ? <X size={24} /> : <Menu size={24} />}
               </button>
-
-              {isProfileOpen && (
-                <ProfileDropdown onClose={() => setIsProfileOpen(false)} />
-              )}
             </div>
-          ) : (
-            <div className="hidden md:flex items-center gap-3">
-              <Link href="/auth/signin">
-                <Button type="button" value="Đăng nhập" border="10px" />
-              </Link>
-              <Link href="/auth/signup">
-                <Button type="button" value="Đăng ký" border="10px" />
-              </Link>
-            </div>
-          )}
-
-          <div className="md:hidden">
-            <button
-              onClick={() => setIsOpen(!isOpen)}
-              className="inline-flex items-center justify-center p-2 rounded-md text-gray-700 hover:text-gray-900 focus:outline-none"
-              aria-label="Toggle menu"
-            >
-              {isOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
           </div>
         </div>
 
