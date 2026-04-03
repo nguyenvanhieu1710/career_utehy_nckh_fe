@@ -170,11 +170,7 @@ export const JobSearch = ({
   return (
     <div className={`relative ${className}`}>
       <form onSubmit={handleSubmit} className="relative">
-        <div
-          className={`relative transition-all duration-200 ${
-            isFocused ? "ring-2 ring-green-500 ring-opacity-50" : ""
-          }`}
-        >
+        <div className="relative transition-all duration-200">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
 
           <input
@@ -185,9 +181,8 @@ export const JobSearch = ({
             onBlur={handleBlur}
             placeholder={placeholder}
             disabled={loading}
-            className={`w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-gray-900 placeholder-gray-500 transition-all duration-200 ${
-              loading ? "opacity-50 cursor-not-allowed" : ""
-            }`}
+            className={`w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-gray-900 placeholder-gray-500 transition-all duration-200 ${loading ? "opacity-50 cursor-not-allowed" : ""
+              }`}
           />
 
           {/* Clear button */}

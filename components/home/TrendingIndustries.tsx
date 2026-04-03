@@ -69,7 +69,7 @@ export default function TrendingIndustries() {
       <div className="container mx-auto px-4">
         <SectionTitle
           title="NGÀNH NGHỀ NỔI BẬT"
-          className="text-4xl bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent"
+          className="text-4xl leading-relaxed bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent"
         />
 
         {/* Loading State */}

@@ -17,10 +17,12 @@ interface JobListProps {
   favoriteJobIds?: string[];
   total?: number;
   className?: string;
+  error?: boolean;
+  onRetry?: () => void;
 }
 
 
-type SortOption = "newest" | "salary" | "relevant" | "company";
+type SortOption = "newest" | "oldest" | "salary" | "relevant" | "company";
 
 export const JobList = ({
   jobs,
@@ -33,15 +35,18 @@ export const JobList = ({
   favoriteJobIds = [],
   total = 0,
   className = "",
+  error = false,
+  onRetry,
 }: JobListProps) => {
 
   const [sortBy, setSortBy] = useState<SortOption>("newest");
 
   const sortOptions = [
     { value: "newest", label: "Mới nhất" },
+    { value: "oldest", label: "Cũ nhất" },
     { value: "salary", label: "Lương cao nhất" },
-    { value: "relevant", label: "Phù hợp nhất" },
-    { value: "company", label: "Theo công ty" },
+    { value: "company", label: "Tên công ty (A-Z)" },
+    { value: "relevant", label: "Việc làm nổi bật" },
   ];
 
   const getSortedJobs = () => {
@@ -53,6 +58,12 @@ export const JobList = ({
           (a, b) =>
             new Date(b.posted_date).getTime() -
             new Date(a.posted_date).getTime()
+        );
+      case "oldest":
+        return sortedJobs.sort(
+          (a, b) =>
+            new Date(a.posted_date).getTime() -
+            new Date(b.posted_date).getTime()
         );
       case "salary":
         return sortedJobs.sort((a, b) => {
@@ -178,39 +189,45 @@ export const JobList = ({
             />
           ))}
         </div>
+      ) : error ? (
+        // Error State
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="text-center py-20 bg-red-50 rounded-2xl border border-red-100"
+        >
+          <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <ArrowUpDown className="h-10 w-10 text-red-500 animate-pulse" />
+          </div>
+          <h3 className="text-2xl font-bold text-gray-900 mb-3">
+            Kết nối máy chủ thất bại
+          </h3>
+          <p className="text-gray-600 mb-8 max-w-md mx-auto">
+            Chúng tôi không thể kết nối tới máy chủ vào lúc này. Vui lòng kiểm tra lại kết nối mạng hoặc thử lại.
+          </p>
+          <button
+            onClick={onRetry}
+            className="inline-flex items-center gap-2 px-8 py-3 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700 transition-all active:scale-95 shadow-lg shadow-red-200"
+          >
+            Thử lại ngay
+          </button>
+        </motion.div>
       ) : (
         // No Results
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center py-12"
+          className="text-center py-20 bg-gray-50 rounded-2xl border border-gray-100"
         >
-          <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Briefcase className="h-12 w-12 text-gray-300" />
+          <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl shadow-gray-100">
+            <Briefcase className="h-12 w-12 text-green-500" />
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
+          <h3 className="text-2xl font-bold text-gray-900 mb-3">
             Không tìm thấy việc làm phù hợp
           </h3>
-          <p className="text-gray-600 mb-4">
-            Thử thay đổi từ khóa tìm kiếm hoặc bộ lọc của bạn
+          <p className="text-gray-600 mb-8 max-w-md mx-auto">
+            Thử thay đổi từ khóa tìm kiếm, lọc theo địa điểm khác hoặc mở rộng bộ lọc của bạn để thấy nhiều kết quả hơn.
           </p>
-          <div className="flex flex-wrap justify-center gap-2">
-            <span className="text-sm text-gray-500">Gợi ý:</span>
-            {["React", "Node.js", "Python", "Frontend", "Backend"].map(
-              (suggestion) => (
-                <button
-                  key={suggestion}
-                  className="text-sm bg-gray-100 text-gray-700 px-3 py-1 rounded-full hover:bg-green-100 hover:text-green-700 transition-colors"
-                  onClick={() => {
-                    // This would trigger a new search with the suggestion
-                    // onSearch?.(suggestion);
-                  }}
-                >
-                  {suggestion}
-                </button>
-              )
-            )}
-          </div>
         </motion.div>
       )}
 
@@ -219,7 +236,7 @@ export const JobList = ({
         <div className="text-center mt-8">
           <button
             onClick={onLoadMore}
-            className="bg-white border border-gray-300 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-50 transition-colors font-medium inline-flex items-center gap-2"
+            className="bg-white border border-gray-300 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-50 transition-colors font-medium inline-flex items-center gap-2 cursor-pointer"
           >
             Xem thêm việc làm
             <span className="text-sm text-gray-500">

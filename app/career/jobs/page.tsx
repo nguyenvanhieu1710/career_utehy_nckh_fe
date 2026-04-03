@@ -1,85 +1,125 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Filter, Heart, Bell } from "lucide-react";
+import { Filter, Heart } from "lucide-react";
 import { Job, JobFilters } from "@/types/job";
-import { getJobsByFilters } from "@/mocks/mockJobData";
+import { jobMongoAPI } from "@/services/jobMongo";
+import { mapJobMongoListToJobList } from "@/utils/jobMapper";
 import { JobSearch } from "@/components/jobs/JobSearch";
 import { JobFilters as JobFiltersComponent } from "@/components/jobs/JobFilters";
 import { JobList } from "@/components/jobs/JobList";
 import { JobDetailModal } from "@/components/jobs/JobDetailModal";
 import { QuickApplyModal } from "@/components/jobs/QuickApplyModal";
 import { SavedJobsPanel } from "@/components/jobs/SavedJobsPanel";
-import { JobNotificationsModal } from "@/components/jobs/JobNotificationsModal";
+import { NotificationDialog } from "@/components/common/NotificationDialog";
 
 export default function JobsPage() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState<JobFilters>({});
+  const [error, setError] = useState(false);
+  const [filters, setFilters] = useState<JobFilters>({
+    location: undefined,
+    job_types: [],
+    work_arrangements: [],
+    salary_range: { min: 0, max: undefined },
+    skills: [],
+  });
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [total, setTotal] = useState(0);
-  const [favoriteJobIds, setFavoriteJobIds] = useState<string[]>(["1", "4"]); // Mock some favorites
+  const [globalTotal, setGlobalTotal] = useState(0);
+  const [favoriteJobIds, setFavoriteJobIds] = useState<string[]>([]);
 
   // Modal states
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [showJobDetail, setShowJobDetail] = useState(false);
   const [showQuickApply, setShowQuickApply] = useState(false);
   const [showSavedJobs, setShowSavedJobs] = useState(false);
-  const [showJobAlerts, setShowJobAlerts] = useState(false);
 
-  // Notification state (mock data)
-  const [unreadNotificationCount, setUnreadNotificationCount] = useState(3);
+  // Dialog state
+  const [msgDialog, setMsgDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type: "success" | "info" | "error" | "warning";
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    type: "info",
+  });
 
   // Load jobs based on filters
-  const loadJobs = (
+  const loadJobs = async (
     newFilters: JobFilters,
     newPage: number = 1,
     append: boolean = false
   ) => {
     setLoading(true);
+    setError(false);
 
-    // Simulate API delay
-    setTimeout(() => {
-      const result = getJobsByFilters(newFilters, newPage, 6);
+    try {
+      // Map UI filters to API parameters
+      const apiFilters = {
+        query: newFilters.search,
+        location: newFilters.location,
+        job_type: newFilters.job_types?.[0], 
+        experience_level: newFilters.experience_level?.[0], 
+        salary_min: newFilters.salary_range?.min,
+        salary_max: newFilters.salary_range?.max,
+        remote_allowed: newFilters.work_arrangements?.includes("remote"),
+        page: newPage,
+        limit: 10,
+      };
+
+      const result = await jobMongoAPI.listJobs(apiFilters);
+      const mappedJobs = mapJobMongoListToJobList(result.data);
 
       if (append) {
-        setJobs((prev) => [...prev, ...result.jobs]);
+        setJobs((prev) => [...prev, ...mappedJobs]);
       } else {
-        setJobs(result.jobs);
+        setJobs(mappedJobs);
       }
 
-      setTotal(result.total);
-      setHasMore(result.hasMore);
+      setTotal(result.pagination.total);
+      setHasMore(newPage < result.pagination.total_pages);
       setPage(newPage);
+    } catch (error) {
+      console.error("Failed to load jobs:", error);
+      setError(true);
+    } finally {
       setLoading(false);
-    }, 500);
+    }
   };
 
-  // Initial load - use useEffect properly for side effects
+  // Initial load
   useEffect(() => {
-    // Only load on mount, not on every render
-    const initialFilters: JobFilters = {};
+    const fetchInitialData = async () => {
+      // Load jobs
+      loadJobs({}, 1);
 
-    // Use async function to avoid direct setState in effect
-    const loadInitialJobs = async () => {
-      setLoading(true);
-
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      const result = getJobsByFilters(initialFilters, 1, 6);
-
-      setJobs(result.jobs);
-      setTotal(result.total);
-      setHasMore(result.hasMore);
-      setPage(1);
-      setLoading(false);
+      // Load stats
+      try {
+        const stats = await jobMongoAPI.getStats();
+        setGlobalTotal(stats.data.total_jobs);
+      } catch (error) {
+        console.error("Failed to load stats:", error);
+      }
     };
 
-    loadInitialJobs();
+    fetchInitialData();
+
+    // Load favorite job IDs from localStorage
+    const savedFavorites = localStorage.getItem("favorite_job_ids");
+    if (savedFavorites) {
+      try {
+        setFavoriteJobIds(JSON.parse(savedFavorites));
+      } catch (error) {
+        console.error("Failed to parse favorite job IDs:", error);
+      }
+    }
   }, []); // Empty dependency array ensures this only runs once on mount
 
   // Handle search
@@ -113,11 +153,28 @@ export default function JobsPage() {
 
   // Handle job actions
   const handleJobFavorite = (jobId: string, isFavorited: boolean) => {
+    let nextFavoriteIds: string[] = [];
+
     if (isFavorited) {
-      setFavoriteJobIds((prev) => [...prev, jobId]);
+      nextFavoriteIds = [...favoriteJobIds, jobId];
+      setMsgDialog({
+        isOpen: true,
+        title: "Thành công",
+        message: "Công việc đã được thêm vào danh sách yêu thích của bạn.",
+        type: "success",
+      });
     } else {
-      setFavoriteJobIds((prev) => prev.filter((id) => id !== jobId));
+      nextFavoriteIds = favoriteJobIds.filter((id) => id !== jobId);
+      setMsgDialog({
+        isOpen: true,
+        title: "Thông báo",
+        message: "Công việc đã được xóa khỏi danh sách yêu thích.",
+        type: "info",
+      });
     }
+
+    setFavoriteJobIds(nextFavoriteIds);
+    localStorage.setItem("favorite_job_ids", JSON.stringify(nextFavoriteIds));
   };
 
   const handleJobApply = (jobId: string) => {
@@ -140,7 +197,15 @@ export default function JobsPage() {
   const savedJobs = jobs.filter((job) => favoriteJobIds.includes(job.id));
 
   const handleRemoveSavedJob = (jobId: string) => {
-    setFavoriteJobIds((prev) => prev.filter((id) => id !== jobId));
+    const nextFavoriteIds = favoriteJobIds.filter((id) => id !== jobId);
+    setFavoriteJobIds(nextFavoriteIds);
+    localStorage.setItem("favorite_job_ids", JSON.stringify(nextFavoriteIds));
+    setMsgDialog({
+      isOpen: true,
+      title: "Thông báo",
+      message: "Công việc đã được xóa khỏi danh sách yêu thích.",
+      type: "info",
+    });
   };
 
   return (
@@ -154,7 +219,7 @@ export default function JobsPage() {
                 Tìm kiếm việc làm
               </h1>
               <p className="text-gray-600 mt-1">
-                Khám phá {total.toLocaleString()} cơ hội nghề nghiệp tuyệt vời
+                Khám phá {globalTotal.toLocaleString() || total.toLocaleString()} cơ hội nghề nghiệp tuyệt vời
               </p>
             </div>
 
@@ -170,21 +235,6 @@ export default function JobsPage() {
 
             {/* Action Buttons */}
             <div className="flex items-center gap-3">
-              {/* Job Alerts */}
-              <button
-                onClick={() => setShowJobAlerts(true)}
-                className="inline-flex items-center gap-2 px-4 py-3 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors cursor-pointer relative"
-                title="Thông báo việc làm"
-              >
-                <Bell className="h-5 w-5" />
-                <span className="hidden sm:inline">Thông báo</span>
-                {unreadNotificationCount > 0 && (
-                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                    {unreadNotificationCount}
-                  </span>
-                )}
-              </button>
-
               {/* Saved Jobs */}
               <button
                 onClick={() => setShowSavedJobs(true)}
@@ -245,6 +295,8 @@ export default function JobsPage() {
             <JobList
               jobs={jobs}
               loading={loading}
+              error={error}
+              onRetry={() => loadJobs(filters, 1, false)}
               onLoadMore={loadMore}
               hasMore={hasMore}
               onJobFavorite={handleJobFavorite}
@@ -293,30 +345,12 @@ export default function JobsPage() {
         onApplyJob={handleJobApply}
       />
 
-      <JobNotificationsModal
-        isOpen={showJobAlerts}
-        onClose={() => setShowJobAlerts(false)}
-        onMarkAsRead={(notificationId) => {
-          // Decrease unread count
-          setUnreadNotificationCount((prev) => Math.max(0, prev - 1));
-        }}
-        onMarkAllAsRead={() => {
-          // Reset unread count
-          setUnreadNotificationCount(0);
-        }}
-        onViewJob={(jobId) => {
-          // Handle viewing job from notification
-          handleJobView(jobId);
-        }}
-        onRefresh={() => {
-          // Simulate refresh - could add new notifications
-        }}
-        onDeleteNotification={(notificationId) => {
-          // Handle notification deletion
-        }}
-        onDeleteAllRead={() => {
-          // Handle bulk deletion of read notifications
-        }}
+      <NotificationDialog
+        open={msgDialog.isOpen}
+        onOpenChange={(open) => setMsgDialog((prev) => ({ ...prev, isOpen: open }))}
+        title={msgDialog.title}
+        message={msgDialog.message}
+        type={msgDialog.type}
       />
     </div>
   );

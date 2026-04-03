@@ -6,4 +6,3 @@ export { JobSkeletonLoader } from "./JobSkeletonLoader";
 export { JobDetailModal } from "./JobDetailModal";
 export { QuickApplyModal } from "./QuickApplyModal";
 export { SavedJobsPanel } from "./SavedJobsPanel";
-export { JobNotificationsModal } from "./JobNotificationsModal";

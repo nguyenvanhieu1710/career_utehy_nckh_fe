@@ -43,9 +43,7 @@ export const JobDetailModal = ({
   onFavorite,
   isFavorited = false,
 }: JobDetailModalProps) => {
-  const [activeTab, setActiveTab] = useState<
-    "overview" | "company" | "requirements"
-  >("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "company">("overview");
 
   if (!job) return null;
 
@@ -110,18 +108,17 @@ export const JobDetailModal = ({
   };
 
   const tabs: Array<{
-    id: "overview" | "company" | "requirements";
+    id: "overview" | "company";
     label: string;
     icon: typeof Briefcase;
   }> = [
-    { id: "overview", label: "Tổng quan", icon: Briefcase },
-    { id: "company", label: "Công ty", icon: Building },
-    { id: "requirements", label: "Yêu cầu", icon: CheckCircle },
-  ];
+      { id: "overview", label: "Tổng quan", icon: Briefcase },
+      { id: "company", label: "Công ty", icon: Building },
+    ];
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden p-0 bg-white flex flex-col">
+      <DialogContent className="w-[calc(100%-2rem)] lg:max-w-3xl xl:max-w-4xl max-h-[90vh] overflow-hidden p-0 bg-white flex flex-col">
         {/* Header */}
         <div className="flex-shrink-0 bg-white border-b border-gray-200 z-10">
           <div className="flex items-start justify-between p-6">
@@ -132,9 +129,9 @@ export const JobDetailModal = ({
                 </div>
                 <div>
                   <div className="flex items-center gap-2 mb-1">
-                    <h2 className="text-xl font-bold text-gray-900">
+                    <DialogTitle className="text-xl font-bold text-gray-900">
                       {job.title}
-                    </h2>
+                    </DialogTitle>
                     {job.is_featured && (
                       <Star className="h-4 w-4 text-yellow-500 fill-current" />
                     )}
@@ -157,16 +154,16 @@ export const JobDetailModal = ({
                   {job.location}
                 </div>
                 <div className="flex items-center gap-1">
-                  <Briefcase className="h-4 w-4" />
-                  {formatJobType(job.job_type)}
-                </div>
-                <div className="flex items-center gap-1">
                   <Clock className="h-4 w-4" />
                   {formatPostedDate(job.posted_date)}
                 </div>
                 <div className="flex items-center gap-1">
                   <DollarSign className="h-4 w-4" />
                   {job.salary}
+                </div>
+                <div className="flex items-center gap-1">
+                  <Briefcase className="h-4 w-4" />
+                  {formatJobType(job.job_type)}
                 </div>
               </div>
             </div>
@@ -182,11 +179,10 @@ export const JobDetailModal = ({
               </button>
               <button
                 onClick={handleFavorite}
-                className={`p-2 rounded-lg transition-colors cursor-pointer ${
-                  isFavorited
-                    ? "text-red-600 bg-red-50 hover:bg-red-100"
-                    : "text-gray-500 hover:text-red-600 hover:bg-gray-100"
-                }`}
+                className={`p-2 rounded-lg transition-colors cursor-pointer ${isFavorited
+                  ? "text-red-600 bg-red-50 hover:bg-red-100"
+                  : "text-gray-500 hover:text-red-600 hover:bg-gray-100"
+                  }`}
                 title={isFavorited ? "Bỏ lưu" : "Lưu việc làm"}
               >
                 <Heart
@@ -209,16 +205,11 @@ export const JobDetailModal = ({
               return (
                 <button
                   key={tab.id}
-                  onClick={() =>
-                    setActiveTab(
-                      tab.id as "overview" | "company" | "requirements",
-                    )
-                  }
-                  className={`flex items-center gap-2 px-6 py-3 text-sm font-medium transition-colors relative cursor-pointer ${
-                    activeTab === tab.id
-                      ? "text-green-600 border-b-2 border-green-600"
-                      : "text-gray-500 hover:text-gray-700"
-                  }`}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center gap-2 px-6 py-3 text-sm font-medium transition-colors relative cursor-pointer ${activeTab === tab.id
+                    ? "text-green-600 border-b-2 border-green-600"
+                    : "text-gray-500 hover:text-gray-700"
+                    }`}
                 >
                   <Icon className="h-4 w-4" />
                   {tab.label}
@@ -251,15 +242,34 @@ export const JobDetailModal = ({
                     </div>
                   </div>
 
+                  {/* Requirements */}
+                  {job.requirements && job.requirements.length > 0 && (
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-3">
+                        Yêu cầu công việc
+                      </h3>
+                      <div className="space-y-3">
+                        {job.requirements.map((requirement, index) => (
+                          <div
+                            key={`${requirement}-${index}`}
+                            className="flex items-start gap-3"
+                          >
+                            <span className="text-gray-700">{requirement}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Skills */}
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900 mb-3">
                       Kỹ năng yêu cầu
                     </h3>
                     <div className="flex flex-wrap gap-2">
-                      {job.skills.map((skill) => (
+                      {job.skills.map((skill, index) => (
                         <span
-                          key={skill}
+                          key={`${skill}-${index}`}
                           className="bg-green-50 text-green-700 text-sm font-medium px-3 py-1 rounded-full border border-green-200"
                         >
                           {skill}
@@ -275,9 +285,9 @@ export const JobDetailModal = ({
                         Phúc lợi
                       </h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {job.benefits.map((benefit) => (
+                        {job.benefits.map((benefit, index) => (
                           <div
-                            key={benefit}
+                            key={`${benefit}-${index}`}
                             className="flex items-center gap-2"
                           >
                             <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
@@ -320,156 +330,11 @@ export const JobDetailModal = ({
                           {job.company.name}
                         </h3>
                         {job.company.location && (
-                          <div className="flex items-center gap-1 text-gray-600 mb-2">
+                          <div className="flex items-center gap-1 text-gray-600">
                             <MapPin className="h-4 w-4" />
                             {job.company.location}
                           </div>
                         )}
-                        <p className="text-gray-700">
-                          Công ty công nghệ hàng đầu chuyên phát triển các giải
-                          pháp phần mềm hiện đại.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Company Stats */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="bg-white border border-gray-200 rounded-lg p-4 text-center">
-                      <div className="text-2xl font-bold text-green-600 mb-1">
-                        50+
-                      </div>
-                      <div className="text-sm text-gray-600">Nhân viên</div>
-                    </div>
-                    <div className="bg-white border border-gray-200 rounded-lg p-4 text-center">
-                      <div className="text-2xl font-bold text-blue-600 mb-1">
-                        5+
-                      </div>
-                      <div className="text-sm text-gray-600">
-                        Năm kinh nghiệm
-                      </div>
-                    </div>
-                    <div className="bg-white border border-gray-200 rounded-lg p-4 text-center">
-                      <div className="text-2xl font-bold text-purple-600 mb-1">
-                        100+
-                      </div>
-                      <div className="text-sm text-gray-600">Dự án</div>
-                    </div>
-                    <div className="bg-white border border-gray-200 rounded-lg p-4 text-center">
-                      <div className="text-2xl font-bold text-orange-600 mb-1">
-                        4.8
-                      </div>
-                      <div className="text-sm text-gray-600">Đánh giá</div>
-                    </div>
-                  </div>
-
-                  {/* Other Jobs */}
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-3">
-                      Việc làm khác tại {job.company.name}
-                    </h3>
-                    <div className="space-y-3">
-                      {[1, 2, 3].map((i) => (
-                        <div
-                          key={i}
-                          className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer"
-                        >
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <h4 className="font-medium text-gray-900">
-                                Backend Developer
-                              </h4>
-                              <p className="text-sm text-gray-600">
-                                Hà Nội • Toàn thời gian
-                              </p>
-                            </div>
-                            <div className="text-right">
-                              <div className="font-medium text-gray-900">
-                                20 - 30 triệu
-                              </div>
-                              <div className="text-sm text-gray-500">
-                                2 ngày trước
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {activeTab === "requirements" && (
-                <div className="space-y-8">
-                  {/* Requirements */}
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-3">
-                      Yêu cầu công việc
-                    </h3>
-                    <div className="space-y-3">
-                      {job.requirements.map((requirement, index) => (
-                        <div key={index} className="flex items-start gap-3">
-                          <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-                          <span className="text-gray-700">{requirement}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Nice to Have */}
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-3">
-                      Ưu tiên
-                    </h3>
-                    <div className="space-y-3">
-                      {[
-                        "Kinh nghiệm với GraphQL",
-                        "Hiểu biết về microservices",
-                        "Kỹ năng leadership",
-                      ].map((item, index) => (
-                        <div key={index} className="flex items-start gap-3">
-                          <AlertCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                          <span className="text-gray-700">{item}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Application Process */}
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-6">
-                    <h3 className="text-lg font-semibold text-green-900 mb-3">
-                      Quy trình ứng tuyển
-                    </h3>
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-6 h-6 bg-green-600 text-white rounded-full flex items-center justify-center text-sm font-medium">
-                          1
-                        </div>
-                        <span className="text-green-800">Nộp hồ sơ online</span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <div className="w-6 h-6 bg-green-600 text-white rounded-full flex items-center justify-center text-sm font-medium">
-                          2
-                        </div>
-                        <span className="text-green-800">
-                          Phỏng vấn qua điện thoại (30 phút)
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <div className="w-6 h-6 bg-green-600 text-white rounded-full flex items-center justify-center text-sm font-medium">
-                          3
-                        </div>
-                        <span className="text-green-800">
-                          Phỏng vấn kỹ thuật (1 giờ)
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <div className="w-6 h-6 bg-green-600 text-white rounded-full flex items-center justify-center text-sm font-medium">
-                          4
-                        </div>
-                        <span className="text-green-800">
-                          Phỏng vấn với team lead (45 phút)
-                        </span>
                       </div>
                     </div>
                   </div>

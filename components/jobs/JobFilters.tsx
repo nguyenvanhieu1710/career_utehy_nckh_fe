@@ -210,7 +210,7 @@ export const JobFilters = ({
           {getActiveFiltersCount() > 0 && (
             <button
               onClick={onReset}
-              className="text-gray-500 hover:text-gray-700 transition-colors p-1"
+              className="text-gray-500 hover:text-gray-700 transition-colors p-1 cursor-pointer"
               title="Xóa tất cả bộ lọc"
             >
               <RotateCcw className="h-4 w-4" />

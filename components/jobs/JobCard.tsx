@@ -102,9 +102,8 @@ export const JobCard = ({
               />
             ) : null}
             <Briefcase
-              className={`h-8 w-8 text-green-600 ${
-                job.company.logo ? "hidden" : ""
-              }`}
+              className={`h-8 w-8 text-green-600 ${job.company.logo ? "hidden" : ""
+                }`}
             />
           </div>
 
@@ -130,34 +129,34 @@ export const JobCard = ({
                   )}
                 </div>
 
-                {/* Company */}
-                <div className="flex items-center gap-2 mb-3">
-                  <p className="text-green-600 font-medium hover:text-green-700 transition-colors">
+                {/* Company Row */}
+                <div className="flex items-center gap-2 mb-3 min-w-0">
+                  <p className="text-gray-600 font-medium" title={job.company.name}>
                     {job.company.name}
                   </p>
-                  {job.company.location && (
-                    <>
-                      <span className="text-gray-300">•</span>
-                      <span className="text-gray-500 text-sm">
-                        {job.company.location}
-                      </span>
-                    </>
-                  )}
                 </div>
 
-                {/* Job Details */}
-                <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 mb-3">
+                {/* Job Location*/}
+                <div className="flex items-center gap-1 text-sm text-gray-500 mb-1.5 max-w-[90%]">
+                  <MapPin className="h-4 w-4 flex-shrink-0 text-gray-400" />
+                  <span className="line-clamp-1 flex-1" title={job.location}>
+                    {job.location}
+                  </span>
+                </div>
+
+                {/* Other Job Details */}
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-600 mb-3">
                   <div className="flex items-center gap-1">
-                    <MapPin className="h-4 w-4 flex-shrink-0" />
-                    <span>{job.location}</span>
+                    <Clock className="h-4 w-4 flex-shrink-0 text-gray-400" />
+                    <span className="whitespace-nowrap">
+                      {formatPostedDate(job.posted_date)}
+                    </span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <Briefcase className="h-4 w-4 flex-shrink-0" />
-                    <span>{formatJobType(job.job_type)}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Clock className="h-4 w-4 flex-shrink-0" />
-                    <span>{formatPostedDate(job.posted_date)}</span>
+                    <Briefcase className="h-4 w-4 flex-shrink-0 text-gray-400" />
+                    <span className="whitespace-nowrap">
+                      {formatJobType(job.job_type)}
+                    </span>
                   </div>
                   {job.work_arrangement && (
                     <div className="bg-blue-50 text-blue-700 text-xs font-medium px-2 py-1 rounded-full">
@@ -182,25 +181,15 @@ export const JobCard = ({
                     </span>
                   )}
                 </div>
-
-                {/* Description */}
-                <p className="text-gray-600 text-sm line-clamp-2 leading-relaxed">
-                  {job.description}
-                </p>
               </div>
 
               {/* Right Side - Salary & Actions */}
               <div className="text-right flex-shrink-0">
                 {/* Salary */}
                 <div className="mb-3">
-                  <div className="text-lg font-bold text-gray-900 mb-1">
+                  <div className="text-lg font-bold text-gray-900 mb-1 whitespace-nowrap">
                     {job.salary}
                   </div>
-                  {job.application_count && (
-                    <div className="text-sm text-gray-500">
-                      {job.application_count} ứng viên
-                    </div>
-                  )}
                 </div>
 
                 {/* Actions */}
@@ -215,11 +204,10 @@ export const JobCard = ({
 
                   <button
                     onClick={handleFavoriteClick}
-                    className={`border rounded-lg px-4 py-2 text-sm font-medium transition-colors cursor-pointer flex items-center justify-center gap-1 ${
-                      isFavorited
-                        ? "border-red-200 text-red-600 bg-red-50 hover:bg-red-100"
-                        : "border-gray-300 text-gray-700 bg-white hover:bg-gray-50"
-                    }`}
+                    className={`border rounded-lg px-4 py-2 text-sm font-medium transition-colors cursor-pointer flex items-center justify-center gap-1 ${isFavorited
+                      ? "border-red-200 text-red-600 bg-red-50 hover:bg-red-100"
+                      : "border-gray-300 text-gray-700 bg-white hover:bg-gray-50"
+                      }`}
                   >
                     <Heart
                       className={`h-4 w-4 ${isFavorited ? "fill-current" : ""}`}
