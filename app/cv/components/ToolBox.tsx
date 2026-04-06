@@ -288,12 +288,12 @@ export default function CVToolBox({
     };
 
     const renderItem = (item: SectionItem, sectionIndex: number, itemPath: number[], depth: number = 0) => {
-        const hasChildren = item.children.length > 0;
+        const hasChildren = item.children?.length > 0;
         const textStyle = {
-            fontWeight: item.style.bold ? 'bold' : 'normal',
-            fontStyle: item.style.italic ? 'italic' : 'normal',
-            textDecoration: item.style.underline ? 'underline' : 'none',
-            color: item.style.color
+            fontWeight: item.style?.bold ? 'bold' : 'normal',
+            fontStyle: item.style?.italic ? 'italic' : 'normal',
+            textDecoration: item.style?.underline ? 'underline' : 'none',
+            color: item.style?.color
         };
 
         return (
@@ -354,21 +354,21 @@ export default function CVToolBox({
                             {/* Style buttons */}
                             <button
                                 onClick={() => toggleStyle(sectionIndex, itemPath, 'bold')}
-                                className={`p-1.5 rounded transition-all ${item.style.bold ? 'bg-gray-200 text-gray-800' : 'text-gray-600 hover:bg-gray-100'}`}
+                                className={`p-1.5 rounded transition-all ${item.style?.bold ? 'bg-gray-200 text-gray-800' : 'text-gray-600 hover:bg-gray-100'}`}
                                 title="Bold"
                             >
                                 <Bold size={12} />
                             </button>
                             <button
                                 onClick={() => toggleStyle(sectionIndex, itemPath, 'italic')}
-                                className={`p-1.5 rounded transition-all ${item.style.italic ? 'bg-gray-200 text-gray-800' : 'text-gray-600 hover:bg-gray-100'}`}
+                                className={`p-1.5 rounded transition-all ${item.style?.italic ? 'bg-gray-200 text-gray-800' : 'text-gray-600 hover:bg-gray-100'}`}
                                 title="Italic"
                             >
                                 <Italic size={12} />
                             </button>
                             <button
                                 onClick={() => toggleStyle(sectionIndex, itemPath, 'underline')}
-                                className={`p-1.5 rounded transition-all ${item.style.underline ? 'bg-gray-200 text-gray-800' : 'text-gray-600 hover:bg-gray-100'}`}
+                                className={`p-1.5 rounded transition-all ${item.style?.underline ? 'bg-gray-200 text-gray-800' : 'text-gray-600 hover:bg-gray-100'}`}
                                 title="Underline"
                             >
                                 <Underline size={12} />

@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react";
-import CVCanvas, { ImageState } from "../components/Canvas";
+import CVCanvas, { ImageState } from "../components/Canvas_v2";
 import CVToolBox from "../components/ToolBox";
 import Button from "@/components/ui/Button";
 import { PanelRightClose, PanelRightOpen } from "lucide-react";
@@ -9,6 +9,7 @@ import { useParams } from "next/navigation";
 import { cvAPI } from "@/services/cv";
 import { CVProfile } from "@/types/cv";
 import { DEFAULT_SECTIONS, DEFAULT_SECTIONS_VI } from "../page";
+import { set } from "date-fns";
 
 export interface TextStyle {
   bold: boolean;
@@ -101,8 +102,8 @@ export const defaultSections: { id: string, title: string, x: number, y: number,
   },
 ];
 const INITIAL_IMAGE_STATE: ImageState = {
-  x: 40,
-  y: 140,
+  x: 51,
+  y: 20,
   width: 160,
   height: 160,
   rotation: 0,
@@ -140,6 +141,7 @@ export default function CVDesktop() {
       size: sec.size
     }))
   );
+  const [backgroundElements, setBackgroundElements] = useState([]);
   const [imageURL, setImageURL] = useState<string | null>(null);
 
   useEffect(() => {
@@ -155,12 +157,29 @@ export default function CVDesktop() {
       } else {
         secs = JSON.parse(cv.sections);
       }
+      setBackgroundElements(JSON.parse(cv.design_data || "[]"))
       setSections(secs)
     }).catch(err => {
 
     })
   }, [cv_id])
-
+  const handleItemTextChange = ({ sectionIndex, itemPath, newText }) => {
+    setSections(prev => {
+      const updated = [...prev];
+      const section = { ...updated[sectionIndex] };
+      // Deep clone items
+      const items = JSON.parse(JSON.stringify(section.items));
+      // Navigate to item via path
+      let target = items;
+      for (let i = 0; i < itemPath.length - 1; i++) {
+        target = target[itemPath[i]].children;
+      }
+      target[itemPath[itemPath.length - 1]].text = newText;
+      section.items = items;
+      updated[sectionIndex] = section;
+      return updated;
+    });
+  };
   return (
     <div className="flex text-gray-600 bg-white h-screen relative">
       <CVToolBox
@@ -210,7 +229,7 @@ export default function CVDesktop() {
             setSections(prev => prev.map(sec => sec.id === data.id ? { ...sec, x: data.x, y: data.y } : sec))
           }}
           isSavable
-
+          backgroundElements={backgroundElements}
         />
       </div>
       <div className="absolute top-2 right-4 zindex-10">
@@ -228,35 +247,36 @@ export default function CVDesktop() {
         {cvs?.filter(c => c.id != cv_id).map(cv => {
           let sections = [];
           if (cv.sections == 'NONE') {
-        sections = DEFAULT_SECTIONS_VI;
+            sections = DEFAULT_SECTIONS_VI;
           } else {
-        sections = JSON.parse(cv.sections);
+            sections = JSON.parse(cv.sections);
           }
           return (
-        <div
-          key={cv.id}
-          className="relative bg-white rounded-xl cursor-pointer"
-          onClick={() => location.href = `/cv/${cv.id}`}
-        >
-          <CVCanvas
-            projectName={cv.name}
-            isSavable={false}
-            isIcon
-            imageState={INITIAL_IMAGE_STATE}
-            setImageState={() => { }}
-            defaultZoom={0.21}
-            cvTitle={cv.title || ""}
-            key={cv.id}
-            primaryColor={cv.primary_color || "#0C6A4E"}
-            sections={sections}
-          />
+            <div
+              key={cv.id}
+              className="relative bg-white rounded-xl cursor-pointer"
+              onClick={() => location.href = `/cv/${cv.id}`}
+            >
+              <CVCanvas
+                projectName={cv.name}
+                isSavable={false}
+                isIcon
+                imageState={INITIAL_IMAGE_STATE}
+                setImageState={() => { }}
+                defaultZoom={0.21}
+                cvTitle={cv.title || ""}
+                key={cv.id}
+                primaryColor={cv.primary_color || "#0C6A4E"}
+                sections={sections}
+                onItemTextChange={handleItemTextChange}
+              />
 
-          <h3 className="font-medium text-gray-500 text-sm text-ellipsis w-40">
-            {cv.name}
-          </h3>
-          <span className="text-[10px] font-light text-gray-500"> Cập nhật cuối: {new Date(cv?.updated_at).toLocaleString()}</span>
+              <h3 className="font-medium text-gray-500 text-sm text-ellipsis w-40">
+                {cv.name}
+              </h3>
+              <span className="text-[10px] font-light text-gray-500"> Cập nhật cuối: {new Date(cv?.updated_at).toLocaleString()}</span>
 
-        </div>
+            </div>
           )
         })}
       </div>
