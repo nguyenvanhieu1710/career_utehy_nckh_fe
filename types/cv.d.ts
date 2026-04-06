@@ -30,6 +30,7 @@ export interface CVProfile extends BaseModel {
   subtitle?: string | null;
   primary_color?: string | null;
   sections: string;
+  design_data?: string;
 }
 
 export interface CVProfileCreate {
