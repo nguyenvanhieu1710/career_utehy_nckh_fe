@@ -59,13 +59,13 @@ export const RoleDialog = ({
   useEffect(() => {
     const wasClosed = !prevOpenRef.current && open;
     const initialDataChanged = prevInitialDataRef.current !== initialData;
-    
+
     if (wasClosed || initialDataChanged) {
       setName(initialData?.name ?? "");
       setDescription(initialData?.description ?? "");
       setSelectedPerms(initialData?.permissions?.map((e) => e.perm) || []);
     }
-    
+
     prevOpenRef.current = open;
     prevInitialDataRef.current = initialData;
   }, [open, initialData]);
@@ -101,16 +101,16 @@ export const RoleDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto bg-white text-gray-800">
+      <DialogContent className="w-[95vw] sm:max-w-lg lg:max-w-2xl xl:max-w-4xl max-h-[90vh] overflow-y-auto bg-white text-gray-800">
         <DialogHeader>
           <DialogTitle>
             {mode === "add" ? "Thêm nhóm quyền" : "Chỉnh sửa nhóm quyền"}
           </DialogTitle>
         </DialogHeader>
 
-        <div className="grid gap-6 py-4">
+        <div className="grid gap-4 py-2">
           {/* Name */}
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-2">
             <Label className="text-right">Tên nhóm</Label>
             <TextField
               placeholder="Nhập tên nhóm quyền"
@@ -121,7 +121,7 @@ export const RoleDialog = ({
           </div>
 
           {/* Description */}
-          <div className="flex flex-col items-start gap-4">
+          <div className="flex flex-col items-start gap-2">
             <Label className="text-right pt-2">Mô tả</Label>
             <TextField
               multiline
@@ -163,7 +163,7 @@ export const RoleDialog = ({
               <div className="flex gap-3 relative">
                 <TextField
                   multiline
-                  placeholder={`Enter the permission name manually\n\nblog.*\nuser.update\nuser.*\n...`}
+                  placeholder={`Nhập quyền thủ công\n\nuser.*\nuser.update\ncategory.*\n...`}
                   value={permsManually}
                   onChange={(
                     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
