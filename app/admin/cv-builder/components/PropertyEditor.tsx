@@ -82,12 +82,12 @@ export const PropertyEditor = ({ selectedId, data, onChange, onDelete }: Propert
     const sec = data.sections.find(s => s.id === selectedId) as CVSection | undefined;
 
     if (el) return <BgElementEditor el={el} openGroups={openGroups} toggle={toggle}
-        onChange={(patch) => onChange({ backgroundElements: data.backgroundElements.map(e => e.id === selectedId ? { ...e, ...patch } : e) })}
+        onChange={(patch: any) => onChange({ backgroundElements: data.backgroundElements.map(e => e.id === selectedId ? { ...e, ...patch } : e) })}
         onDelete={() => { onDelete(selectedId); }} />;
 
     if (sec) return <SectionEditor sec={sec} openGroups={openGroups} toggle={toggle}
         primaryColor={data.primaryColor}
-        onChange={(patch) => onChange({ sections: data.sections.map(s => s.id === selectedId ? { ...s, ...patch } : s) })}
+        onChange={(patch: any) => onChange({ sections: data.sections.map(s => s.id === selectedId ? { ...s, ...patch } : s) })}
         onDelete={() => { onDelete(selectedId); }} />;
 
     return null;

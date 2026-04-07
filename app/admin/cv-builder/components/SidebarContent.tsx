@@ -29,7 +29,7 @@ export const SidebarContent = ({ data, onUpdate }: any) => {
         <Button 
           backgroundColor="#f0f7ff"
           color="#0066cc"
-          value={sections.some(s => s.type === 'avatar') ? "Đã có Ảnh" : "Tạo vùng chứa Ảnh"}
+          value={sections.some((s: any) => s.type === 'avatar') ? "Đã có Ảnh" : "Tạo vùng chứa Ảnh"}
           iconLeft={<ImageIcon size={18} />}
           onClick={() => addUniqueSection('avatar')}
         />
@@ -37,7 +37,7 @@ export const SidebarContent = ({ data, onUpdate }: any) => {
         <Button 
           backgroundColor="#f0f7ff"
           color="#0066cc"
-          value={sections.some(s => s.type === 'name') ? "Đã có Tên" : "Tạo nơi chứa Tên"}
+          value={sections.some((s: any) => s.type === 'name') ? "Đã có Tên" : "Tạo nơi chứa Tên"}
           iconLeft={<User size={18} />}
           onClick={() => addUniqueSection('name')}
         />
