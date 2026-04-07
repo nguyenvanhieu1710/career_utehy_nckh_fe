@@ -20,13 +20,9 @@ export interface CVTemplate {
     category: string;
     status: "active" | "draft";
     description?: string;
-    // Cấu trúc dữ liệu để đổ vào Canvas
-    design_data: {
-        primaryColor: string;
-        backgroundElements: ShapeElement[];
-        // Cấu trúc sections mặc định cho mẫu này
-        defaultSections: any[]; 
-    };
+    primary_color: string;
+    design_data: string;
+    default_sections: string;
     created_at: string;
     updated_at: string;
 }

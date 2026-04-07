@@ -40,9 +40,10 @@ interface TemplateInfo {
     id: string;
     name: string;
     primary_color: string;
-    design_data: string;       // JSON string → ShapeElement[]
-    default_sections: string;  // JSON string → Section[]
+    design_data: string;      
+    default_sections: string; 
     category?: string;
+    
 }
 
 // ─── Template Picker Modal ────────────────────────────────────────────────────
@@ -198,7 +199,7 @@ export default function CVManager() {
     // ── Create blank CV (no template) ──
     const handleCreateBlankCV = () => {
         setLoading(true);
-        cvAPI.create({ name: "New CV", id: undefined, primary_color: "#0C6A4E", sections: "NONE", design_data: "[]" })
+        cvAPI.create({ name: "New CV", id: undefined, primary_color: "#0C6A4E", sections: "NONE" })
             .then(res => { location.href = `/cv/${res.data.id}`; })
             .catch(console.error)
             .finally(() => setLoading(false));
@@ -219,7 +220,7 @@ export default function CVManager() {
                 id: undefined,
                 primary_color: tpl.primary_color,
                 sections: secs,
-                template_id: tpl.id,
+                template_id: tpl.id
             });
             location.href = `/cv/${res.data.id}`;
         } catch (err) {
