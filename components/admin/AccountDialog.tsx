@@ -204,9 +204,9 @@ export const AccountDialog = ({
 
         <div className="grid gap-6 py-4">
           {/* Avatar Upload */}
-          <div className="grid grid-cols-4 items-start gap-4">
+          <div className="grid grid-cols-[130px_1fr] items-start gap-4">
             <Label className="text-right text-green-900 pt-2">Avatar</Label>
-            <div className="col-span-3">
+            <div className="w-full">
               <div className="space-y-4">
                 {/* Current Avatar Display */}
                 {(avatarPreview || currentAvatarUrl) && (
@@ -321,14 +321,14 @@ export const AccountDialog = ({
           </div>
 
           {/* Tên người dùng */}
-          <div className="grid grid-cols-4 items-start gap-4">
+          <div className="grid grid-cols-[130px_1fr] items-start gap-4">
             <Label
               htmlFor="fullname"
               className="text-right text-green-900 pt-2"
             >
               Tên người dùng
             </Label>
-            <div className="col-span-3">
+            <div className="w-full">
               <Input
                 id="fullname"
                 className={`border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900 placeholder:text-gray-300 ${
@@ -352,11 +352,11 @@ export const AccountDialog = ({
           </div>
 
           {/* Email */}
-          <div className="grid grid-cols-4 items-start gap-4">
+          <div className="grid grid-cols-[130px_1fr] items-start gap-4">
             <Label htmlFor="email" className="text-right text-green-900 pt-2">
               Email
             </Label>
-            <div className="col-span-3">
+            <div className="w-full">
               <Input
                 id="email"
                 type="email"
@@ -381,9 +381,9 @@ export const AccountDialog = ({
           </div>
 
           {/* Vai trò */}
-          <div className="grid grid-cols-4 items-start gap-4">
+          <div className="grid grid-cols-[130px_1fr] items-start gap-4">
             <Label className="text-right text-green-900 pt-2">Vai trò</Label>
-            <div className="col-span-3">
+            <div className="w-full">
               <Select
                 value={role}
                 onValueChange={(value) => {
@@ -431,9 +431,9 @@ export const AccountDialog = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-4 items-start gap-4">
+          <div className="grid grid-cols-[130px_1fr] items-start gap-4">
             <Label className="text-right pt-2 text-green-900">Trạng thái</Label>
-            <div className="col-span-3">
+            <div className="w-full">
               <Select
                 value={status}
                 onValueChange={(value: EntityStatus) => setStatus(value)}
