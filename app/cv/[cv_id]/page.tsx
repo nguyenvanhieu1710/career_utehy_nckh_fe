@@ -163,7 +163,7 @@ export default function CVDesktop() {
 
     })
   }, [cv_id])
-  const handleItemTextChange = ({ sectionIndex, itemPath, newText }) => {
+  const handleItemTextChange = ({ sectionIndex, itemPath, newText } : { sectionIndex: number, itemPath: number[], newText: string }) => {
     setSections(prev => {
       const updated = [...prev];
       const section = { ...updated[sectionIndex] };
