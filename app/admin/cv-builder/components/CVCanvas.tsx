@@ -41,13 +41,7 @@ export interface SectionItem {
 export interface CVSection {
     id: string;
     title: string;
-    open: boolean;
-
     items: SectionItem[];
-
-    adding: boolean;
-    editingIndex: number | null;
-
     x: number;
     y: number;
     size: { width: number; height: number };
@@ -349,12 +343,12 @@ export const CVCanvas = forwardRef<{ toDataURL: () => string }, CVCanvasProps>(
             ctx.beginPath(); ctx.rect(x, y, sw, sh); ctx.clip();
 
             // Section header
-            const ac = section.accentColor || data.primaryColor || "#1d7057";
+            const ac = data.primaryColor || "#1d7057";
             ctx.fillStyle = ac;
             ctx.beginPath();
             ctx.arc(x + 6, y + 14, 4, 0, Math.PI * 2);
             ctx.fill();
-            ctx.fillStyle = section.titleColor || "#111827";
+            ctx.fillStyle = "#111827";
             ctx.font = "bold 13px Arial";
             ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
             ctx.fillText(section.title.toUpperCase(), x + 18, y + 18);
@@ -371,7 +365,7 @@ export const CVCanvas = forwardRef<{ toDataURL: () => string }, CVCanvasProps>(
                 const bold = item.style?.bold ? "bold " : "";
                 const italic = item.style?.italic ? "italic " : "";
                 ctx.font = `${italic}${bold}13px Arial`;
-                ctx.fillStyle = item.style?.color || section.textColor || "#374151";
+                ctx.fillStyle = item.style?.color || "#374151";
                 ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
                 const words = item.text.split(" ");
                 let line = ""; let lineY = iy;
