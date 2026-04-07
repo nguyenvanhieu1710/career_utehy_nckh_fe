@@ -58,18 +58,12 @@ export default function TemplateEditorPage({ templateId, initialData }: PageProp
             const sec: CVSection = {
                 id: `section-${Date.now()}`,
                 title: el.title || "Section",
-                open: true,
-
                 items: (el.items || ["New item"]).map((t: any) =>
                     typeof t === "string" ? createDefaultItem(t) : {
                         ...createDefaultItem(t.text || ""),
                         ...t,
                     }
                 ),
-
-                adding: false,
-                editingIndex: null,
-
                 x: el.x ?? 300,
                 y: el.y ?? 200,
                 size: {
