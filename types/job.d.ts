@@ -34,6 +34,7 @@ export interface Job {
   is_featured?: boolean;
   application_count?: number;
   status?: JobStatusType;
+  application_url?: string;
 }
 
 export interface JobFilters {

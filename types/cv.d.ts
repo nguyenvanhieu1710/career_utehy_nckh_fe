@@ -43,3 +43,36 @@ export interface CVProfileCreate {
 }
 
 export type CVProfileUpdate = Partial<CVProfileCreate>;
+
+export interface TextStyle {
+  bold: boolean;
+  italic: boolean;
+  underline: boolean;
+  color: string;
+}
+
+export interface SectionItem {
+  text: string;
+  editing: boolean;
+  tempText: string;
+  style: TextStyle;
+  children: SectionItem[];
+  expanded: boolean;
+}
+
+export interface Section {
+  id: string;
+  title: string;
+  open: boolean;
+  items: SectionItem[];
+  adding: boolean;
+  editingIndex: number | null;
+  x: number;
+  y: number;
+  size: SectionSize;
+}
+
+export interface SectionSize {
+  width: number;
+  height: number;
+}

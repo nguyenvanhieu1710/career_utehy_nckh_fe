@@ -49,6 +49,7 @@ export const mapJobMongoToJob = (jobMongo: JobMongo): Job => {
     is_urgent: (jobMongo.is_urgent as boolean) || false,
     application_count: (jobMongo.application_count as number) || 0,
     status: (jobMongo.status as any) || "approved",
+    application_url: (jobMongo.applicationUrl as string) || "",
   };
 };
 

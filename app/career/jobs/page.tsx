@@ -9,7 +9,6 @@ import { JobSearch } from "@/components/jobs/JobSearch";
 import { JobFilters as JobFiltersComponent } from "@/components/jobs/JobFilters";
 import { JobList } from "@/components/jobs/JobList";
 import { JobDetailModal } from "@/components/jobs/JobDetailModal";
-import { QuickApplyModal } from "@/components/jobs/QuickApplyModal";
 import { SavedJobsPanel } from "@/components/jobs/SavedJobsPanel";
 import { NotificationDialog } from "@/components/common/NotificationDialog";
 
@@ -35,7 +34,6 @@ export default function JobsPage() {
   // Modal states
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [showJobDetail, setShowJobDetail] = useState(false);
-  const [showQuickApply, setShowQuickApply] = useState(false);
   const [showSavedJobs, setShowSavedJobs] = useState(false);
 
   // Dialog state
@@ -55,7 +53,7 @@ export default function JobsPage() {
   const loadJobs = async (
     newFilters: JobFilters,
     newPage: number = 1,
-    append: boolean = false
+    append: boolean = false,
   ) => {
     setLoading(true);
     setError(false);
@@ -65,8 +63,8 @@ export default function JobsPage() {
       const apiFilters = {
         query: newFilters.search,
         location: newFilters.location,
-        job_type: newFilters.job_types?.[0], 
-        experience_level: newFilters.experience_level?.[0], 
+        job_type: newFilters.job_types?.[0],
+        experience_level: newFilters.experience_level?.[0],
         salary_min: newFilters.salary_range?.min,
         salary_max: newFilters.salary_range?.max,
         remote_allowed: newFilters.work_arrangements?.includes("remote"),
@@ -180,8 +178,16 @@ export default function JobsPage() {
   const handleJobApply = (jobId: string) => {
     const job = jobs.find((j) => j.id === jobId);
     if (job) {
-      setSelectedJob(job);
-      setShowQuickApply(true);
+      if (job.application_url) {
+        window.open(job.application_url, "_blank", "noopener,noreferrer");
+      } else {
+        setMsgDialog({
+          isOpen: true,
+          title: "Thông báo",
+          message: "Công việc này không có liên kết ứng tuyển trực tiếp.",
+          type: "info",
+        });
+      }
     }
   };
 
@@ -190,6 +196,23 @@ export default function JobsPage() {
     if (job) {
       setSelectedJob(job);
       setShowJobDetail(true);
+
+      // Save to viewed jobs in localStorage
+      const viewedIdsStr = localStorage.getItem("viewed_job_ids");
+      let viewedIds: string[] = [];
+      try {
+        viewedIds = viewedIdsStr ? JSON.parse(viewedIdsStr) : [];
+      } catch (e) {
+        viewedIds = [];
+      }
+
+      // Filter out if already exists and add to front (most recent)
+      const nextViewedIds = [
+        jobId,
+        ...viewedIds.filter((id) => id !== jobId),
+      ].slice(0, 50); // Keep last 50 viewed jobs
+
+      localStorage.setItem("viewed_job_ids", JSON.stringify(nextViewedIds));
     }
   };
 
@@ -219,7 +242,9 @@ export default function JobsPage() {
                 Tìm kiếm việc làm
               </h1>
               <p className="text-gray-600 mt-1">
-                Khám phá {globalTotal.toLocaleString() || total.toLocaleString()} cơ hội nghề nghiệp tuyệt vời
+                Khám phá{" "}
+                {globalTotal.toLocaleString() || total.toLocaleString()} cơ hội
+                nghề nghiệp tuyệt vời
               </p>
             </div>
 
@@ -324,18 +349,6 @@ export default function JobsPage() {
         }
       />
 
-      <QuickApplyModal
-        job={selectedJob}
-        isOpen={showQuickApply}
-        onClose={() => {
-          setShowQuickApply(false);
-          setSelectedJob(null);
-        }}
-        onSubmit={(applicationData) => {
-          // Handle application submission
-        }}
-      />
-
       <SavedJobsPanel
         savedJobs={savedJobs}
         isOpen={showSavedJobs}
@@ -347,7 +360,9 @@ export default function JobsPage() {
 
       <NotificationDialog
         open={msgDialog.isOpen}
-        onOpenChange={(open) => setMsgDialog((prev) => ({ ...prev, isOpen: open }))}
+        onOpenChange={(open) =>
+          setMsgDialog((prev) => ({ ...prev, isOpen: open }))
+        }
         title={msgDialog.title}
         message={msgDialog.message}
         type={msgDialog.type}
