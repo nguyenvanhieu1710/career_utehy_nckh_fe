@@ -1,6 +1,6 @@
 "use client";
 import { Card } from "@/components/ui/card";
-import { Heart, Link2, Eye } from "lucide-react";
+import { Heart, Link2, Eye, ChevronDown } from "lucide-react";
 import clsx from "clsx";
 import { twMerge } from "tailwind-merge";
 import { useRouter } from "next/navigation";
@@ -214,6 +214,7 @@ export default function SuitableJobs() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [noCv, setNoCv] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(2);
 
   useEffect(() => {
     const fetchRecommendations = async () => {
@@ -240,11 +241,12 @@ export default function SuitableJobs() {
         // Take the latest CV
         const latestCv = userCvs[0];
         let sections: Section[] = [];
-        
+
         try {
-          sections = latestCv.sections === "NONE" 
-            ? DEFAULT_SECTIONS_VI 
-            : JSON.parse(latestCv.sections);
+          sections =
+            latestCv.sections === "NONE"
+              ? DEFAULT_SECTIONS_VI
+              : JSON.parse(latestCv.sections);
         } catch (e) {
           console.error("Failed to parse CV sections", e);
           sections = DEFAULT_SECTIONS_VI;
@@ -269,7 +271,7 @@ export default function SuitableJobs() {
             sim_mota: rec.sim_mota,
             loc_score: rec.loc_score,
             exp_score: rec.exp_score,
-          }
+          },
         }));
 
         setJobs(mappedJobs);
@@ -305,7 +307,9 @@ export default function SuitableJobs() {
           className="flex flex-col justify-center items-center py-20 space-y-4"
         >
           <Loader2 className="h-12 w-12 text-[#0C6A4E] animate-spin" />
-          <p className="text-gray-500 font-medium">AI đang phân tích hồ sơ và tìm việc phù hợp cho bạn...</p>
+          <p className="text-gray-500 font-medium">
+            AI đang phân tích hồ sơ và tìm việc phù hợp cho bạn...
+          </p>
         </motion.div>
       </section>
     );
@@ -321,7 +325,7 @@ export default function SuitableJobs() {
     return (
       <section className="py-16 px-7">
         <SectionTitle title="CÔNG VIỆC PHÙ HỢP VỚI BẠN" />
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="bg-green-50 border border-green-100 rounded-3xl p-10 text-center max-w-3xl mx-auto mt-8"
@@ -329,12 +333,16 @@ export default function SuitableJobs() {
           <div className="bg-white w-20 h-20 rounded-2xl shadow-sm flex items-center justify-center mx-auto mb-6">
             <FileText className="h-10 w-10 text-[#0C6A4E]" />
           </div>
-          <h3 className="text-2xl font-bold text-gray-900 mb-3">Bạn chưa có CV trên hệ thống</h3>
+          <h3 className="text-2xl font-bold text-gray-900 mb-3">
+            Bạn chưa có CV trên hệ thống
+          </h3>
           <p className="text-gray-600 mb-8">
-            Hãy tạo một chiếc CV chuyên nghiệp để hệ thống AI của chúng tôi có thể phân tích và gợi ý những công việc phù hợp nhất với năng lực của bạn.
+            Hãy tạo một chiếc CV chuyên nghiệp để hệ thống AI của chúng tôi có
+            thể phân tích và gợi ý những công việc phù hợp nhất với năng lực của
+            bạn.
           </p>
-          <Link 
-            href="/cv" 
+          <Link
+            href="/cv"
             className="inline-flex items-center justify-center bg-[#0C6A4E] text-white px-8 py-3 rounded-xl font-bold hover:bg-[#0a5441] transition-all shadow-lg shadow-green-100"
           >
             Tạo CV ngay bây giờ
@@ -349,7 +357,7 @@ export default function SuitableJobs() {
     return (
       <section className="py-16 px-7">
         <SectionTitle title="CÔNG VIỆC PHÙ HỢP VỚI BẠN" />
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           className="bg-green-50 border border-green-100 rounded-3xl p-10 text-center max-w-2xl mx-auto mt-8"
@@ -357,11 +365,14 @@ export default function SuitableJobs() {
           <div className="bg-white w-16 h-16 rounded-2xl shadow-sm flex items-center justify-center mx-auto mb-6">
             <AlertCircle className="h-8 w-8 text-[#0C6A4E]" />
           </div>
-          <h3 className="text-xl font-bold text-gray-900 mb-2">Hệ thống AI đang bận một chút</h3>
+          <h3 className="text-xl font-bold text-gray-900 mb-2">
+            Hệ thống AI đang bận một chút
+          </h3>
           <p className="text-gray-600 mb-6">
-            Dường như có một chút gián đoạn nhỏ khi kết nối với bộ não AI của chúng tôi. Bạn hãy thử làm mới trang hoặc quay lại sau giây lát nhé!
+            Dường như có một chút gián đoạn nhỏ khi kết nối với bộ não AI của
+            chúng tôi. Bạn hãy thử làm mới trang hoặc quay lại sau giây lát nhé!
           </p>
-          <button 
+          <button
             onClick={() => window.location.reload()}
             className="inline-flex items-center justify-center bg-[#0C6A4E] text-white px-6 py-2.5 rounded-xl font-semibold hover:bg-[#0a5441] transition-all shadow-md shadow-green-100 cursor-pointer"
           >
@@ -392,7 +403,7 @@ export default function SuitableJobs() {
         viewport={{ once: true, margin: "-100px" }}
         className="space-y-6"
       >
-        {jobs.map((job, idx) => (
+        {jobs.slice(0, visibleCount).map((job, idx) => (
           <JobItem
             key={idx}
             index={idx}
@@ -405,6 +416,28 @@ export default function SuitableJobs() {
           />
         ))}
       </motion.div>
+
+      {jobs.length > visibleCount && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="mt-10 flex justify-center"
+        >
+          <button
+            onClick={() => setVisibleCount(jobs.length)}
+            className="group flex items-center gap-2 px-8 py-3 bg-white border-2 border-[#0C6A4E] text-[#0C6A4E] font-bold rounded-2xl hover:bg-[#0C6A4E] hover:text-white transition-all duration-300 shadow-md hover:shadow-xl cursor-pointer"
+          >
+            Xem tất cả ({jobs.length} công việc)
+            <motion.div
+              animate={{ y: [0, 4, 0] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+            >
+              <ChevronDown className="w-5 h-5 group-hover:scale-110" />
+            </motion.div>
+          </button>
+        </motion.div>
+      )}
     </section>
   );
 }

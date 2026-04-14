@@ -19,17 +19,15 @@ import {
 } from "@/components/ui/Select";
 import { Database } from "lucide-react";
 
-interface DataSourceDialogData {
+export interface DataSourceDialogData {
   name?: string;
   description?: string;
   base_url?: string;
   isActive?: boolean;
-  // Essential crawl config fields
   crawl_frequency?: string;
   crawl_enabled?: boolean;
   max_pages?: number;
-  // Selector configuration
-  custom_selectors?: string;
+  crawler_payload?: any;
 }
 
 interface DataSourceDialogProps {
@@ -57,65 +55,65 @@ export function DataSourceDialog({
   const [crawlEnabled, setCrawlEnabled] = useState(true);
   const [maxPages, setMaxPages] = useState(100);
 
-  // Selector configuration
-  // Individual selector fields
-  const [titleSelector, setTitleSelector] = useState("");
-  const [companySelector, setCompanySelector] = useState("");
-  const [locationSelector, setLocationSelector] = useState("");
-  const [salarySelector, setSalarySelector] = useState("");
-  const [descriptionSelector, setDescriptionSelector] = useState("");
-  const [requirementsSelector, setRequirementsSelector] = useState("");
-  const [benefitsSelector, setBenefitsSelector] = useState("");
-  const [postedDateSelector, setPostedDateSelector] = useState("");
-  const [jobTypeSelector, setJobTypeSelector] = useState("");
-  const [experienceSelector, setExperienceSelector] = useState("");
+  // Crawler Payload Fields
+  const [webName, setWebName] = useState("");
+  const [userName, setUserName] = useState("");
+  const [stageNumber, setStageNumber] = useState(1);
+  const [repeatCount, setRepeatCount] = useState(0);
+  const [linkKey, setLinkKey] = useState("");
+  const [stepsJson, setStepsJson] = useState("[]");
 
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<{
     name?: string;
     base_url?: string;
+    steps_json?: string;
   }>({});
 
   // Reset form when dialog opens
   useEffect(() => {
-    if (open) {
-      setName(initialData?.name ?? "");
-      setDescription(initialData?.description ?? "");
-      setBaseUrl(initialData?.base_url ?? "");
-      setIsActive(initialData?.isActive ?? true);
-      setCrawlFrequency(initialData?.crawl_frequency ?? "daily");
-      setCrawlEnabled(initialData?.crawl_enabled ?? true);
+    if (!open) return;
 
-      // Essential settings
-      setMaxPages(initialData?.max_pages ?? 100);
+    setName(initialData?.name ?? "");
+    setDescription(initialData?.description ?? "");
+    setBaseUrl(initialData?.base_url || "");
+    setIsActive(initialData?.isActive ?? true);
+    setCrawlFrequency(initialData?.crawl_frequency ?? "daily");
+    setCrawlEnabled(initialData?.crawl_enabled ?? true);
+    setMaxPages(initialData?.max_pages ?? 100);
+    const payload =
+      (initialData as any)?.crawler_payload ||
+      (initialData as any)?.crawler_config?.crawler_payload ||
+      {};
 
-      // Parse and set individual selectors from JSON
-      const selectors = initialData?.custom_selectors ? JSON.parse(initialData.custom_selectors) : {};
-      setTitleSelector(selectors.title || "");
-      setCompanySelector(selectors.company || "");
-      setLocationSelector(selectors.location || "");
-      setSalarySelector(selectors.salary || "");
-      setDescriptionSelector(selectors.description || "");
-      setRequirementsSelector(selectors.requirements || "");
-      setBenefitsSelector(selectors.benefits || "");
-      setPostedDateSelector(selectors.posted_date || "");
-      setJobTypeSelector(selectors.job_type || "");
-      setExperienceSelector(selectors.experience || "");
+    setWebName(payload.web_name || "");
+    setUserName(payload.user_name || "");
+    setStageNumber(payload.stage || 1);
+    setRepeatCount(payload.repeat || 0);
+    setLinkKey(payload.link_key || payload.folder_name || "");
 
-      setErrors({});
+    let stepsToDisplay = payload.steps || [];
+    if (typeof stepsToDisplay === "string") {
+      try {
+        stepsToDisplay = JSON.parse(stepsToDisplay);
+      } catch {
+        stepsToDisplay = [];
+      }
     }
+
+    setStepsJson(JSON.stringify(stepsToDisplay, null, 2));
+    setErrors({});
   }, [open, initialData]);
 
   const validateForm = (): boolean => {
     const newErrors: {
       name?: string;
       base_url?: string;
+      steps_json?: string;
     } = {};
 
     if (!name.trim()) {
       newErrors.name = "Tên nguồn dữ liệu không được để trống";
-    } else if (name.trim().length < 3) {
-      newErrors.name = "Tên nguồn dữ liệu phải có ít nhất 3 ký tự";
     }
 
     if (baseUrl.trim()) {
@@ -124,6 +122,17 @@ export function DataSourceDialog({
       } catch {
         newErrors.base_url = "URL không hợp lệ";
       }
+    }
+
+    let cleanedSteps = stepsJson.trim();
+    if (cleanedSteps.includes("\\'")) {
+      cleanedSteps = cleanedSteps.replace(/\\'/g, "'");
+    }
+
+    try {
+      if (cleanedSteps) JSON.parse(cleanedSteps);
+    } catch (e: any) {
+      newErrors.steps_json = `JSON lỗi: ${e.message}`;
     }
 
     setErrors(newErrors);
@@ -135,30 +144,28 @@ export function DataSourceDialog({
 
     setIsLoading(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 500)); // Simulate API call
+      let cleanedSteps = stepsJson.trim() || "[]";
+      if (cleanedSteps.includes("\\'")) {
+        cleanedSteps = cleanedSteps.replace(/\\'/g, "'");
+      }
 
-      // Build selectors JSON from individual fields
-      const selectors = {
-        title: titleSelector.trim(),
-        company: companySelector.trim(),
-        location: locationSelector.trim(),
-        salary: salarySelector.trim(),
-        description: descriptionSelector.trim(),
-        requirements: requirementsSelector.trim(),
-        benefits: benefitsSelector.trim(),
-        posted_date: postedDateSelector.trim(),
-        job_type: jobTypeSelector.trim(),
-        experience: experienceSelector.trim(),
+      const payload: any = {
+        web_name: webName.trim(),
+        user_name: userName.trim(),
+        repeat: repeatCount,
+        steps: JSON.parse(cleanedSteps),
       };
 
-      // Filter out empty selectors
-      const filteredSelectors = Object.fromEntries(
-        Object.entries(selectors).filter(([, value]) => value !== "")
-      );
-
-      const selectorsJson = Object.keys(filteredSelectors).length > 0 
-        ? JSON.stringify(filteredSelectors, null, 2)
-        : "";
+      if (stageNumber === 1) {
+        payload.stage = 1;
+        payload.url_web = baseUrl.trim();
+        payload.folder_name = "it_categories";
+      } else {
+        payload.new_stage = stageNumber;
+        payload.link_key = linkKey.trim();
+        payload.prev_folder = "";
+        payload.new_folder = "";
+      }
 
       onSubmit?.({
         name: name.trim(),
@@ -168,8 +175,10 @@ export function DataSourceDialog({
         crawl_frequency: crawlFrequency,
         crawl_enabled: crawlEnabled,
         max_pages: maxPages,
-        custom_selectors: selectorsJson || undefined,
+        crawler_payload: payload,
       });
+    } catch (error) {
+      console.error("Submit error:", error);
     } finally {
       setIsLoading(false);
     }
@@ -186,284 +195,212 @@ export function DataSourceDialog({
         </DialogHeader>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 py-4">
-          {/* Left Column - Data Source Info */}
           <div className="space-y-4">
             <h3 className="text-lg font-medium text-green-900 border-b pb-2">
               Thông tin nguồn dữ liệu
             </h3>
 
-            {/* Tên nguồn dữ liệu */}
             <div className="space-y-2">
               <Label htmlFor="name" className="text-green-900">
                 Tên nguồn dữ liệu *
               </Label>
               <Input
                 id="name"
-                className={`border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900 placeholder:text-gray-300 ${
-                  errors.name
-                    ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-                    : ""
-                }`}
-                placeholder="Ví dụ: JobStreet API"
+                className={`border-green-200 text-green-900 ${errors.name ? "border-red-500" : ""}`}
+                placeholder="Ví dụ: TopCV"
                 value={name}
-                onChange={(e) => {
-                  setName(e.target.value);
-                  if (errors.name) {
-                    setErrors({ ...errors, name: undefined });
-                  }
-                }}
+                onChange={(e) => setName(e.target.value)}
               />
               {errors.name && (
                 <p className="text-red-500 text-sm">{errors.name}</p>
               )}
             </div>
 
-            {/* URL */}
             <div className="space-y-2">
               <Label htmlFor="base_url" className="text-green-900">
                 URL API
               </Label>
               <Input
                 id="base_url"
-                type="url"
-                className={`border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900 placeholder:text-gray-300 ${
-                  errors.base_url
-                    ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-                    : ""
-                }`}
+                className={`border-green-200 text-green-900 ${errors.base_url ? "border-red-500" : ""}`}
                 placeholder="https://www.vietnamworks.com/"
                 value={baseUrl}
-                onChange={(e) => {
-                  setBaseUrl(e.target.value);
-                  if (errors.base_url) {
-                    setErrors({ ...errors, base_url: undefined });
-                  }
-                }}
+                onChange={(e) => setBaseUrl(e.target.value)}
               />
               {errors.base_url && (
                 <p className="text-red-500 text-sm">{errors.base_url}</p>
               )}
             </div>
 
-            {/* Trạng thái nguồn dữ liệu */}
             <div className="space-y-2">
-              <Label className="text-green-900">Trạng thái nguồn dữ liệu</Label>
-              <Select
-                value={isActive ? "active" : "inactive"}
-                onValueChange={(value) => setIsActive(value === "active")}
-              >
-                <SelectTrigger className="border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900">
-                  <SelectValue placeholder="Chọn trạng thái" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="active">🟢 Hoạt động</SelectItem>
-                  <SelectItem value="inactive">🔴 Tạm dừng</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Right Column - Crawl Configuration */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium text-green-900 border-b pb-2">
-              Cấu hình Crawl
-            </h3>
-
-            {/* Tần suất crawl */}
-            <div className="space-y-2">
-              <Label className="text-green-900">Tần suất crawl</Label>
-              <Select value={crawlFrequency} onValueChange={setCrawlFrequency}>
-                <SelectTrigger className="border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900">
-                  <SelectValue placeholder="Chọn tần suất crawl" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="hourly">⏰ Hàng giờ</SelectItem>
-                  <SelectItem value="daily">📅 Hàng ngày</SelectItem>
-                  <SelectItem value="weekly">📆 Hàng tuần</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Trạng thái crawl */}
-            <div className="space-y-2">
-              <Label className="text-green-900">Trạng thái crawl</Label>
-              <div className="flex items-center gap-3">
-                <Switch
-                  checked={crawlEnabled}
-                  onCheckedChange={setCrawlEnabled}
-                  className="data-[state=checked]:bg-green-500"
-                />
-                <span
-                  className={`text-sm font-medium ${crawlEnabled ? "text-green-600" : "text-gray-400"}`}
-                >
-                  {crawlEnabled ? "Đang chạy" : "Đã tắt"}
-                </span>
-              </div>
-            </div>
-
-            {/* Max Pages */}
-            <div className="space-y-2">
-              <Label htmlFor="max_pages" className="text-green-900">
-                Số trang tối đa
+              <Label htmlFor="description" className="text-green-900">
+                Mô tả
               </Label>
-              <Input
-                id="max_pages"
-                type="number"
-                min="1"
-                max="10000"
-                className="border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900"
-                value={maxPages}
-                onChange={(e) => setMaxPages(parseInt(e.target.value) || 100)}
+              <textarea
+                id="description"
+                className="w-full p-2 border border-green-200 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 text-green-900"
+                rows={3}
+                placeholder="Mô tả về nguồn dữ liệu..."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
               />
             </div>
 
-            {/* CSS Selectors */}
-            <div className="space-y-4">
-              <Label className="text-green-900 font-semibold text-lg">
-                🔧 CSS Selectors tùy chỉnh
-              </Label>
-              
-              <div className="grid grid-cols-1 gap-4">
-                {/* Title Selector */}
-                <div className="space-y-2">
-                  <Label htmlFor="title_selector" className="text-green-900 font-medium">
-                    📝 Tiêu đề công việc
-                  </Label>
-                  <Input
-                    id="title_selector"
-                    className="border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900 placeholder:text-gray-300 font-mono text-sm"
-                    placeholder=".job-title, h1.title, .position-name"
-                    value={titleSelector}
-                    onChange={(e) => setTitleSelector(e.target.value)}
-                  />
-                </div>
-
-                {/* Company Selector */}
-                <div className="space-y-2">
-                  <Label htmlFor="company_selector" className="text-green-900 font-medium">
-                    🏢 Tên công ty
-                  </Label>
-                  <Input
-                    id="company_selector"
-                    className="border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900 placeholder:text-gray-300 font-mono text-sm"
-                    placeholder=".company-name, .employer, .company-info h2"
-                    value={companySelector}
-                    onChange={(e) => setCompanySelector(e.target.value)}
-                  />
-                </div>
-
-                {/* Location Selector */}
-                <div className="space-y-2">
-                  <Label htmlFor="location_selector" className="text-green-900 font-medium">
-                    📍 Địa điểm
-                  </Label>
-                  <Input
-                    id="location_selector"
-                    className="border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900 placeholder:text-gray-300 font-mono text-sm"
-                    placeholder=".job-location, .location, .address"
-                    value={locationSelector}
-                    onChange={(e) => setLocationSelector(e.target.value)}
-                  />
-                </div>
-
-                {/* Salary Selector */}
-                <div className="space-y-2">
-                  <Label htmlFor="salary_selector" className="text-green-900 font-medium">
-                    💰 Mức lương
-                  </Label>
-                  <Input
-                    id="salary_selector"
-                    className="border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900 placeholder:text-gray-300 font-mono text-sm"
-                    placeholder=".salary, .wage, .compensation"
-                    value={salarySelector}
-                    onChange={(e) => setSalarySelector(e.target.value)}
-                  />
-                </div>
-
-                {/* Description Selector */}
-                <div className="space-y-2">
-                  <Label htmlFor="description_selector" className="text-green-900 font-medium">
-                    📄 Mô tả công việc
-                  </Label>
-                  <Input
-                    id="description_selector"
-                    className="border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900 placeholder:text-gray-300 font-mono text-sm"
-                    placeholder=".job-description, .job-content, .description"
-                    value={descriptionSelector}
-                    onChange={(e) => setDescriptionSelector(e.target.value)}
-                  />
-                </div>
-
-                {/* Requirements Selector */}
-                <div className="space-y-2">
-                  <Label htmlFor="requirements_selector" className="text-green-900 font-medium">
-                    ✅ Yêu cầu
-                  </Label>
-                  <Input
-                    id="requirements_selector"
-                    className="border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900 placeholder:text-gray-300 font-mono text-sm"
-                    placeholder=".requirements, .qualifications"
-                    value={requirementsSelector}
-                    onChange={(e) => setRequirementsSelector(e.target.value)}
-                  />
-                </div>
-
-                {/* Benefits Selector */}
-                <div className="space-y-2">
-                  <Label htmlFor="benefits_selector" className="text-green-900 font-medium">
-                    🎁 Phúc lợi
-                  </Label>
-                  <Input
-                    id="benefits_selector"
-                    className="border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900 placeholder:text-gray-300 font-mono text-sm"
-                    placeholder=".benefits, .perks"
-                    value={benefitsSelector}
-                    onChange={(e) => setBenefitsSelector(e.target.value)}
-                  />
-                </div>
-
-                {/* Posted Date Selector */}
-                <div className="space-y-2">
-                  <Label htmlFor="posted_date_selector" className="text-green-900 font-medium">
-                    📅 Ngày đăng
-                  </Label>
-                  <Input
-                    id="posted_date_selector"
-                    className="border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900 placeholder:text-gray-300 font-mono text-sm"
-                    placeholder=".posted-date, .date, time"
-                    value={postedDateSelector}
-                    onChange={(e) => setPostedDateSelector(e.target.value)}
-                  />
-                </div>
-
-                {/* Job Type Selector */}
-                <div className="space-y-2">
-                  <Label htmlFor="job_type_selector" className="text-green-900 font-medium">
-                    🏷️ Loại công việc
-                  </Label>
-                  <Input
-                    id="job_type_selector"
-                    className="border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900 placeholder:text-gray-300 font-mono text-sm"
-                    placeholder=".job-type, .employment-type"
-                    value={jobTypeSelector}
-                    onChange={(e) => setJobTypeSelector(e.target.value)}
-                  />
-                </div>
-
-                {/* Experience Selector */}
-                <div className="space-y-2">
-                  <Label htmlFor="experience_selector" className="text-green-900 font-medium">
-                    📈 Kinh nghiệm
-                  </Label>
-                  <Input
-                    id="experience_selector"
-                    className="border-green-200 focus:border-green-500 focus:ring-green-500 text-green-900 placeholder:text-gray-300 font-mono text-sm"
-                    placeholder=".experience-level, .exp-required"
-                    value={experienceSelector}
-                    onChange={(e) => setExperienceSelector(e.target.value)}
-                  />
-                </div>
+            <div className="flex items-center gap-8 pt-2">
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="isActive"
+                  checked={isActive}
+                  onCheckedChange={setIsActive}
+                />
+                <Label htmlFor="isActive" className="text-green-900">
+                  Kích hoạt nguồn
+                </Label>
               </div>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="crawl_enabled"
+                  checked={crawlEnabled}
+                  onCheckedChange={setCrawlEnabled}
+                />
+                <Label htmlFor="crawl_enabled" className="text-green-900">
+                  Tự động Crawl
+                </Label>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="crawl_frequency" className="text-green-900">
+                  Tần suất
+                </Label>
+                <Select
+                  value={crawlFrequency}
+                  onValueChange={setCrawlFrequency}
+                >
+                  <SelectTrigger className="border-green-200">
+                    <SelectValue placeholder="Chọn tần suất" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="hourly">Hàng giờ</SelectItem>
+                    <SelectItem value="daily">Hàng ngày</SelectItem>
+                    <SelectItem value="weekly">Hàng tuần</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="max_pages" className="text-green-900">
+                  Giới hạn trang
+                </Label>
+                <Input
+                  id="max_pages"
+                  type="number"
+                  className="border-green-200"
+                  value={maxPages}
+                  onChange={(e) => setMaxPages(parseInt(e.target.value) || 0)}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-4 bg-emerald-50/30 p-4 rounded-lg border border-emerald-100">
+            <h3 className="text-lg font-medium text-green-900 border-b border-emerald-200 pb-2">
+              Cấu hình Crawler
+            </h3>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="web_name" className="text-green-900">
+                  Web Name
+                </Label>
+                <Input
+                  id="web_name"
+                  placeholder="topcv"
+                  className="border-green-200 text-green-900"
+                  value={webName}
+                  onChange={(e) => setWebName(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="user_name" className="text-green-900">
+                  User Name
+                </Label>
+                <Input
+                  id="user_name"
+                  placeholder="admin_thanh"
+                  className="border-green-200 text-green-900"
+                  value={userName}
+                  onChange={(e) => setUserName(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-10">
+              <div className="space-y-2">
+                <Label htmlFor="stage" className="text-green-900">
+                  Giai đoạn (Stage)
+                </Label>
+                <Select
+                  value={stageNumber.toString()}
+                  onValueChange={(v) => setStageNumber(parseInt(v))}
+                >
+                  <SelectTrigger className="border-green-200 text-green-900">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">Stage 1 (Lấy Menu)</SelectItem>
+                    <SelectItem value="2">Stage 2 (Lấy Link)</SelectItem>
+                    <SelectItem value="3">Stage 3 (Lấy Data)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="repeat" className="text-green-900">
+                  Lặp lại (Repeat)
+                </Label>
+                <Input
+                  id="repeat"
+                  type="number"
+                  className="border-green-200 text-green-900"
+                  value={repeatCount}
+                  onChange={(e) =>
+                    setRepeatCount(parseInt(e.target.value) || 0)
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="link_key" className="text-green-900">
+                  Link Key (Stage 2/3)
+                </Label>
+                <Input
+                  id="link_key"
+                  placeholder="it_categories"
+                  className="border-green-200 text-green-900"
+                  value={linkKey}
+                  onChange={(e) => setLinkKey(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label
+                htmlFor="steps_json"
+                className="text-green-900 flex justify-between"
+              >
+                <span>Cấu hình Tiến trình (Steps JSON)</span>
+                {errors.steps_json && (
+                  <span className="text-red-500 text-xs">
+                    {errors.steps_json}
+                  </span>
+                )}
+              </Label>
+              <textarea
+                id="steps_json"
+                className={`w-full min-h-[300px] p-3 rounded-md border-2 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-green-500 ${errors.steps_json ? "border-red-500" : "border-green-200"}`}
+                placeholder='[{"type": "action", "args": {...}}, {"type": "extract", "args": {...}}]'
+                value={stepsJson}
+                onChange={(e) => setStepsJson(e.target.value)}
+              />
             </div>
           </div>
         </div>

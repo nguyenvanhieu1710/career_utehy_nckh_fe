@@ -6,7 +6,10 @@ import { Column, Table } from "@/components/admin/Table";
 import { Pagination } from "@/components/admin/Pagination";
 import { ActionButtons } from "@/components/admin/ActionButtons";
 import { AddButton } from "@/components/admin/AddButton";
-import { DataSourceDialog } from "@/components/admin/DataSourceDialog";
+import {
+  DataSourceDialog,
+  DataSourceDialogData,
+} from "@/components/admin/DataSourceDialog";
 import { DeleteConfirmationDialog } from "@/components/admin/DeleteConfirmationDialog";
 import { NotificationDialog } from "@/components/admin/NotificationDialog";
 import { CrawlDetailDialog } from "@/components/admin/CrawlDetailDialog";
@@ -21,20 +24,6 @@ import {
 } from "@/utils/crawl-helpers";
 import { schedulerAPI } from "@/services/scheduler";
 import { Switch } from "@/components/ui/switch";
-
-interface DataSourceDialogData {
-  name?: string;
-  base_url?: string;
-  status?: "active" | "inactive";
-  description?: string;
-  timePeriod?: string;
-  startDate?: string;
-  endDate?: string;
-  isActive?: boolean;
-  // Crawl config fields
-  crawl_frequency?: string;
-  crawl_enabled?: boolean;
-}
 
 export default function DataManagementPage() {
   // Dialog states
@@ -177,6 +166,7 @@ export default function DataManagementPage() {
         status: data.isActive ? "active" : "inactive",
         crawl_frequency: data.crawl_frequency || "daily",
         crawl_enabled: data.crawl_enabled !== false,
+        crawler_payload: data.crawler_payload,
       };
 
       await createDataSource(apiData);
@@ -209,6 +199,7 @@ export default function DataManagementPage() {
         status: data.isActive ? "active" : "inactive",
         crawl_frequency: data.crawl_frequency,
         crawl_enabled: data.crawl_enabled,
+        crawler_payload: data.crawler_payload,
       };
 
       await updateDataSource(selectedDataSource.id, apiData);
@@ -401,13 +392,12 @@ export default function DataManagementPage() {
         initialData={
           selectedDataSource
             ? {
-                name: selectedDataSource.name,
-                description: selectedDataSource.description,
+                ...selectedDataSource,
                 base_url: selectedDataSource.base_url || "",
                 isActive: selectedDataSource.status === "active",
-                // TODO: Load crawl config from API
-                crawl_frequency: "daily",
-                crawl_enabled: true,
+                crawl_frequency: selectedDataSource.crawl_frequency || "daily",
+                crawl_enabled: selectedDataSource.crawl_enabled ?? true,
+                crawler_payload: selectedDataSource.crawler_payload,
               }
             : undefined
         }
