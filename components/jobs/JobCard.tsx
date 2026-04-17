@@ -49,11 +49,12 @@ export const JobCard = ({
     return arrangementMap[arrangement] || arrangement;
   };
 
-  const formatPostedDate = (dateString: string) => {
+  const formatPostedDate = (dateString?: string) => {
+    if (!dateString) return "---";
     const date = new Date(dateString);
     const now = new Date();
     const diffInDays = Math.floor(
-      (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24)
+      (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24),
     );
 
     if (diffInDays === 0) return "Hôm nay";
@@ -102,8 +103,9 @@ export const JobCard = ({
               />
             ) : null}
             <Briefcase
-              className={`h-8 w-8 text-green-600 ${job.company.logo ? "hidden" : ""
-                }`}
+              className={`h-8 w-8 text-green-600 ${
+                job.company.logo ? "hidden" : ""
+              }`}
             />
           </div>
 
@@ -131,7 +133,10 @@ export const JobCard = ({
 
                 {/* Company Row */}
                 <div className="flex items-center gap-2 mb-3 min-w-0">
-                  <p className="text-gray-600 font-medium" title={job.company.name}>
+                  <p
+                    className="text-gray-600 font-medium"
+                    title={job.company.name}
+                  >
                     {job.company.name}
                   </p>
                 </div>
@@ -149,7 +154,7 @@ export const JobCard = ({
                   <div className="flex items-center gap-1">
                     <Clock className="h-4 w-4 flex-shrink-0 text-gray-400" />
                     <span className="whitespace-nowrap">
-                      {formatPostedDate(job.posted_date)}
+                      {formatPostedDate(job.posted_at || job.posted_date)}
                     </span>
                   </div>
                   <div className="flex items-center gap-1">
@@ -187,8 +192,8 @@ export const JobCard = ({
               <div className="text-right flex-shrink-0">
                 {/* Salary */}
                 <div className="mb-3">
-                  <div className="text-lg font-bold text-gray-900 mb-1 whitespace-nowrap">
-                    {job.salary}
+                  <div className="text-lg font-bold text-green-600 mb-1 whitespace-nowrap">
+                    {job.salary_display || job.salary}
                   </div>
                 </div>
 
@@ -204,10 +209,11 @@ export const JobCard = ({
 
                   <button
                     onClick={handleFavoriteClick}
-                    className={`border rounded-lg px-4 py-2 text-sm font-medium transition-colors cursor-pointer flex items-center justify-center gap-1 ${isFavorited
-                      ? "border-red-200 text-red-600 bg-red-50 hover:bg-red-100"
-                      : "border-gray-300 text-gray-700 bg-white hover:bg-gray-50"
-                      }`}
+                    className={`border rounded-lg px-4 py-2 text-sm font-medium transition-colors cursor-pointer flex items-center justify-center gap-1 ${
+                      isFavorited
+                        ? "border-red-200 text-red-600 bg-red-50 hover:bg-red-100"
+                        : "border-gray-300 text-gray-700 bg-white hover:bg-gray-50"
+                    }`}
                   >
                     <Heart
                       className={`h-4 w-4 ${isFavorited ? "fill-current" : ""}`}
@@ -219,30 +225,6 @@ export const JobCard = ({
             </div>
           </div>
         </div>
-
-        {/* Benefits (if available) */}
-        {job.benefits && job.benefits.length > 0 && (
-          <div className="mt-4 pt-4 border-t border-gray-100">
-            <div className="flex flex-wrap gap-2">
-              <span className="text-xs font-medium text-gray-500 mr-2">
-                Phúc lợi:
-              </span>
-              {job.benefits.slice(0, 3).map((benefit) => (
-                <span
-                  key={benefit}
-                  className="bg-green-50 text-green-700 text-xs font-medium px-2 py-1 rounded-full"
-                >
-                  {benefit}
-                </span>
-              ))}
-              {job.benefits.length > 3 && (
-                <span className="text-gray-500 text-xs">
-                  +{job.benefits.length - 3} phúc lợi khác
-                </span>
-              )}
-            </div>
-          </div>
-        )}
       </div>
     </motion.div>
   );

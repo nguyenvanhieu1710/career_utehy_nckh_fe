@@ -6,16 +6,20 @@ import { Pagination } from "@/components/admin/Pagination";
 import { DeleteConfirmationDialog } from "@/components/admin/DeleteConfirmationDialog";
 import { NotificationDialog } from "@/components/admin/NotificationDialog";
 import { ActionButtons } from "@/components/admin/ActionButtons";
-import { jobMongoAPI, JobMongo } from "@/services/jobMongo";
+import { AddButton } from "@/components/admin/AddButton";
+import { JobDialog } from "@/components/admin/JobDialog";
+import { jobAPI } from "@/services/job";
+import { Job } from "@/types/job";
 import { DialogState } from "@/types/dialog";
 import { logger } from "@/lib/logger";
 
 export default function JobManagementPage() {
   const [loading, setLoading] = useState(true);
-  const [jobs, setJobs] = useState<JobMongo[]>([]);
-  const [selectedJob, setSelectedJob] = useState<JobMongo | null>(null);
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
+  const [isJobDialogOpen, setIsJobDialogOpen] = useState(false);
   const [dialogState, setDialogState] = useState<DialogState>({
     isOpen: false,
     title: "",
@@ -40,24 +44,24 @@ export default function JobManagementPage() {
     try {
       setLoading(true);
 
-      const response = await jobMongoAPI.listJobs({
-        query: searchKeyword || undefined,
+      const response = await jobAPI.getJobs({
+        searchKeyword: searchKeyword || undefined,
         location: locationFilter || undefined,
         job_type: typeFilter || undefined,
         page,
-        limit,
+        row: limit,
       });
 
       setJobs(response.data || []);
-      setTotal(response.pagination.total || 0);
-      setTotalPages(response.pagination.total_pages || 1);
+      setTotal(response.total || 0);
+      setTotalPages(response.max_page || 1);
     } catch (error) {
       logger.error("Failed to load jobs", error);
       setJobs([]);
       setDialogState({
         isOpen: true,
         title: "Lỗi tải dữ liệu",
-        message: "Không thể tải danh sách công việc từ MongoDB!",
+        message: "Không thể tải danh sách công việc từ PostgreSQL!",
         type: "error",
       });
     } finally {
@@ -80,12 +84,54 @@ export default function JobManagementPage() {
     setPage(1);
   };
 
-  const handleViewDetail = (job: JobMongo) => {
+  const handleViewDetail = (job: Job) => {
     setSelectedJob(job);
     setIsDetailDialogOpen(true);
   };
 
-  const handleDelete = (job: JobMongo) => {
+  const handleCreate = () => {
+    setSelectedJob(null);
+    setIsJobDialogOpen(true);
+  };
+
+  const handleEdit = (job: Job) => {
+    setSelectedJob(job);
+    setIsJobDialogOpen(true);
+  };
+
+  const handleSaveJob = async (data: any) => {
+    try {
+      if (selectedJob) {
+        await jobAPI.updateJob(selectedJob.id, data);
+        setDialogState({
+          isOpen: true,
+          title: "Thành công",
+          message: "Đã cập nhật tin tuyển dụng thành công.",
+          type: "success",
+        });
+      } else {
+        await jobAPI.createJob(data);
+        setDialogState({
+          isOpen: true,
+          title: "Thành công",
+          message: "Đã tạo tin tuyển dụng mới thành công.",
+          type: "success",
+        });
+      }
+      setIsJobDialogOpen(false);
+      loadJobs();
+    } catch (error) {
+      logger.error("Failed to save job", error);
+      setDialogState({
+        isOpen: true,
+        title: "Lỗi",
+        message: "Không thể lưu tin tuyển dụng.",
+        type: "error",
+      });
+    }
+  };
+
+  const handleDelete = (job: Job) => {
     setSelectedJob(job);
     setIsDeleteDialogOpen(true);
   };
@@ -93,54 +139,54 @@ export default function JobManagementPage() {
   const handleDeleteJob = async () => {
     if (!selectedJob) return;
 
-    setDialogState({
-      isOpen: true,
-      title: "Chức năng chưa hỗ trợ",
-      message:
-        "Xóa job từ MongoDB chưa được hỗ trợ. Đây là dữ liệu crawl từ nguồn bên ngoài.",
-      type: "error",
-    });
+    try {
+      await jobAPI.deleteJob(selectedJob.id);
+      setDialogState({
+        isOpen: true,
+        title: "Thành công",
+        message: "Đã xóa tin tuyển dụng thành công.",
+        type: "success",
+      });
+      loadJobs();
+    } catch (error) {
+      logger.error("Failed to delete job", error);
+      setDialogState({
+        isOpen: true,
+        title: "Lỗi",
+        message: "Không thể xóa tin tuyển dụng này.",
+        type: "error",
+      });
+    }
     setIsDeleteDialogOpen(false);
   };
 
-  const formatSalary = (job: JobMongo) => {
-    if (job.salaryDisplay) return job.salaryDisplay;
-    if (job.salaryMin && job.salaryMax) {
-      return `${(job.salaryMin / 1000000).toFixed(0)}-${(
-        job.salaryMax / 1000000
+  const formatSalary = (job: Job) => {
+    if (job.salary_display) return job.salary_display;
+    if (job.salary) return job.salary;
+    if (job.salary_min && job.salary_max) {
+      return `${(job.salary_min / 1000000).toFixed(0)}-${(
+        job.salary_max / 1000000
       ).toFixed(0)} triệu`;
     }
-    if (job.salaryMin)
-      return `Từ ${(job.salaryMin / 1000000).toFixed(0)} triệu`;
-    if (job.salaryMax)
-      return `Đến ${(job.salaryMax / 1000000).toFixed(0)} triệu`;
+    if (job.salary_min)
+      return `Từ ${(job.salary_min / 1000000).toFixed(0)} triệu`;
+    if (job.salary_max)
+      return `Đến ${(job.salary_max / 1000000).toFixed(0)} triệu`;
     return "Thỏa thuận";
   };
 
   const formatJobType = (type?: string) => {
     const typeMap: Record<string, string> = {
-      full_time: "Full-time",
-      part_time: "Part-time",
+      "full-time": "Full-time",
+      "part-time": "Part-time",
       contract: "Hợp đồng",
-      internship: "Thực tập",
+      intern: "Thực tập",
       freelance: "Freelance",
     };
     return type ? typeMap[type] || type : "N/A";
   };
 
-  const formatExperienceLevel = (level?: string) => {
-    const levelMap: Record<string, string> = {
-      entry: "Mới vào nghề",
-      junior: "Junior",
-      middle: "Middle",
-      senior: "Senior",
-      lead: "Lead",
-      executive: "Executive",
-    };
-    return level ? levelMap[level] || level : "N/A";
-  };
-
-  const columns: Column<JobMongo>[] = [
+  const columns: Column<Job>[] = [
     {
       label: "#",
       render: (_, i) => (page - 1) * limit + i + 1,
@@ -162,22 +208,19 @@ export default function JobManagementPage() {
     {
       label: "Công ty",
       render: (job) => (
-        <div className="font-medium">{job.company_name || "N/A"}</div>
+        <div className="font-medium">{job.company?.name || "---"}</div>
       ),
     },
     {
       label: "Địa điểm",
-      render: (job) => job.location || "N/A",
+      render: (job) => job.location || "---",
     },
     {
-      label: "Loại / Cấp độ",
+      label: "Loại / Hình thức",
       render: (job) => (
         <div className="text-sm">
           <div className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs inline-block mb-1">
-            {formatJobType(job.jobType)}
-          </div>
-          <div className="text-gray-600 text-xs">
-            {formatExperienceLevel(job.experienceLevel)}
+            {formatJobType(job.job_type)}
           </div>
         </div>
       ),
@@ -185,29 +228,6 @@ export default function JobManagementPage() {
     {
       label: "Lương",
       render: (job) => <div className="text-sm">{formatSalary(job)}</div>,
-    },
-    {
-      label: "Remote",
-      render: (job) => (
-        <span
-          className={`px-2 py-1 rounded-full text-xs ${
-            job.remoteAllowed
-              ? "bg-green-100 text-green-800"
-              : "bg-gray-100 text-gray-600"
-          }`}
-        >
-          {job.remoteAllowed ? "Có" : "Không"}
-        </span>
-      ),
-    },
-    {
-      label: "Nổi bật",
-      render: (job) =>
-        job.featured ? (
-          <span className="text-yellow-500">⭐</span>
-        ) : (
-          <span className="text-gray-300">☆</span>
-        ),
     },
     {
       label: "Hành động",
@@ -218,6 +238,11 @@ export default function JobManagementPage() {
             permission="job.view"
             onClick={() => handleViewDetail(job)}
           />
+          {/* <ActionButtons
+            type="edit"
+            permission="job.update"
+            onClick={() => handleEdit(job)}
+          /> */}
           <ActionButtons
             type="delete"
             permission="job.delete"
@@ -226,17 +251,18 @@ export default function JobManagementPage() {
         </div>
       ),
     },
-  ] as Column<JobMongo>[];
+  ] as Column<Job>[];
 
   return (
     <div className="max-w-7xl mx-auto">
       {/* Header */}
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-center mb-2">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">
             Quản lý tin tuyển dụng
           </h1>
         </div>
+        {/* <AddButton permission="job.create" onClick={handleCreate} /> */}
       </div>
 
       {/* Filters */}
@@ -278,10 +304,10 @@ export default function JobManagementPage() {
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">Tất cả</option>
-              <option value="full_time">Full-time</option>
-              <option value="part_time">Part-time</option>
+              <option value="full-time">Full-time</option>
+              <option value="part-time">Part-time</option>
               <option value="contract">Hợp đồng</option>
-              <option value="internship">Thực tập</option>
+              <option value="intern">Thực tập</option>
               <option value="freelance">Freelance</option>
             </select>
           </div>
@@ -303,6 +329,14 @@ export default function JobManagementPage() {
         onPageChange={(newPage) => setPage(newPage)}
       />
 
+      {/* Job Dialog (Create/Edit) */}
+      <JobDialog
+        open={isJobDialogOpen}
+        onOpenChange={setIsJobDialogOpen}
+        job={selectedJob}
+        onSuccess={handleSaveJob}
+      />
+
       {/* Job Detail Dialog */}
       {isDetailDialogOpen && selectedJob && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -322,7 +356,9 @@ export default function JobManagementPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm text-gray-500">Công ty</p>
-                    <p className="font-medium">{selectedJob.company_name}</p>
+                    <p className="font-medium">
+                      {selectedJob.company?.name || "---"}
+                    </p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Địa điểm</p>
@@ -331,24 +367,12 @@ export default function JobManagementPage() {
                   <div>
                     <p className="text-sm text-gray-500">Loại công việc</p>
                     <p className="font-medium">
-                      {formatJobType(selectedJob.jobType)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Cấp độ</p>
-                    <p className="font-medium">
-                      {formatExperienceLevel(selectedJob.experienceLevel)}
+                      {formatJobType(selectedJob.job_type)}
                     </p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Lương</p>
                     <p className="font-medium">{formatSalary(selectedJob)}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Remote</p>
-                    <p className="font-medium">
-                      {selectedJob.remoteAllowed ? "Có" : "Không"}
-                    </p>
                   </div>
                 </div>
 
@@ -368,9 +392,13 @@ export default function JobManagementPage() {
                     <div>
                       <p className="text-sm text-gray-500 mb-2">Yêu cầu</p>
                       <ul className="list-disc list-inside text-sm space-y-1">
-                        {selectedJob.requirements.map((req, idx) => (
-                          <li key={idx}>{req}</li>
-                        ))}
+                        {Array.isArray(selectedJob.requirements) ? (
+                          selectedJob.requirements.map((req, idx) => (
+                            <li key={idx}>{req}</li>
+                          ))
+                        ) : (
+                          <li>{selectedJob.requirements}</li>
+                        )}
                       </ul>
                     </div>
                   )}
@@ -395,9 +423,13 @@ export default function JobManagementPage() {
                   <div>
                     <p className="text-sm text-gray-500 mb-2">Quyền lợi</p>
                     <ul className="list-disc list-inside text-sm space-y-1">
-                      {selectedJob.benefits.map((benefit, idx) => (
-                        <li key={idx}>{benefit}</li>
-                      ))}
+                      {Array.isArray(selectedJob.benefits) ? (
+                        selectedJob.benefits.map((benefit, idx) => (
+                          <li key={idx}>{benefit}</li>
+                        ))
+                      ) : (
+                        <li>{selectedJob.benefits}</li>
+                      )}
                     </ul>
                   </div>
                 )}

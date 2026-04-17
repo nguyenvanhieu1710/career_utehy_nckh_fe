@@ -79,13 +79,13 @@ export const SavedJobsPanel = ({
       switch (sortBy) {
         case "newest":
           return (
-            new Date(b.posted_date).getTime() -
-            new Date(a.posted_date).getTime()
+            new Date(b.posted_at || b.posted_date).getTime() -
+            new Date(a.posted_at || a.posted_date).getTime()
           );
         case "oldest":
           return (
-            new Date(a.posted_date).getTime() -
-            new Date(b.posted_date).getTime()
+            new Date(a.posted_at || a.posted_date).getTime() -
+            new Date(b.posted_at || b.posted_date).getTime()
           );
         case "company":
           return a.company.name.localeCompare(b.company.name);
@@ -245,13 +245,13 @@ export const SavedJobsPanel = ({
                             </div>
                             <div className="flex items-center gap-1">
                               <Clock className="h-3 w-3" />
-                              {formatPostedDate(job.posted_date)}
+                              {formatPostedDate(job.posted_at || job.posted_date)}
                             </div>
                           </div>
 
                           {/* Salary */}
-                          <div className="text-sm font-medium text-gray-900 mb-3">
-                            {job.salary}
+                          <div className="text-sm font-medium text-green-600 mb-3">
+                            {job.salary_display || job.salary}
                           </div>
 
                           {/* Skills */}

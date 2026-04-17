@@ -1,3 +1,6 @@
+import { GetSchema } from "./base";
+import { Company } from "./company";
+
 // Job Type enum
 export type JobType =
   | "full-time"
@@ -8,6 +11,16 @@ export type JobType =
 
 // Job Status enum
 export type JobStatusType = "pending" | "approved" | "rejected";
+
+export interface JobGetSchema extends GetSchema {
+  location?: string;
+  job_type?: string;
+  salary_min?: number;
+  salary_max?: number;
+  work_arrangement?: string;
+  experience_level?: string;
+  remote_allowed?: boolean;
+}
 
 export interface Job {
   id: string;
@@ -21,15 +34,17 @@ export interface Job {
   location: string;
   other_locations?: string[];
   salary?: string;
+  salary_display?: string;
   salary_min?: number;
   salary_max?: number;
   job_type: JobType;
   work_arrangement: "remote" | "hybrid" | "onsite";
   posted_date: string;
+  posted_at?: string;
   description: string;
-  requirements: string[];
+  requirements: string | string[];
   skills: string[];
-  benefits?: string[];
+  benefits?: string | string[];
   is_urgent?: boolean;
   is_featured?: boolean;
   application_count?: number;
@@ -68,6 +83,7 @@ export interface JobCreate {
   location?: string;
   other_locations?: string[];
   salary?: string;
+  salary_display?: string;
   salary_min?: number;
   salary_max?: number;
   job_type: JobType;
@@ -88,6 +104,7 @@ export interface JobUpdate {
   location?: string;
   other_locations?: string[];
   salary?: string;
+  salary_display?: string;
   salary_min?: number;
   salary_max?: number;
   job_type?: JobType;

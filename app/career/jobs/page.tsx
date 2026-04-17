@@ -2,9 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { Filter, Heart } from "lucide-react";
-import { Job, JobFilters } from "@/types/job";
-import { jobMongoAPI } from "@/services/jobMongo";
-import { mapJobMongoListToJobList } from "@/utils/jobMapper";
+import { Job, JobFilters, JobGetSchema } from "@/types/job";
+import { jobAPI } from "@/services/job";
 import { JobSearch } from "@/components/jobs/JobSearch";
 import { JobFilters as JobFiltersComponent } from "@/components/jobs/JobFilters";
 import { JobList } from "@/components/jobs/JobList";
@@ -60,29 +59,31 @@ export default function JobsPage() {
 
     try {
       // Map UI filters to API parameters
-      const apiFilters = {
-        query: newFilters.search,
-        location: newFilters.location,
+      const apiFilters: JobGetSchema = {
+        searchKeyword: newFilters.search || searchQuery || undefined,
+        location: newFilters.location || undefined,
         job_type: newFilters.job_types?.[0],
-        experience_level: newFilters.experience_level?.[0],
         salary_min: newFilters.salary_range?.min,
         salary_max: newFilters.salary_range?.max,
+        work_arrangement: newFilters.work_arrangements?.[0] as any,
         remote_allowed: newFilters.work_arrangements?.includes("remote"),
+        status: "approved",
         page: newPage,
-        limit: 10,
+        row: 10,
       };
 
-      const result = await jobMongoAPI.listJobs(apiFilters);
-      const mappedJobs = mapJobMongoListToJobList(result.data);
+      const response = await jobAPI.getJobs(apiFilters);
+      const newJobs = response.data;
 
       if (append) {
-        setJobs((prev) => [...prev, ...mappedJobs]);
+        setJobs((prev) => [...prev, ...newJobs]);
       } else {
-        setJobs(mappedJobs);
+        setJobs(newJobs);
       }
 
-      setTotal(result.pagination.total);
-      setHasMore(newPage < result.pagination.total_pages);
+      setTotal(response.total);
+      setGlobalTotal(response.total);
+      setHasMore(newPage < response.max_page);
       setPage(newPage);
     } catch (error) {
       console.error("Failed to load jobs:", error);
@@ -94,20 +95,7 @@ export default function JobsPage() {
 
   // Initial load
   useEffect(() => {
-    const fetchInitialData = async () => {
-      // Load jobs
-      loadJobs({}, 1);
-
-      // Load stats
-      try {
-        const stats = await jobMongoAPI.getStats();
-        setGlobalTotal(stats.data.total_jobs);
-      } catch (error) {
-        console.error("Failed to load stats:", error);
-      }
-    };
-
-    fetchInitialData();
+    loadJobs(filters, 1);
 
     // Load favorite job IDs from localStorage
     const savedFavorites = localStorage.getItem("favorite_job_ids");

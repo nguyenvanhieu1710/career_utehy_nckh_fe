@@ -3,8 +3,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Briefcase, Loader2, Heart } from "lucide-react";
-import { jobMongoAPI } from "@/services/jobMongo";
-import { mapJobMongoToJob } from "@/utils/jobMapper";
+import { jobAPI } from "@/services/job";
 import { Job } from "@/types/job";
 import { JobCard } from "@/components/jobs/JobCard";
 import { JobDetailModal } from "@/components/jobs/JobDetailModal";
@@ -54,12 +53,10 @@ export default function FavoriteJobsPage() {
         }
 
         // Fetch each job by ID
-        // Note: In a real app, you might want a batch API,
-        // but since it's "favorites", the number is usually small.
         const jobPromises = ids.map(async (id) => {
           try {
-            const result = await jobMongoAPI.getJobById(id);
-            return result.data ? mapJobMongoToJob(result.data) : null;
+            const response = await jobAPI.getJobById(id);
+            return response.data;
           } catch (err) {
             console.error(`Failed to fetch job ${id}:`, err);
             return null;

@@ -66,7 +66,8 @@ export const JobDetailModal = ({
     return arrangementMap[arrangement] || arrangement;
   };
 
-  const formatPostedDate = (dateString: string) => {
+  const formatPostedDate = (dateString?: string) => {
+    if (!dateString) return "---";
     const date = new Date(dateString);
     const now = new Date();
     const diffInDays = Math.floor(
@@ -155,11 +156,11 @@ export const JobDetailModal = ({
                 </div>
                 <div className="flex items-center gap-1">
                   <Clock className="h-4 w-4" />
-                  {formatPostedDate(job.posted_date)}
+                  {formatPostedDate(job.posted_at || job.posted_date)}
                 </div>
                 <div className="flex items-center gap-1">
                   <DollarSign className="h-4 w-4" />
-                  {job.salary}
+                  {job.salary_display || job.salary}
                 </div>
                 <div className="flex items-center gap-1">
                   <Briefcase className="h-4 w-4" />
@@ -243,13 +244,16 @@ export const JobDetailModal = ({
                   </div>
 
                   {/* Requirements */}
-                  {job.requirements && job.requirements.length > 0 && (
+                  {job.requirements && (
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900 mb-3">
                         Yêu cầu công việc
                       </h3>
                       <div className="space-y-3">
-                        {job.requirements.map((requirement, index) => (
+                        {(typeof job.requirements === "string"
+                          ? job.requirements.split("\n")
+                          : job.requirements
+                        ).filter(Boolean).map((requirement: string, index: number) => (
                           <div
                             key={`${requirement}-${index}`}
                             className="flex items-start gap-3"
@@ -279,13 +283,16 @@ export const JobDetailModal = ({
                   </div>
 
                   {/* Benefits */}
-                  {job.benefits && job.benefits.length > 0 && (
+                  {job.benefits && (
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900 mb-3">
                         Phúc lợi
                       </h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {job.benefits.map((benefit, index) => (
+                        {(typeof job.benefits === "string"
+                          ? job.benefits.split("\n")
+                          : job.benefits
+                        ).filter(Boolean).map((benefit: string, index: number) => (
                           <div
                             key={`${benefit}-${index}`}
                             className="flex items-center gap-2"
