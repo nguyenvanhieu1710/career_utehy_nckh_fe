@@ -60,7 +60,7 @@ export function DataSourceDialog({
   const [userName, setUserName] = useState("");
   const [stageNumber, setStageNumber] = useState(1);
   const [repeatCount, setRepeatCount] = useState(0);
-  const [linkKey, setLinkKey] = useState("");
+  const [folderName, setFolderName] = useState("");
   const [stepsJson, setStepsJson] = useState("[]");
 
   const [isLoading, setIsLoading] = useState(false);
@@ -90,7 +90,7 @@ export function DataSourceDialog({
     setUserName(payload.user_name || "");
     setStageNumber(payload.stage || 1);
     setRepeatCount(payload.repeat || 0);
-    setLinkKey(payload.link_key || payload.folder_name || "");
+    setFolderName(payload.folder_name || "");
 
     let stepsToDisplay = payload.steps || [];
     if (typeof stepsToDisplay === "string") {
@@ -154,15 +154,14 @@ export function DataSourceDialog({
         user_name: userName.trim(),
         repeat: repeatCount,
         steps: JSON.parse(cleanedSteps),
+        stage: stageNumber,
+        url_web: baseUrl.trim(),
       };
 
-      if (stageNumber === 1) {
-        payload.stage = 1;
-        payload.url_web = baseUrl.trim();
-        payload.folder_name = "it_categories";
-      } else {
-        payload.new_stage = stageNumber;
-        payload.link_key = linkKey.trim();
+      payload.folder_name =
+        folderName.trim() || (stageNumber === 1 ? "it_categories" : "");
+
+      if (stageNumber !== 1) {
         payload.prev_folder = "";
         payload.new_folder = "";
       }
@@ -369,15 +368,15 @@ export function DataSourceDialog({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="link_key" className="text-green-900">
-                  Link Key (Stage 2/3)
+                <Label htmlFor="folder_name" className="text-green-900">
+                  Folder Name
                 </Label>
                 <Input
-                  id="link_key"
+                  id="folder_name"
                   placeholder="it_categories"
                   className="border-green-200 text-green-900"
-                  value={linkKey}
-                  onChange={(e) => setLinkKey(e.target.value)}
+                  value={folderName}
+                  onChange={(e) => setFolderName(e.target.value)}
                 />
               </div>
             </div>
