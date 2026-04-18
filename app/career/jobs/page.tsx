@@ -166,8 +166,9 @@ export default function JobsPage() {
   const handleJobApply = (jobId: string) => {
     const job = jobs.find((j) => j.id === jobId);
     if (job) {
-      if (job.application_url) {
-        window.open(job.application_url, "_blank", "noopener,noreferrer");
+      const applyUrl = job.url_source || job.application_url;
+      if (applyUrl) {
+        window.open(applyUrl, "_blank", "noopener,noreferrer");
       } else {
         setMsgDialog({
           isOpen: true,

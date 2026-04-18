@@ -50,6 +50,7 @@ export interface Job {
   application_count?: number;
   status?: JobStatusType;
   application_url?: string;
+  url_source?: string;
 }
 
 export interface JobFilters {

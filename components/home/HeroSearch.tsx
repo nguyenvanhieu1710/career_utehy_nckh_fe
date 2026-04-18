@@ -119,15 +119,18 @@ const heroTitles: {
   },
 ];
 
+// Fallback data when API is unavailable
+const FALLBACK_STATS: Record<TitleId, number> = {
+  job: 24043,
+  studient: 92395,
+  company: 2357,
+};
+
 export function HeroSearch() {
   const router = useRouter();
   const MAX_QUERY_LENGTH = 255;
   const [titleDataIndex, setTitleDataIndex] = useState(0);
-  const [titleAmountData] = useState<Record<TitleId, number>>({
-    job: 24043,
-    studient: 92395,
-    company: 2357,
-  });
+  const [titleAmountData, setTitleAmountData] = useState<Record<TitleId, number>>(FALLBACK_STATS);
 
   // Search states
   const [searchQuery, setSearchQuery] = useState("");
@@ -158,7 +161,31 @@ export function HeroSearch() {
     [],
   );
 
-  // --- Auto change title every 3s ---
+  // --- Fetch stats from API ---
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const baseUrl =
+          process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1";
+        const res = await fetch(`${baseUrl}/public/stats`);
+        if (!res.ok) return;
+        const json = await res.json();
+        if (json?.status === "success" && json?.data) {
+          const { user_count, job_count, company_count } = json.data;
+          setTitleAmountData({
+            studient: user_count ?? FALLBACK_STATS.studient,
+            job: job_count ?? FALLBACK_STATS.job,
+            company: company_count ?? FALLBACK_STATS.company,
+          });
+        }
+      } catch {
+        // Keep fallback values on error
+      }
+    };
+    fetchStats();
+  }, []);
+
+  // --- Auto change title every 5s ---
   useEffect(() => {
     const interval = setInterval(() => {
       setTitleDataIndex((prev) => {

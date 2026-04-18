@@ -26,6 +26,14 @@ interface JobItemProps {
   location?: string;
   compatibility: number;
   index?: number;
+  experience_required?: string;
+  scores?: {
+    sim_title: number;
+    sim_tech: number;
+    sim_mota: number;
+    loc_score: number;
+    exp_score: number;
+  };
 }
 
 const JobItem = ({
@@ -36,13 +44,26 @@ const JobItem = ({
   location,
   compatibility,
   index = 0,
+  experience_required,
+  scores,
 }: JobItemProps) => {
   const router = useRouter();
   const [isHeartFilled, setIsHeartFilled] = useState(false);
 
   const handleViewDetail = () => {
     if (job_id) {
-      router.push(`/career/suitable-job-detail`);
+      const params = new URLSearchParams({
+        job: JSON.stringify({
+          job_id,
+          title,
+          company,
+          location,
+          compatibility,
+          experience_required,
+          scores,
+        }),
+      });
+      router.push(`/career/suitable-job-detail?${params.toString()}`);
     }
   };
 
@@ -264,7 +285,8 @@ export default function SuitableJobs() {
           company: rec.company_name,
           location: `${rec.location_district}, ${rec.location_city}`,
           compatibility: Math.round(rec.final_score * 100),
-          // Store all scores for potential use in detail page
+          experience_required: rec.experience_required,
+          // Store all scores for detail page
           scores: {
             sim_title: rec.sim_title,
             sim_tech: rec.sim_tech,
@@ -413,6 +435,8 @@ export default function SuitableJobs() {
             company={job.company}
             location={job.location}
             compatibility={job.compatibility}
+            experience_required={job.experience_required}
+            scores={job.scores}
           />
         ))}
       </motion.div>
