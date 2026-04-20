@@ -51,6 +51,8 @@ export interface Job {
   status?: JobStatusType;
   application_url?: string;
   url_source?: string;
+  job_level?: string;
+  years_of_experience?: number;
 }
 
 export interface JobFilters {
@@ -96,6 +98,8 @@ export interface JobCreate {
   is_urgent?: boolean;
   is_featured?: boolean;
   status?: JobStatusType;
+  job_level?: string;
+  years_of_experience?: number;
 }
 
 // Job Update interface (for updating existing jobs)
@@ -117,4 +121,6 @@ export interface JobUpdate {
   is_urgent?: boolean;
   is_featured?: boolean;
   status?: JobStatusType;
+  job_level?: string;
+  years_of_experience?: number;
 }

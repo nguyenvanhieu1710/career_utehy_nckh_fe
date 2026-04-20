@@ -20,10 +20,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import Button from "@/components/ui/Button";
+import { getUploadsUrl } from "@/lib/config";
+
 
 type TitleId = "job" | "studient" | "company";
 
-const studentAvatars = [
+const INITIAL_STUDENT_AVATARS = [
   "/avatars/avatar-1.jpeg",
   "/avatars/avatar-2.jpg",
   "/avatars/avatar-3.jpg",
@@ -31,6 +33,7 @@ const studentAvatars = [
   "/avatars/avatar-5.jpg",
   "/avatars/avatar-6.jpg",
 ];
+
 
 // Search data
 const searchData = {
@@ -131,6 +134,8 @@ export function HeroSearch() {
   const MAX_QUERY_LENGTH = 255;
   const [titleDataIndex, setTitleDataIndex] = useState(0);
   const [titleAmountData, setTitleAmountData] = useState<Record<TitleId, number>>(FALLBACK_STATS);
+  const [studentAvatars, setStudentAvatars] = useState<string[]>(INITIAL_STUDENT_AVATARS);
+
 
   // Search states
   const [searchQuery, setSearchQuery] = useState("");
@@ -163,27 +168,47 @@ export function HeroSearch() {
 
   // --- Fetch stats from API ---
   useEffect(() => {
-    const fetchStats = async () => {
+    const fetchData = async () => {
       try {
         const baseUrl =
-          process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1";
-        const res = await fetch(`${baseUrl}/public/stats`);
-        if (!res.ok) return;
-        const json = await res.json();
-        if (json?.status === "success" && json?.data) {
-          const { user_count, job_count, company_count } = json.data;
-          setTitleAmountData({
-            studient: user_count ?? FALLBACK_STATS.studient,
-            job: job_count ?? FALLBACK_STATS.job,
-            company: company_count ?? FALLBACK_STATS.company,
-          });
+          process.env.NEXT_PUBLIC_API_BASE_URL;
+        
+        // Fetch stats
+        const statsRes = await fetch(`${baseUrl}/public/stats`);
+        if (statsRes.ok) {
+          const statsJson = await statsRes.json();
+          if (statsJson?.status === "success" && statsJson?.data) {
+            const { user_count, job_count, company_count } = statsJson.data;
+            setTitleAmountData({
+              studient: user_count ?? FALLBACK_STATS.studient,
+              job: job_count ?? FALLBACK_STATS.job,
+              company: company_count ?? FALLBACK_STATS.company,
+            });
+          }
+        }
+
+        // Fetch student avatars
+        const avatarRes = await fetch(`${baseUrl}/public/featured-students`);
+        if (avatarRes.ok) {
+          const avatarJson = await avatarRes.json();
+          if (avatarJson?.status === "success" && Array.isArray(avatarJson?.data)) {
+            const urls = avatarJson.data
+              .filter((u: any) => u.avatar_url)
+              .map((u: any) => getUploadsUrl(u.avatar_url))
+              .slice(0, 6);
+            
+            if (urls.length > 0) {
+              setStudentAvatars(urls);
+            }
+          }
         }
       } catch {
         // Keep fallback values on error
       }
     };
-    fetchStats();
+    fetchData();
   }, []);
+
 
   // --- Auto change title every 5s ---
   useEffect(() => {
