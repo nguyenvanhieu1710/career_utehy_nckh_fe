@@ -76,3 +76,9 @@ export interface SectionSize {
   width: number;
   height: number;
 }
+
+export interface CVUploaded extends BaseModel {
+  user_id: string;
+  name: string;
+  file_path: string;
+}
