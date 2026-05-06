@@ -129,21 +129,15 @@ export default function DataManagementPage() {
       // Step 4: If enabling, trigger crawl in background (don't wait)
       if (newStatus === "enabled") {
         schedulerAPI.triggerCrawl(dataSource.id).catch((error) => {
-          // If crawl fails, revert the switch and show error
-          schedulerAPI
-            .updateSchedule(dataSource.id, {
-              status: "disabled",
-              frequency: dataSource.crawl_frequency || "daily",
-            })
-            .then(() => {
-              setDialogState({
-                isOpen: true,
-                title: "Lỗi khi crawl",
-                message: `Không thể crawl ${dataSource.name}: ${error.message}. Đã tắt cron job.`,
-                type: "error",
-              });
-              refreshData();
-            });
+          console.error("Background crawl trigger failed:", error);
+          // We don't disable the cron job anymore because a trigger failure
+          // might be transient or just a timeout, while the scheduler is still valid.
+          setDialogState({
+            isOpen: true,
+            title: "Thông tin",
+            message: `Không thể kích hoạt crawl ngay lập tức: ${error.message}`,
+            type: "info",
+          });
         });
       }
     } catch (error: any) {

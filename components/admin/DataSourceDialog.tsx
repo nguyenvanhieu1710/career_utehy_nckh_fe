@@ -27,6 +27,7 @@ export interface DataSourceDialogData {
   crawl_frequency?: string;
   crawl_enabled?: boolean;
   max_pages?: number;
+  fetch_detail?: boolean;
   crawler_payload?: any;
 }
 
@@ -54,20 +55,14 @@ export function DataSourceDialog({
   const [crawlFrequency, setCrawlFrequency] = useState("daily");
   const [crawlEnabled, setCrawlEnabled] = useState(true);
   const [maxPages, setMaxPages] = useState(100);
-
-  // Crawler Payload Fields
-  const [webName, setWebName] = useState("");
-  const [userName, setUserName] = useState("");
-  const [stageNumber, setStageNumber] = useState(1);
-  const [repeatCount, setRepeatCount] = useState(0);
-  const [folderName, setFolderName] = useState("");
-  const [stepsJson, setStepsJson] = useState("[]");
+  const [fetchDetail, setFetchDetail] = useState(true);
 
   const [isLoading, setIsLoading] = useState(false);
+  const [cssConfigJson, setCssConfigJson] = useState("");
   const [errors, setErrors] = useState<{
     name?: string;
     base_url?: string;
-    steps_json?: string;
+    css_config_json?: string;
   }>({});
 
   // Reset form when dialog opens
@@ -80,28 +75,19 @@ export function DataSourceDialog({
     setIsActive(initialData?.isActive ?? true);
     setCrawlFrequency(initialData?.crawl_frequency ?? "daily");
     setCrawlEnabled(initialData?.crawl_enabled ?? true);
-    setMaxPages(initialData?.max_pages ?? 100);
-    const payload =
-      (initialData as any)?.crawler_payload ||
-      (initialData as any)?.crawler_config?.crawler_payload ||
-      {};
-
-    setWebName(payload.web_name || "");
-    setUserName(payload.user_name || "");
-    setStageNumber(payload.stage || 1);
-    setRepeatCount(payload.repeat || 0);
-    setFolderName(payload.folder_name || "");
-
-    let stepsToDisplay = payload.steps || [];
-    if (typeof stepsToDisplay === "string") {
-      try {
-        stepsToDisplay = JSON.parse(stepsToDisplay);
-      } catch {
-        stepsToDisplay = [];
-      }
+    // Extract settings from crawler_payload if exists
+    const payload = (initialData as any)?.crawler_payload || 
+                    (initialData as any)?.crawler_config?.crawler_payload || {};
+    
+    setFetchDetail(payload.fetchDetail !== undefined ? payload.fetchDetail : true);
+    setMaxPages(payload.maxPages || initialData?.max_pages || 100);
+    
+    if (payload.cssConfig) {
+      setCssConfigJson(JSON.stringify(payload.cssConfig, null, 2));
+    } else {
+      setCssConfigJson("");
     }
-
-    setStepsJson(JSON.stringify(stepsToDisplay, null, 2));
+    
     setErrors({});
   }, [open, initialData]);
 
@@ -109,7 +95,7 @@ export function DataSourceDialog({
     const newErrors: {
       name?: string;
       base_url?: string;
-      steps_json?: string;
+      css_config_json?: string;
     } = {};
 
     if (!name.trim()) {
@@ -124,19 +110,34 @@ export function DataSourceDialog({
       }
     }
 
-    let cleanedSteps = stepsJson.trim();
-    if (cleanedSteps.includes("\\'")) {
-      cleanedSteps = cleanedSteps.replace(/\\'/g, "'");
-    }
-
-    try {
-      if (cleanedSteps) JSON.parse(cleanedSteps);
-    } catch (e: any) {
-      newErrors.steps_json = `JSON lỗi: ${e.message}`;
+    if (cssConfigJson.trim()) {
+      try {
+        JSON.parse(cssConfigJson);
+      } catch (e: any) {
+        newErrors.css_config_json = "JSON không hợp lệ";
+      }
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  const handleFormatJson = () => {
+    if (!cssConfigJson.trim()) return;
+
+    try {
+      // Dùng kỹ thuật Function để parse các chuỗi dạng JS Object (chấp nhận ngoặc đơn, key không ngoặc)
+      // eslint-disable-next-line no-new-func
+      const obj = new Function(`return ${cssConfigJson}`)();
+      const formatted = JSON.stringify(obj, null, 2);
+      setCssConfigJson(formatted);
+      setErrors((prev) => ({ ...prev, css_config_json: undefined }));
+    } catch (e: any) {
+      setErrors((prev) => ({
+        ...prev,
+        css_config_json: "Không thể định dạng: Kiểm tra lại cú pháp.",
+      }));
+    }
   };
 
   const handleSubmit = async () => {
@@ -144,26 +145,15 @@ export function DataSourceDialog({
 
     setIsLoading(true);
     try {
-      let cleanedSteps = stepsJson.trim() || "[]";
-      if (cleanedSteps.includes("\\'")) {
-        cleanedSteps = cleanedSteps.replace(/\\'/g, "'");
-      }
-
       const payload: any = {
-        web_name: webName.trim(),
-        user_name: userName.trim(),
-        repeat: repeatCount,
-        steps: JSON.parse(cleanedSteps),
-        stage: stageNumber,
-        url_web: baseUrl.trim(),
+        source: name.trim().toLowerCase(),
+        maxPages: maxPages,
+        fetchDetail: fetchDetail,
+        saveToDb: true,
       };
 
-      payload.folder_name =
-        folderName.trim() || (stageNumber === 1 ? "it_categories" : "");
-
-      if (stageNumber !== 1) {
-        payload.prev_folder = "";
-        payload.new_folder = "";
+      if (cssConfigJson.trim()) {
+        payload.cssConfig = JSON.parse(cssConfigJson.trim());
       }
 
       onSubmit?.({
@@ -174,6 +164,7 @@ export function DataSourceDialog({
         crawl_frequency: crawlFrequency,
         crawl_enabled: crawlEnabled,
         max_pages: maxPages,
+        fetch_detail: fetchDetail,
         crawler_payload: payload,
       });
     } catch (error) {
@@ -217,7 +208,7 @@ export function DataSourceDialog({
 
             <div className="space-y-2">
               <Label htmlFor="base_url" className="text-green-900">
-                URL API
+                URL Website
               </Label>
               <Input
                 id="base_url"
@@ -252,7 +243,10 @@ export function DataSourceDialog({
                   checked={isActive}
                   onCheckedChange={setIsActive}
                 />
-                <Label htmlFor="isActive" className="text-green-900">
+                <Label
+                  htmlFor="isActive"
+                  className="text-green-900 cursor-pointer"
+                >
                   Kích hoạt nguồn
                 </Label>
               </div>
@@ -262,7 +256,10 @@ export function DataSourceDialog({
                   checked={crawlEnabled}
                   onCheckedChange={setCrawlEnabled}
                 />
-                <Label htmlFor="crawl_enabled" className="text-green-900">
+                <Label
+                  htmlFor="crawl_enabled"
+                  className="text-green-900 cursor-pointer"
+                >
                   Tự động Crawl
                 </Label>
               </div>
@@ -277,7 +274,7 @@ export function DataSourceDialog({
                   value={crawlFrequency}
                   onValueChange={setCrawlFrequency}
                 >
-                  <SelectTrigger className="border-green-200">
+                  <SelectTrigger className="border-green-200 text-green-900">
                     <SelectValue placeholder="Chọn tần suất" />
                   </SelectTrigger>
                   <SelectContent>
@@ -294,7 +291,7 @@ export function DataSourceDialog({
                 <Input
                   id="max_pages"
                   type="number"
-                  className="border-green-200"
+                  className="border-green-200 text-green-900"
                   value={maxPages}
                   onChange={(e) => setMaxPages(parseInt(e.target.value) || 0)}
                 />
@@ -307,99 +304,61 @@ export function DataSourceDialog({
               Cấu hình Crawler
             </h3>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="web_name" className="text-green-900">
-                  Web Name
-                </Label>
-                <Input
-                  id="web_name"
-                  placeholder="topcv"
-                  className="border-green-200 text-green-900"
-                  value={webName}
-                  onChange={(e) => setWebName(e.target.value)}
+            <div className="space-y-6">
+              {/* 
+              <div className="flex items-center space-x-3 p-4 bg-white rounded-lg border border-emerald-100 shadow-sm">
+                <Switch
+                  id="fetch_detail"
+                  checked={fetchDetail}
+                  onCheckedChange={setFetchDetail}
                 />
+                <div className="space-y-1">
+                  <Label
+                    htmlFor="fetch_detail"
+                    className="text-green-900 font-medium cursor-pointer"
+                  >
+                    Lấy dữ liệu chi tiết tin tuyển dụng
+                  </Label>
+                  <p className="text-xs text-gray-500">
+                    Truy cập trang chi tiết từng công việc để lấy đầy đủ mô tả
+                  </p>
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="user_name" className="text-green-900">
-                  User Name
-                </Label>
-                <Input
-                  id="user_name"
-                  placeholder="admin_thanh"
-                  className="border-green-200 text-green-900"
-                  value={userName}
-                  onChange={(e) => setUserName(e.target.value)}
-                />
-              </div>
-            </div>
+              */}
 
-            <div className="grid grid-cols-3 gap-10">
-              <div className="space-y-2">
-                <Label htmlFor="stage" className="text-green-900">
-                  Giai đoạn (Stage)
-                </Label>
-                <Select
-                  value={stageNumber.toString()}
-                  onValueChange={(v) => setStageNumber(parseInt(v))}
+              <div className="space-y-2 pt-2">
+                <Label
+                  htmlFor="css_config_json"
+                  className="text-green-900 flex justify-between font-medium items-center"
                 >
-                  <SelectTrigger className="border-green-200 text-green-900">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1">Stage 1 (Lấy Menu)</SelectItem>
-                    <SelectItem value="2">Stage 2 (Lấy Link)</SelectItem>
-                    <SelectItem value="3">Stage 3 (Lấy Data)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="repeat" className="text-green-900">
-                  Lặp lại (Repeat)
+                  <span>CSS Selectors (JSON - Tùy chọn)</span>
+                  <div className="flex gap-2">
+                    {errors.css_config_json && (
+                      <span className="text-red-500 text-xs font-normal">
+                        {errors.css_config_json}
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={handleFormatJson}
+                      className="text-[10px] bg-green-100 text-green-700 px-2 py-1.5 rounded hover:bg-green-200 transition-colors border border-green-200 cursor-pointer"
+                    >
+                      Định dạng JSON
+                    </button>
+                  </div>
                 </Label>
-                <Input
-                  id="repeat"
-                  type="number"
-                  className="border-green-200 text-green-900"
-                  value={repeatCount}
-                  onChange={(e) =>
-                    setRepeatCount(parseInt(e.target.value) || 0)
-                  }
+                <textarea
+                  id="css_config_json"
+                  className={`w-full min-h-[250px] p-3 rounded-md border-2 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-green-500 bg-white ${
+                    errors.css_config_json
+                      ? "border-red-500"
+                      : "border-green-100"
+                  }`}
+                  placeholder='{ "list": { "container": ".job-item", "title": { "selector": "h3", "extract": "text" } } }'
+                  value={cssConfigJson}
+                  onChange={(e) => setCssConfigJson(e.target.value)}
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="folder_name" className="text-green-900">
-                  Folder Name
-                </Label>
-                <Input
-                  id="folder_name"
-                  placeholder="it_categories"
-                  className="border-green-200 text-green-900"
-                  value={folderName}
-                  onChange={(e) => setFolderName(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label
-                htmlFor="steps_json"
-                className="text-green-900 flex justify-between"
-              >
-                <span>Cấu hình Tiến trình (Steps JSON)</span>
-                {errors.steps_json && (
-                  <span className="text-red-500 text-xs">
-                    {errors.steps_json}
-                  </span>
-                )}
-              </Label>
-              <textarea
-                id="steps_json"
-                className={`w-full min-h-[300px] p-3 rounded-md border-2 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-green-500 ${errors.steps_json ? "border-red-500" : "border-green-200"}`}
-                placeholder='[{"type": "action", "args": {...}}, {"type": "extract", "args": {...}}]'
-                value={stepsJson}
-                onChange={(e) => setStepsJson(e.target.value)}
-              />
             </div>
           </div>
         </div>
