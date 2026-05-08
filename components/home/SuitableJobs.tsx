@@ -1,6 +1,6 @@
 "use client";
 import { Card } from "@/components/ui/card";
-import { Heart, Link2, Eye, ChevronDown } from "lucide-react";
+import { Heart, Link2, Eye, ChevronDown, ExternalLink } from "lucide-react";
 import clsx from "clsx";
 import { twMerge } from "tailwind-merge";
 import { useRouter } from "next/navigation";
@@ -10,11 +10,7 @@ import SectionTitle from "../common/SectionTitle";
 import { useAuth } from "@/hooks/useAuth";
 import { LoginRequired } from "@/components/auth/LoginRequired";
 import { cvAPI } from "@/services/cv";
-import { recommendationAPI } from "@/services/recommendation";
-import { getUserStorage } from "@/services/auth";
-import { prepareRecommendationPayload } from "@/utils/cvExtractor";
-import { CVProfile, Section } from "@/types/cv";
-import { DEFAULT_SECTIONS_VI } from "@/app/cv/page";
+import { jobAPI } from "@/services/job";
 import { Loader2, AlertCircle, FileText } from "lucide-react";
 import Link from "next/link";
 
@@ -27,6 +23,9 @@ interface JobItemProps {
   compatibility: number;
   index?: number;
   experience_required?: string;
+  matched_skills?: string[];
+  missing_skills?: string[];
+  explanation?: string;
   scores?: {
     sim_title: number;
     sim_tech: number;
@@ -45,30 +44,117 @@ const JobItem = ({
   compatibility,
   index = 0,
   experience_required,
+  matched_skills,
+  missing_skills,
+  explanation,
+  url_source,
   scores,
-}: JobItemProps) => {
+}: JobItemProps & { url_source?: string }) => {
   const router = useRouter();
   const [isHeartFilled, setIsHeartFilled] = useState(false);
 
-  const handleViewDetail = () => {
+  useEffect(() => {
+    const savedFavorites = localStorage.getItem("favorite_job_ids");
+    if (savedFavorites) {
+      try {
+        let favoriteIds = JSON.parse(savedFavorites);
+        // Cleanup potential "undefined" or "null" strings from previous bugs
+        if (Array.isArray(favoriteIds)) {
+          const cleanFavorites = favoriteIds.filter(
+            (id) => id && id !== "undefined" && id !== "null",
+          );
+          if (cleanFavorites.length !== favoriteIds.length) {
+            localStorage.setItem(
+              "favorite_job_ids",
+              JSON.stringify(cleanFavorites),
+            );
+            favoriteIds = cleanFavorites;
+          }
+          setIsHeartFilled(!!job_id && favoriteIds.includes(String(job_id)));
+        }
+      } catch (e) {
+        console.error("Error parsing favorites", e);
+      }
+    }
+  }, [job_id]);
+
+  const handleViewDetail = (e?: React.MouseEvent) => {
+    // console.log(
+    //   "handleViewDetail Triggered. job_id:",
+    //   job_id,
+    //   "Event exists:",
+    //   !!e,
+    // );
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
     if (job_id) {
-      const params = new URLSearchParams({
-        job: JSON.stringify({
-          job_id,
-          title,
-          company,
-          location,
-          compatibility,
-          experience_required,
-          scores,
-        }),
+      const jobData = {
+        job_id,
+        title,
+        company,
+        location,
+        compatibility,
+        experience_required,
+        matched_skills,
+        missing_skills,
+        explanation,
+        url_source,
+        scores,
+      };
+      // console.log("Saving job data to sessionStorage:", jobData);
+      // Lưu toàn bộ dữ liệu vào sessionStorage thay vì nối vào URL
+      sessionStorage.setItem("selected_job_detail", JSON.stringify(jobData));
+      // console.log("Executing router.push to /career/suitable-job-detail");
+      router.push(`/career/suitable-job-detail`);
+    } else {
+      console.error("handleViewDetail Failed: job_id is undefined or null", {
+        job_id,
+        title,
+        company,
       });
-      router.push(`/career/suitable-job-detail?${params.toString()}`);
     }
   };
 
-  const handleHeartClick = () => {
-    setIsHeartFilled(!isHeartFilled);
+  const handleHeartClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const savedFavorites = localStorage.getItem("favorite_job_ids");
+    let favoriteIds: string[] = [];
+    if (savedFavorites) {
+      try {
+        favoriteIds = JSON.parse(savedFavorites);
+      } catch (e) {
+        favoriteIds = [];
+      }
+    }
+
+    const jobIdStr = String(job_id);
+    let nextFavorites: string[];
+
+    if (favoriteIds.includes(jobIdStr)) {
+      nextFavorites = favoriteIds.filter((id) => id !== jobIdStr);
+      setIsHeartFilled(false);
+    } else {
+      nextFavorites = [...favoriteIds, jobIdStr];
+      setIsHeartFilled(true);
+    }
+
+    localStorage.setItem("favorite_job_ids", JSON.stringify(nextFavorites));
+  };
+
+  const handleLinkClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (url_source) {
+      let finalUrl = url_source;
+      if (!finalUrl.startsWith("http")) {
+        finalUrl = "https://" + finalUrl;
+      }
+      window.open(finalUrl, "_blank", "noopener,noreferrer");
+    } else {
+      handleViewDetail();
+    }
   };
 
   return (
@@ -84,14 +170,13 @@ const JobItem = ({
     >
       <Card
         className={twMerge(
-          "bg-gradient-to-br from-white to-gray-50 p-4 sm:p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300 relative overflow-hidden group",
+          "bg-gradient-to-br from-white to-gray-50 p-4 sm:p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300 relative overflow-hidden group cursor-pointer",
         )}
+        onClick={handleViewDetail}
       >
-        {/* Animated gradient background on hover */}
         <div className="absolute inset-0 bg-gradient-to-r from-green-50 via-transparent to-green-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
         <div className="relative z-10 flex flex-col sm:flex-row items-start justify-between gap-4 sm:gap-6">
-          {/* Logo + Info */}
           <div className="flex items-start gap-4 flex-1 w-full">
             <motion.div
               whileHover={{ scale: 1.1, rotate: 5 }}
@@ -106,120 +191,88 @@ const JobItem = ({
             </motion.div>
 
             <div className="space-y-2 flex-1">
-              <motion.h3
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 1 }}
-                transition={{ delay: index * 0.2 + 0.1 }}
-                className="font-semibold text-lg text-gray-900 group-hover:text-[#0C6A4E] transition-colors duration-300"
-              >
+              <h3 className="font-semibold text-lg text-gray-900 group-hover:text-[#0C6A4E] transition-colors duration-300 line-clamp-1">
                 {title}
-              </motion.h3>
-              <p className="text-sm text-gray-600">{company}</p>
-              <p className="text-sm text-gray-400 mt-1">{location}</p>
+              </h3>
+              <p className="text-sm text-gray-600 font-medium">{company}</p>
+              {location && location !== "Chưa cập nhật" && (
+                <p className="text-sm text-gray-400 mt-1 flex items-center gap-1">
+                  <span className="w-1 h-1 bg-gray-400 rounded-full inline-block"></span>
+                  {location}
+                </p>
+              )}
 
-              <motion.div className="flex items-center gap-4 pt-2">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-[#0C6A4E] transition-colors duration-300 cursor-pointer"
+              <div className="flex items-center gap-4 pt-2">
+                <button
+                  onClick={handleLinkClick}
+                  className="flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-[#0C6A4E] transition-colors duration-300 cursor-pointer"
                 >
                   <Link2 className="w-4 h-4" />
                   <span>Link</span>
-                </motion.button>
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                </button>
+                <button
                   onClick={handleHeartClick}
-                  className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-red-600 transition-colors duration-300 cursor-pointer"
+                  className="flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-red-600 transition-colors duration-300 cursor-pointer"
                 >
-                  <motion.div
-                    animate={{ scale: isHeartFilled ? [1, 1.3, 1] : 1 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <Heart
-                      className={`w-4 h-4 ${
-                        isHeartFilled ? "fill-red-600 text-red-600" : ""
-                      }`}
-                    />
-                  </motion.div>
+                  <Heart
+                    className={`w-4 h-4 ${
+                      isHeartFilled ? "fill-red-600 text-red-600" : ""
+                    }`}
+                  />
                   <span>Yêu thích</span>
-                </motion.button>
-              </motion.div>
+                </button>
+              </div>
             </div>
           </div>
 
-          {/* Compatibility */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            transition={{ delay: index * 0.2 + 0.2, duration: 0.5 }}
-            className="w-full sm:w-auto text-center sm:text-right space-y-3 shrink-0"
-          >
-            <motion.div
-              animate={{
-                scale: [1, 1.05, 1],
-              }}
-              transition={{
-                duration: 2,
-                repeat: Infinity,
-                ease: "easeInOut",
-              }}
+          <div className="w-full sm:w-auto text-center sm:text-right space-y-3 shrink-0">
+            <div
               className={clsx(
                 "text-4xl font-bold transition-all duration-300",
                 compatibility >= 50 ? "text-green-600" : "text-red-500",
               )}
             >
-              {compatibility}%
-            </motion.div>
-            <motion.p
+              {compatibility > 0 ? `${compatibility}%` : "NEW"}
+            </div>
+            <p
               className={clsx(
                 "text-xs uppercase tracking-wider font-medium",
                 compatibility >= 50 ? "text-green-600" : "text-red-500",
               )}
             >
-              Tỷ lệ phù hợp
-            </motion.p>
+              {compatibility > 0 ? "Tỷ lệ phù hợp" : "Công việc mới"}
+            </p>
 
-            <motion.button
-              whileHover={{ scale: 1.05, y: -2 }}
-              whileTap={{ scale: 0.98 }}
-              className={twMerge(
-                "mt-3 rounded-lg font-medium px-4 py-2.5 text-sm flex items-center justify-center sm:justify-start w-full sm:w-auto cursor-pointer transition-all duration-300 shadow-sm hover:shadow-md",
-                compatibility >= 50
-                  ? "text-white bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
-                  : "text-white bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700",
-              )}
-              onClick={handleViewDetail}
-            >
-              <motion.div
-                animate={{ x: [0, 2, 0] }}
-                transition={{ duration: 1.5, repeat: Infinity }}
+            {compatibility > 0 ? (
+              <button
+                className="mt-3 rounded-lg font-medium px-4 py-2.5 text-sm flex items-center justify-center sm:justify-start w-full sm:w-auto cursor-pointer transition-all duration-300 shadow-sm hover:shadow-md text-white bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
+                onClick={handleViewDetail}
               >
                 <Eye className="w-4 h-4 mr-1.5" />
-              </motion.div>
-              Xem chi tiết
-            </motion.button>
-          </motion.div>
+                Xem chi tiết
+              </button>
+            ) : (
+              <button
+                className="mt-3 rounded-lg font-medium px-4 py-2.5 text-sm flex items-center justify-center sm:justify-start w-full sm:w-auto cursor-pointer transition-all duration-300 shadow-sm hover:shadow-md text-white bg-gradient-to-r from-[#0C6A4E] to-[#0a5441] hover:from-[#0a5441] hover:to-[#084233]"
+                onClick={handleLinkClick}
+              >
+                <ExternalLink className="w-4 h-4 mr-1.5" />
+                Ứng tuyển ngay
+              </button>
+            )}
+          </div>
         </div>
       </Card>
     </motion.div>
   );
 };
 
-// Login Required Section Component
 const LoginRequiredSection = () => {
   return (
     <section className="py-16 px-7">
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        viewport={{ once: true }}
-        className="flex justify-between items-center mb-8"
-      >
+      <div className="flex justify-between items-center mb-8">
         <SectionTitle title="CÔNG VIỆC PHÙ HỢP VỚI BẠN" />
-      </motion.div>
-
+      </div>
       <LoginRequired
         title="Đăng nhập để xem công việc phù hợp"
         description="Hệ thống sẽ phân tích hồ sơ của bạn và gợi ý những công việc phù hợp nhất. Đăng nhập ngay để khám phá cơ hội nghề nghiệp dành riêng cho bạn!"
@@ -236,75 +289,114 @@ export default function SuitableJobs() {
   const [error, setError] = useState<string | null>(null);
   const [noCv, setNoCv] = useState(false);
   const [visibleCount, setVisibleCount] = useState(2);
+  const [recommendationSource, setRecommendationSource] = useState<
+    "profile" | "file" | "none"
+  >("none");
+
+  const fetchRecommendations = async (forceRefresh = false) => {
+    if (!isAuthenticated) return;
+
+    const cacheKey = "auto_recommendations_cache";
+
+    // Check cache
+    if (!forceRefresh) {
+      const cached = sessionStorage.getItem(cacheKey);
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          setJobs(parsed.jobs);
+          setRecommendationSource(parsed.mode || "none");
+          setNoCv(parsed.noCv);
+          return; // Skip API call if we have cache
+        } catch (e) {
+          console.error("Cache parsing error", e);
+        }
+      }
+    }
+
+    setLoading(true);
+    setError(null);
+    setNoCv(false);
+
+    try {
+      const res = await cvAPI.getAutoRecommendations(10);
+      // console.log("Recommend API Response:", res.data); // Added log for debugging
+
+      if (res.data?.success) {
+        const { matches, mode } = res.data;
+        setRecommendationSource(mode || "none");
+
+        if (matches && matches.length > 0) {
+          const mappedJobs = matches.map((rec: any) => ({
+            id: rec.job_id,
+            logo: "/logo/default-company.png",
+            title: rec.job_title,
+            company: rec.company,
+            location: rec.location || rec.location_city,
+            compatibility: Math.round(rec.compatibility_score),
+            experience_required: rec.experience_required || "Chưa cập nhật",
+            matched_skills: rec.matched_skills,
+            missing_skills: rec.missing_skills,
+            explanation: rec.match_explanation,
+            url_source: rec.url_source,
+            scores: rec.scores || {
+              sim_title: 0,
+              sim_tech: 0,
+              sim_mota: 0,
+              loc_score: 0,
+              exp_score: 0,
+            },
+          }));
+          setJobs(mappedJobs);
+
+          // Save to cache
+          sessionStorage.setItem(
+            cacheKey,
+            JSON.stringify({
+              jobs: mappedJobs,
+              mode: mode || "none",
+              noCv: false,
+            }),
+          );
+        } else if (mode === "none") {
+          setNoCv(true);
+          const fallbackRes = await jobAPI.getJobs({ page: 1, row: 10 });
+          if (fallbackRes?.data) {
+            const fallbackJobs = fallbackRes.data.map((j: any) => ({
+              id: j.id,
+              logo: "/logo/default-company.png",
+              title: j.title,
+              company: j.company?.name || "Đang cập nhật",
+              location: j.location,
+              compatibility: 0,
+              experience_required: j.years_of_experience
+                ? `${j.years_of_experience} năm`
+                : "Chưa cập nhật",
+              url_source: j.url_source,
+            }));
+            setJobs(fallbackJobs);
+
+            // Save fallback to cache
+            sessionStorage.setItem(
+              cacheKey,
+              JSON.stringify({
+                jobs: fallbackJobs,
+                mode: "none",
+                noCv: true,
+              }),
+            );
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Failed to fetch recommendations:", err);
+      setError("Không thể kết nối với hệ thống AI lúc này.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchRecommendations = async () => {
-      if (!isAuthenticated) return;
-
-      setLoading(true);
-      setError(null);
-      setNoCv(false);
-
-      try {
-        const { user_id } = getUserStorage();
-        if (!user_id) return;
-
-        // 1. Fetch User CVs
-        const cvRes = await cvAPI.getForUser({});
-        const userCvs = cvRes.data?.data as CVProfile[];
-
-        if (!userCvs || userCvs.length === 0) {
-          setNoCv(true);
-          setLoading(false);
-          return;
-        }
-
-        // Take the latest CV
-        const latestCv = userCvs[0];
-        let sections: Section[] = [];
-
-        try {
-          sections =
-            latestCv.sections === "NONE"
-              ? DEFAULT_SECTIONS_VI
-              : JSON.parse(latestCv.sections);
-        } catch (e) {
-          console.error("Failed to parse CV sections", e);
-          sections = DEFAULT_SECTIONS_VI;
-        }
-
-        // 2. Prepare Payload and Call AI Recommendation API
-        const payload = prepareRecommendationPayload(user_id, sections);
-        const recRes = await recommendationAPI.getRecommendations(payload);
-
-        // 3. Map Response to UI Data Structure
-        const mappedJobs = recRes.recommendations.map((rec) => ({
-          id: rec.job_id,
-          logo: "/logo/default-company.png", // Fallback logo
-          title: rec.job_title,
-          company: rec.company_name,
-          location: `${rec.location_district}, ${rec.location_city}`,
-          compatibility: Math.round(rec.final_score * 100),
-          experience_required: rec.experience_required,
-          // Store all scores for detail page
-          scores: {
-            sim_title: rec.sim_title,
-            sim_tech: rec.sim_tech,
-            sim_mota: rec.sim_mota,
-            loc_score: rec.loc_score,
-            exp_score: rec.exp_score,
-          },
-        }));
-
-        setJobs(mappedJobs);
-      } catch (err) {
-        console.error("Failed to fetch recommendations:", err);
-        setError("Không thể lấy dữ liệu gợi ý việc làm lúc này.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchRecommendations();
   }, [isAuthenticated]);
 
@@ -312,155 +404,123 @@ export default function SuitableJobs() {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
-      transition: {
-        staggerChildren: 0.2,
-        delayChildren: 0.1,
-      },
+      transition: { staggerChildren: 0.2 },
     },
   };
 
-  // Show loading state
   if (authLoading || loading) {
     return (
       <section className="py-16 px-4">
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="flex flex-col justify-center items-center py-20 space-y-4"
-        >
+        <div className="flex flex-col justify-center items-center py-20 space-y-4 text-center">
           <Loader2 className="h-12 w-12 text-[#0C6A4E] animate-spin" />
           <p className="text-gray-500 font-medium">
             AI đang phân tích hồ sơ và tìm việc phù hợp cho bạn...
           </p>
-        </motion.div>
+        </div>
       </section>
     );
   }
 
-  // Show login required if not authenticated
-  if (!isAuthenticated) {
-    return <LoginRequiredSection />;
-  }
+  if (!isAuthenticated) return <LoginRequiredSection />;
 
-  // Show status if no CV found
-  if (noCv) {
-    return (
-      <section className="py-16 px-7">
-        <SectionTitle title="CÔNG VIỆC PHÙ HỢP VỚI BẠN" />
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-green-50 border border-green-100 rounded-3xl p-10 text-center max-w-3xl mx-auto mt-8"
-        >
-          <div className="bg-white w-20 h-20 rounded-2xl shadow-sm flex items-center justify-center mx-auto mb-6">
-            <FileText className="h-10 w-10 text-[#0C6A4E]" />
-          </div>
-          <h3 className="text-2xl font-bold text-gray-900 mb-3">
-            Bạn chưa có CV trên hệ thống
-          </h3>
-          <p className="text-gray-600 mb-8">
-            Hãy tạo một chiếc CV chuyên nghiệp để hệ thống AI của chúng tôi có
-            thể phân tích và gợi ý những công việc phù hợp nhất với năng lực của
-            bạn.
-          </p>
-          <Link
-            href="/cv"
-            className="inline-flex items-center justify-center bg-[#0C6A4E] text-white px-8 py-3 rounded-xl font-bold hover:bg-[#0a5441] transition-all shadow-lg shadow-green-100"
-          >
-            Tạo CV ngay bây giờ
-          </Link>
-        </motion.div>
-      </section>
-    );
-  }
-
-  // Show error if API fails
   if (error) {
     return (
-      <section className="py-16 px-7">
+      <section className="py-16 px-7 text-center">
         <SectionTitle title="CÔNG VIỆC PHÙ HỢP VỚI BẠN" />
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="bg-green-50 border border-green-100 rounded-3xl p-10 text-center max-w-2xl mx-auto mt-8"
-        >
-          <div className="bg-white w-16 h-16 rounded-2xl shadow-sm flex items-center justify-center mx-auto mb-6">
-            <AlertCircle className="h-8 w-8 text-[#0C6A4E]" />
-          </div>
-          <h3 className="text-xl font-bold text-gray-900 mb-2">
-            Hệ thống AI đang bận một chút
-          </h3>
-          <p className="text-gray-600 mb-6">
-            Dường như có một chút gián đoạn nhỏ khi kết nối với bộ não AI của
-            chúng tôi. Bạn hãy thử làm mới trang hoặc quay lại sau giây lát nhé!
-          </p>
+        <div className="mt-8 p-10 bg-red-50 border border-red-100 rounded-3xl max-w-2xl mx-auto">
+          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <h3 className="text-xl font-bold text-gray-900 mb-2">Hệ thống bận</h3>
+          <p className="text-gray-600 mb-6">{error}</p>
           <button
             onClick={() => window.location.reload()}
-            className="inline-flex items-center justify-center bg-[#0C6A4E] text-white px-6 py-2.5 rounded-xl font-semibold hover:bg-[#0a5441] transition-all shadow-md shadow-green-100 cursor-pointer"
+            className="bg-[#0C6A4E] text-white px-8 py-2 rounded-xl cursor-pointer"
           >
-            Thử lại ngay
+            Thử lại
           </button>
-        </motion.div>
+        </div>
       </section>
     );
   }
 
-  // Show suitable jobs if authenticated
   return (
     <section className="py-16 px-7">
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        viewport={{ once: true }}
-        className="flex justify-between items-center mb-8"
-      >
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
         <SectionTitle title="CÔNG VIỆC PHÙ HỢP VỚI BẠN" />
-      </motion.div>
+
+        {recommendationSource !== "none" && (
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="flex items-center gap-2 px-4 py-2 bg-[#0C6A4E]/10 border border-[#0C6A4E]/20 rounded-full"
+          >
+            <div className="flex h-2 w-2 relative">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#0C6A4E] opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#0C6A4E]"></span>
+            </div>
+            <span className="text-xs font-bold text-[#0C6A4E] uppercase tracking-wider">
+              AI Gợi ý từ:{" "}
+              {recommendationSource === "profile" ? "CV Online" : "CV Upload"}
+            </span>
+          </motion.div>
+        )}
+      </div>
+
+      {noCv && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-green-50 border border-green-100 rounded-2xl p-6 mb-8 flex flex-col md:flex-row items-center justify-between gap-6"
+        >
+          <div className="flex items-center gap-4">
+            <div className="bg-white p-3 rounded-xl shadow-sm shrink-0">
+              <FileText className="h-6 w-6 text-[#0C6A4E]" />
+            </div>
+            <div>
+              <h4 className="font-bold text-gray-900">
+                Nâng cao hiệu quả gợi ý của AI!
+              </h4>
+              <p className="text-sm text-gray-600">
+                Bạn chưa có CV. Hãy tạo CV để AI có thể phân tích và đưa ra các
+                gợi ý việc làm chính xác nhất.
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/cv"
+            className="bg-[#0C6A4E] text-white px-6 py-2.5 rounded-xl font-bold hover:bg-[#0a5441] transition-all shadow-md text-sm"
+          >
+            Tạo CV ngay
+          </Link>
+        </motion.div>
+      )}
 
       <motion.div
         variants={containerVariants}
         initial="hidden"
         whileInView="visible"
-        viewport={{ once: true, margin: "-100px" }}
-        className="space-y-6"
+        viewport={{ once: true }}
+        className="grid grid-cols-1 lg:grid-cols-2 gap-6"
       >
-        {jobs.slice(0, visibleCount).map((job, idx) => (
+        {jobs.slice(0, visibleCount).map((job, index) => (
           <JobItem
-            key={idx}
-            index={idx}
+            key={job.id || index}
             job_id={job.id}
-            logo={job.logo}
-            title={job.title}
-            company={job.company}
-            location={job.location}
-            compatibility={job.compatibility}
-            experience_required={job.experience_required}
-            scores={job.scores}
+            {...job}
+            index={index}
           />
         ))}
       </motion.div>
 
       {jobs.length > visibleCount && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="mt-10 flex justify-center"
-        >
+        <div className="flex justify-center mt-12">
           <button
-            onClick={() => setVisibleCount(jobs.length)}
-            className="group flex items-center gap-2 px-8 py-3 bg-white border-2 border-[#0C6A4E] text-[#0C6A4E] font-bold rounded-2xl hover:bg-[#0C6A4E] hover:text-white transition-all duration-300 shadow-md hover:shadow-xl cursor-pointer"
+            onClick={() => setVisibleCount((prev) => prev + 2)}
+            className="group flex items-center gap-2 bg-white border-2 border-gray-100 px-8 py-3 rounded-2xl font-bold text-gray-600 hover:border-[#0C6A4E] hover:text-[#0C6A4E] transition-all duration-300 shadow-sm cursor-pointer"
           >
-            Xem tất cả ({jobs.length} công việc)
-            <motion.div
-              animate={{ y: [0, 4, 0] }}
-              transition={{ duration: 1.5, repeat: Infinity }}
-            >
-              <ChevronDown className="w-5 h-5 group-hover:scale-110" />
-            </motion.div>
+            Xem thêm công việc
+            <ChevronDown className="w-5 h-5 group-hover:translate-y-1 transition-transform duration-300" />
           </button>
-        </motion.div>
+        </div>
       )}
     </section>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { LoginRequired } from "@/components/auth/LoginRequired";
@@ -11,6 +11,7 @@ import {
   TrendingUp,
   ArrowLeft,
   Star,
+  ExternalLink,
 } from "lucide-react";
 
 interface JobDetailData {
@@ -20,6 +21,10 @@ interface JobDetailData {
   location?: string;
   compatibility: number;
   experience_required?: string;
+  matched_skills?: string[];
+  missing_skills?: string[];
+  explanation?: string;
+  url_source?: string;
   scores?: {
     sim_title?: number;
     sim_tech: number;
@@ -30,15 +35,15 @@ interface JobDetailData {
 }
 
 const scoreLabels: Record<string, string> = {
-  // sim_title: "Tiêu đề công việc",
+  sim_title: "Tiêu đề công việc",
   sim_tech: "Kỹ thuật / Công nghệ",
   sim_mota: "Mô tả công việc",
   loc_score: "Địa điểm",
-  exp_score: "Kinh nghiệm",
+  // exp_score: "Kinh nghiệm",
 };
 
 function ScoreBar({ label, value }: { label: string; value: number }) {
-  const percent = Math.round(value * 100);
+  const percent = Math.round(value);
   const color =
     percent >= 70
       ? "bg-green-500"
@@ -67,7 +72,22 @@ function SuitableJobDetailContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  if (isLoading) {
+  const [job, setJob] = useState<JobDetailData | null>(null);
+  const [isInitializing, setIsInitializing] = useState(true);
+
+  useEffect(() => {
+    const cachedJob = sessionStorage.getItem("selected_job_detail");
+    if (cachedJob) {
+      try {
+        setJob(JSON.parse(cachedJob));
+      } catch (e) {
+        console.error("Failed to parse job detail from storage", e);
+      }
+    }
+    setIsInitializing(false);
+  }, []);
+
+  if (isLoading || isInitializing) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600" />
@@ -82,15 +102,6 @@ function SuitableJobDetailContent() {
         description="Bạn cần đăng nhập để xem chi tiết phân tích độ phù hợp giữa hồ sơ của bạn và công việc này."
       />
     );
-  }
-
-  // Parse job data from URL query param
-  let job: JobDetailData | null = null;
-  try {
-    const raw = searchParams.get("job");
-    if (raw) job = JSON.parse(raw);
-  } catch {
-    job = null;
   }
 
   if (!job) {
@@ -135,24 +146,42 @@ function SuitableJobDetailContent() {
 
         {/* Job Overview Card */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
-          <div className="flex items-start gap-4">
-            <div className="w-14 h-14 rounded-xl bg-gray-100 border flex items-center justify-center shrink-0">
-              <Building2 className="w-7 h-7 text-gray-400" />
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-4">
+              <div className="w-14 h-14 rounded-xl bg-gray-100 border flex items-center justify-center shrink-0">
+                <Building2 className="w-7 h-7 text-gray-400" />
+              </div>
+              <div className="flex-1">
+                <h2 className="text-xl font-bold text-gray-900">{job.title}</h2>
+                <p className="text-gray-600 font-medium mt-0.5">{job.company}</p>
+              </div>
             </div>
-            <div className="flex-1">
-              <h2 className="text-xl font-bold text-gray-900">{job.title}</h2>
-              <p className="text-gray-600 font-medium mt-0.5">{job.company}</p>
-            </div>
+            
+            {job.url_source && (
+              <a
+                href={
+                  job.url_source.startsWith("http")
+                    ? job.url_source
+                    : `https://${job.url_source}`
+                }
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 bg-[#0C6A4E] text-white px-5 py-2.5 rounded-xl font-bold hover:bg-[#0a5441] transition-all shadow-md text-sm shrink-0"
+              >
+                Ứng tuyển ngay
+                <ExternalLink className="w-4 h-4" />
+              </a>
+            )}
           </div>
 
           <div className="flex flex-wrap gap-3 pt-1">
-            {job.location && (
+            {job.location && job.location !== "Chưa cập nhật" && (
               <span className="flex items-center gap-1.5 text-sm text-gray-500 bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5">
                 <MapPin className="w-4 h-4 text-green-600" />
                 {job.location}
               </span>
             )}
-            {job.experience_required && (
+            {job.experience_required && job.experience_required !== "Chưa cập nhật" && (
               <span className="flex items-center gap-1.5 text-sm text-gray-500 bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5">
                 <Briefcase className="w-4 h-4 text-indigo-500" />
                 {job.experience_required}
@@ -182,12 +211,68 @@ function SuitableJobDetailContent() {
           </div>
         </div>
 
-        {/* Score Breakdown */}
+        {/* Skills Analysis */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Matched Skills */}
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
+            <h3 className="text-lg font-bold text-green-700 flex items-center gap-2">
+              <span className="w-2 h-2 bg-green-500 rounded-full" />
+              Kỹ năng bạn đã có
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              {job.matched_skills && job.matched_skills.length > 0 ? (
+                job.matched_skills.map((skill: string, i: number) => (
+                  <span
+                    key={i}
+                    className="px-3 py-1 bg-green-50 text-green-700 text-sm font-medium rounded-full border border-green-100"
+                  >
+                    {skill}
+                  </span>
+                ))
+              ) : (
+                <p className="text-sm text-gray-400 italic">
+                  Chưa xác định được kỹ năng khớp cụ thể.
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Missing Skills */}
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
+            <h3 className="text-lg font-bold text-orange-600 flex items-center gap-2">
+              <span className="w-2 h-2 bg-orange-500 rounded-full" />
+              Kỹ năng cần cải thiện
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              {job.missing_skills && job.missing_skills.length > 0 ? (
+                job.missing_skills.map((skill: string, i: number) => (
+                  <span
+                    key={i}
+                    className="px-3 py-1 bg-orange-50 text-orange-700 text-sm font-medium rounded-full border border-orange-100"
+                  >
+                    {skill}
+                  </span>
+                ))
+              ) : (
+                <p className="text-sm text-green-600 font-medium italic">
+                  Bạn đã đáp ứng đầy đủ kỹ năng kỹ thuật!
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Score Breakdown combined with AI Title */}
         {job.scores && (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
-            <h3 className="text-lg font-bold text-gray-800">
-              Phân tích chi tiết các tiêu chí
-            </h3>
+            <div className="flex items-center gap-2 text-indigo-600 mb-2">
+              <div className="p-2 bg-indigo-50 rounded-lg">
+                <TrendingUp className="w-5 h-5" />
+              </div>
+              <h3 className="text-lg font-bold">
+                Phân tích chi tiết độ phù hợp từ AI
+              </h3>
+            </div>
             <div className="space-y-4">
               {Object.entries(job.scores)
                 .filter(([key]) => key in scoreLabels)
@@ -195,7 +280,7 @@ function SuitableJobDetailContent() {
                   <ScoreBar
                     key={key}
                     label={scoreLabels[key]}
-                    value={value}
+                    value={value as number}
                   />
                 ))}
             </div>
