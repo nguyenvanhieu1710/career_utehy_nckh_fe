@@ -13,6 +13,7 @@ import {
 import { DeleteConfirmationDialog } from "@/components/admin/DeleteConfirmationDialog";
 import { NotificationDialog } from "@/components/admin/NotificationDialog";
 import { CrawlDetailDialog } from "@/components/admin/CrawlDetailDialog";
+import { CrawlHistoryDialog } from "@/components/admin/CrawlHistoryDialog";
 import { useDataSources } from "@/hooks/useDataSources";
 import { DataSource } from "@/types/data-source";
 import { CrawlHistory } from "@/types/crawl-history";
@@ -34,6 +35,7 @@ export default function DataManagementPage() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isCrawlDetailOpen, setIsCrawlDetailOpen] = useState(false);
+  const [isCrawlHistoryOpen, setIsCrawlHistoryOpen] = useState(false);
   const [dialogState, setDialogState] = useState<DialogState>({
     isOpen: false,
     title: "",
@@ -74,26 +76,8 @@ export default function DataManagementPage() {
   };
 
   const handleViewHistory = (dataSource: DataSource) => {
-    // TODO: Fetch crawl history for this data source
-    // For now, just open the dialog with mock data
-    setSelectedCrawlHistory({
-      id: "mock-1",
-      source_id: dataSource.id,
-      source_name: dataSource.name,
-      status: "completed",
-      started_at: new Date().toISOString(),
-      completed_at: new Date().toISOString(),
-      duration_seconds: 120,
-      total_jobs_found: 150,
-      jobs_created: 100,
-      jobs_updated: 45,
-      jobs_failed: 5,
-      jobs_skipped: 0,
-      success_rate: 96.7,
-      error_count: 5,
-      crawler_version: "1.0.0",
-    });
-    setIsCrawlDetailOpen(true);
+    setSelectedDataSource(dataSource);
+    setIsCrawlHistoryOpen(true);
   };
 
   const handleToggleCrawl = async (dataSource: DataSource) => {
@@ -417,6 +401,14 @@ export default function DataManagementPage() {
         open={isCrawlDetailOpen}
         onOpenChange={setIsCrawlDetailOpen}
         crawlHistory={selectedCrawlHistory}
+      />
+
+      {/* Crawl History Dialog (List) */}
+      <CrawlHistoryDialog
+        open={isCrawlHistoryOpen}
+        onOpenChange={setIsCrawlHistoryOpen}
+        sourceId={selectedDataSource?.id}
+        sourceName={selectedDataSource?.name}
       />
 
       {/* Notification Dialog */}

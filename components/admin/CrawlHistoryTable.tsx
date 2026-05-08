@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import Loader from "@/components/ui/Loader";
 import { crawlHistoryAPI } from "@/services/crawlHistory";
 import { CrawlHistory, CrawlHistoryFilters } from "@/types/crawl-history";
-import { ActionButtons } from "./ActionButtons";
+// import { ActionButtons } from "./ActionButtons";
 import { usePermissions } from "@/contexts/PermissionContext";
 import { formatDuration, formatDate } from "@/utils/formatters";
 import { getCrawlStatusBadge } from "@/utils/crawl-helpers";
@@ -157,19 +157,33 @@ export function CrawlHistoryTable({
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Started
               </th>
+              <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Total
+              </th>
+              <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                New/Update
+              </th>
+              <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Success
+              </th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Duration
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
+              <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Failed
               </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {crawls.map((crawl) => (
-              <tr key={crawl.id} className="hover:bg-gray-50">
+              <tr key={crawl.id} className="hover:bg-gray-50 transition-colors">
                 <td className="px-4 py-4 whitespace-nowrap">
                   {getCrawlStatusBadge(crawl.status)}
+                  {crawl.status === 'failed' && crawl.error_message && (
+                    <div className="text-[10px] text-red-500 mt-1 max-w-[150px] truncate" title={crawl.error_message}>
+                      {crawl.error_message}
+                    </div>
+                  )}
                 </td>
                 <td className="px-4 py-4 whitespace-nowrap">
                   <div>
@@ -184,26 +198,43 @@ export function CrawlHistoryTable({
                   </div>
                 </td>
                 <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {formatDate(crawl.started_at)}
+                  {crawl.started_at
+                    ? new Date(crawl.started_at)
+                        .toLocaleString("vi-VN", {
+                          day: "numeric",
+                          month: "numeric",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          second: "2-digit",
+                          hour12: false,
+                        })
+                        .replace(",", "")
+                    : "N/A"}
+                </td>
+                <td className="px-4 py-4 whitespace-nowrap text-sm text-center text-gray-900 font-semibold">
+                  {crawl.total_jobs_found.toLocaleString()}
+                </td>
+                <td className="px-4 py-4 whitespace-nowrap text-sm text-center">
+                  <div className="flex flex-col items-center">
+                    <span className="text-green-600 font-medium">+{crawl.jobs_created}</span>
+                    <span className="text-blue-600 text-xs">~{crawl.jobs_updated}</span>
+                  </div>
+                </td>
+                <td className="px-4 py-4 whitespace-nowrap text-sm text-center">
+                  <span className={`px-2 py-1 rounded-full text-xs font-bold ${
+                    crawl.success_rate >= 90 ? 'bg-green-100 text-green-700' :
+                    crawl.success_rate >= 50 ? 'bg-yellow-100 text-yellow-700' :
+                    'bg-red-100 text-red-700'
+                  }`}>
+                    {crawl.success_rate.toFixed(1)}%
+                  </span>
                 </td>
                 <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
                   {formatDuration(crawl.duration_seconds)}
                 </td>
-                <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
-                  <div className="flex items-center gap-2">
-                    <ActionButtons
-                      type="view"
-                      onClick={() => onViewDetails?.(crawl)}
-                      permission="crawl_history.view"
-                    />
-                    {crawl.status === "running" && (
-                      <ActionButtons
-                        type="cancel"
-                        onClick={() => handleCancelCrawl(crawl.id)}
-                        permission="crawl_history.cancel"
-                      />
-                    )}
-                  </div>
+                <td className="px-4 py-4 whitespace-nowrap text-sm text-center text-red-600 font-medium">
+                  {crawl.jobs_failed > 0 ? crawl.jobs_failed : "-"}
                 </td>
               </tr>
             ))}

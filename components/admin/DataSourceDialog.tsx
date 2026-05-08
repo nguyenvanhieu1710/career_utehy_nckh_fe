@@ -76,18 +76,22 @@ export function DataSourceDialog({
     setCrawlFrequency(initialData?.crawl_frequency ?? "daily");
     setCrawlEnabled(initialData?.crawl_enabled ?? true);
     // Extract settings from crawler_payload if exists
-    const payload = (initialData as any)?.crawler_payload || 
-                    (initialData as any)?.crawler_config?.crawler_payload || {};
-    
-    setFetchDetail(payload.fetchDetail !== undefined ? payload.fetchDetail : true);
+    const payload =
+      (initialData as any)?.crawler_payload ||
+      (initialData as any)?.crawler_config?.crawler_payload ||
+      {};
+
+    setFetchDetail(
+      payload.fetchDetail !== undefined ? payload.fetchDetail : true,
+    );
     setMaxPages(payload.maxPages || initialData?.max_pages || 100);
-    
+
     if (payload.cssConfig) {
       setCssConfigJson(JSON.stringify(payload.cssConfig, null, 2));
     } else {
       setCssConfigJson("");
     }
-    
+
     setErrors({});
   }, [open, initialData]);
 
@@ -299,8 +303,8 @@ export function DataSourceDialog({
             </div>
           </div>
 
-          <div className="space-y-4 bg-emerald-50/30 p-4 rounded-lg border border-emerald-100">
-            <h3 className="text-lg font-medium text-green-900 border-b border-emerald-200 pb-2">
+          <div className="space-y-4 p-0">
+            <h3 className="text-lg font-medium text-green-900 border-b border-gray-200 pb-2">
               Cấu hình Crawler
             </h3>
 
@@ -349,7 +353,7 @@ export function DataSourceDialog({
                 </Label>
                 <textarea
                   id="css_config_json"
-                  className={`w-full min-h-[250px] p-3 rounded-md border-2 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-green-500 bg-white ${
+                  className={`w-full min-h-[350px] p-3 rounded-md border-2 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-green-500 bg-white ${
                     errors.css_config_json
                       ? "border-red-500"
                       : "border-green-100"
