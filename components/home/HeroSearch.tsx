@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/dialog";
 import Button from "@/components/ui/Button";
 import { getUploadsUrl } from "@/lib/config";
+import { publicAPI } from "@/services/public";
 
 
 type TitleId = "job" | "studient" | "company";
@@ -170,40 +171,31 @@ export function HeroSearch() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const baseUrl =
-          process.env.NEXT_PUBLIC_API_BASE_URL;
-        
         // Fetch stats
-        const statsRes = await fetch(`${baseUrl}/public/stats`);
-        if (statsRes.ok) {
-          const statsJson = await statsRes.json();
-          if (statsJson?.status === "success" && statsJson?.data) {
-            const { user_count, job_count, company_count } = statsJson.data;
-            setTitleAmountData({
-              studient: user_count ?? FALLBACK_STATS.studient,
-              job: job_count ?? FALLBACK_STATS.job,
-              company: company_count ?? FALLBACK_STATS.company,
-            });
-          }
+        const statsJson = await publicAPI.getStats();
+        if (statsJson?.status === "success" && statsJson?.data) {
+          const { user_count, job_count, company_count } = statsJson.data;
+          setTitleAmountData({
+            studient: user_count ?? FALLBACK_STATS.studient,
+            job: job_count ?? FALLBACK_STATS.job,
+            company: company_count ?? FALLBACK_STATS.company,
+          });
         }
 
         // Fetch student avatars
-        const avatarRes = await fetch(`${baseUrl}/public/featured-students`);
-        if (avatarRes.ok) {
-          const avatarJson = await avatarRes.json();
-          if (avatarJson?.status === "success" && Array.isArray(avatarJson?.data)) {
-            const urls = avatarJson.data
-              .filter((u: any) => u.avatar_url)
-              .map((u: any) => getUploadsUrl(u.avatar_url))
-              .slice(0, 6);
-            
-            if (urls.length > 0) {
-              setStudentAvatars(urls);
-            }
+        const avatarJson = await publicAPI.getFeaturedStudents();
+        if (avatarJson?.status === "success" && Array.isArray(avatarJson?.data)) {
+          const urls = avatarJson.data
+            .filter((u: any) => u.avatar_url)
+            .map((u: any) => getUploadsUrl(u.avatar_url))
+            .slice(0, 6);
+
+          if (urls.length > 0) {
+            setStudentAvatars(urls);
           }
         }
-      } catch {
-        // Keep fallback values on error
+      } catch (error) {
+        console.error("Failed to fetch public data:", error);
       }
     };
     fetchData();
