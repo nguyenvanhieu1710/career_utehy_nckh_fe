@@ -40,13 +40,17 @@ api.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
 
-    // Log outgoing requests (info level - only in dev)
-    apiLogger.info(`${config.method?.toUpperCase()} ${config.url}`);
+    // Store start time for performance tracking
+    (config as any).metadata = { startTime: performance.now() };
+
+    const timestamp = new Date().toLocaleTimeString();
+    apiLogger.info(`[${timestamp}] 🛫 ${config.method?.toUpperCase()} ${config.url}`);
 
     return config;
   },
   (error) => {
-    apiLogger.error("Request setup failed", error);
+    const timestamp = new Date().toLocaleTimeString();
+    apiLogger.error(`[${timestamp}] ❌ Request setup failed`, error);
     return Promise.reject(error);
   },
 );
@@ -54,11 +58,14 @@ api.interceptors.request.use(
 // Response interceptor - Handle errors professionally
 api.interceptors.response.use(
   (response) => {
-    // Success response - log only in development
-    apiLogger.debug(
-      `${response.status} ${response.config.method?.toUpperCase()} ${
-        response.config.url
-      }`,
+    const timestamp = new Date().toLocaleTimeString();
+    const startTime = (response.config as any).metadata?.startTime;
+    const duration = startTime ? performance.now() - startTime : 0;
+
+    // Success response - log with performance info
+    apiLogger.performance(
+      `[${timestamp}] 🛬 ${response.status} ${response.config.method?.toUpperCase()} ${response.config.url}`,
+      duration,
     );
     return response;
   },
@@ -142,8 +149,17 @@ api.interceptors.response.use(
     }
 
     // Error handling with proper logging
+    const timestamp = new Date().toLocaleTimeString();
+    const startTime = (error.config as any)?.metadata?.startTime;
+    const duration = startTime ? performance.now() - startTime : 0;
+
     if (error.response) {
       const { status, config: reqConfig, data } = error.response;
+
+      apiLogger.performance(
+        `[${timestamp}] ❌ ${status} ${reqConfig?.method?.toUpperCase()} ${reqConfig?.url}`,
+        duration,
+      );
 
       // Log based on error severity
       if (status >= 500) {
@@ -171,13 +187,13 @@ api.interceptors.response.use(
       }
     } else if (error.request) {
       // Network errors - critical
-      apiLogger.critical("Network error - no response received", error, {
+      apiLogger.critical(`[${timestamp}] 🚨 Network error - no response received after ${duration.toFixed(2)}ms`, error, {
         url: error.config?.url,
         method: error.config?.method,
       });
     } else {
       // Other errors
-      apiLogger.error("Request error", error);
+      apiLogger.error(`[${timestamp}] ❌ Request error`, error);
     }
 
     return Promise.reject(error);
