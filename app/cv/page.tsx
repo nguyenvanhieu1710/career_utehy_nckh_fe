@@ -4,12 +4,22 @@ import { Footer } from '@/components/layout/Footer';
 import { Header } from '@/components/layout/Header';
 import { useEffect, useState } from 'react';
 import CVCanvas, { ImageState, ShapeElement } from './components/Canvas_v2';
-import { ArrowDownWideNarrow, FilePlus, Loader2, Upload, Layers, Check, X } from 'lucide-react';
+import { ArrowDownWideNarrow, FilePlus, Loader2, Upload, Layers, Check, X, Trash2 } from 'lucide-react';
 import { cvAPI } from '@/services/cv';
 import { cvTemplateAPI } from '@/services/cvTemplate';
 import Loader from '@/components/ui/Loader';
 import { CVProfile } from '@/types/cv';
 import { Section, SectionItem } from './components/ToolBox';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const guideItem = (text: string): SectionItem => ({
@@ -32,6 +42,7 @@ export const DEFAULT_SECTIONS = DEFAULT_SECTIONS_VI; // alias
 
 const INITIAL_IMAGE_STATE: ImageState = {
     x: 50, y: 18, width: 160, height: 160,
+    borderRadius: 999,
     rotation: 0, scale: 1, offsetX: 0, offsetY: 0,
 };
 
@@ -42,6 +53,12 @@ interface TemplateInfo {
     primary_color: string;
     design_data: string;      
     default_sections: string; 
+    default_title?: string;
+    default_subtitle?: string;
+    title_style?: string;
+    subtitle_style?: string;
+    has_avatar?: boolean;
+    avatar_style?: string;
     category?: string;
     
 }
@@ -114,11 +131,15 @@ function TemplatePicker({
                                                 imageState={INITIAL_IMAGE_STATE}
                                                 setImageState={() => {}}
                                                 defaultZoom={0.21}
-                                                cvTitle="Your Name"
-                                                cvSubTitle="Professional Title"
+                                                cvTitle={tpl.default_title || "Your Name"}
+                                                cvSubTitle={tpl.default_subtitle || "Professional Title"}
                                                 primaryColor={tpl.primary_color}
                                                 sections={secs}
                                                 backgroundElements={bgEls}
+                                                titleStyle={tpl.title_style}
+                                                subtitleStyle={tpl.subtitle_style}
+                                                hasAvatar={tpl.has_avatar ?? true}
+                                                avatarStyle={tpl.avatar_style}
                                             />
                                         </div>
 
@@ -166,6 +187,9 @@ function TemplatePicker({
 export default function CVManager() {
     const [searchTerm, setSearchTerm] = useState('');
     const [loading, setLoading] = useState(false);
+    const [deletingCvId, setDeletingCvId] = useState<string | null>(null);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [cvToDelete, setCvToDelete] = useState<CVProfile | null>(null);
     const [cvs, setCvs] = useState<CVProfile[]>([]);
     const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
     const [selectedSort, setSelectedSort] = useState('Ngày cập nhật');
@@ -220,7 +244,13 @@ export default function CVManager() {
                 id: undefined,
                 primary_color: tpl.primary_color,
                 sections: secs,
-                template_id: tpl.id
+                template_id: tpl.id,
+                title: tpl.default_title,
+                subtitle: tpl.default_subtitle,
+                title_style: tpl.title_style,
+                subtitle_style: tpl.subtitle_style,
+                has_avatar: tpl.has_avatar,
+                avatar_style: tpl.avatar_style,
             });
             location.href = `/cv/${res.data.id}`;
         } catch (err) {
@@ -230,10 +260,58 @@ export default function CVManager() {
         }
     };
 
+    const handleDeleteCv = async () => {
+        if (!cvToDelete?.id) return;
+        setDeletingCvId(cvToDelete.id);
+        try {
+            await cvAPI.delete(cvToDelete.id);
+            setCvs(prev => prev.filter(cv => cv.id !== cvToDelete.id));
+            setIsDeleteDialogOpen(false);
+            setCvToDelete(null);
+        } catch (err) {
+            console.error(err);
+            window.alert("Xóa CV thất bại. Vui lòng thử lại.");
+        } finally {
+            setDeletingCvId(null);
+        }
+    };
+
     return (
         <>
             <Header />
             {loading && <Loader />}
+            <AlertDialog
+                open={isDeleteDialogOpen}
+                onOpenChange={(open) => {
+                    setIsDeleteDialogOpen(open);
+                    if (!open) setCvToDelete(null);
+                }}
+            >
+                <AlertDialogContent className="sm:max-w-sm bg-white border border-red-200">
+                    <AlertDialogHeader>
+                        <AlertDialogTitle className="text-red-700">Xóa CV</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Bạn có chắc muốn xóa CV
+                            {cvToDelete?.name ? ` "${cvToDelete.name}"` : ""}?
+                            Hành động này không thể hoàn tác.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel
+                            onClick={() => setCvToDelete(null)}
+                            className="cursor-pointer"
+                        >
+                            Hủy
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={handleDeleteCv}
+                            className="bg-red-600 hover:bg-red-700 cursor-pointer"
+                        >
+                            {deletingCvId ? "Đang xóa..." : "Xóa"}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
             {showTemplatePicker && (
                 <TemplatePicker
                     templates={templates}
@@ -317,7 +395,21 @@ export default function CVManager() {
                                 try { bgEls = cv.design_data && cv.design_data !== "[]" ? JSON.parse(cv.design_data) : []; } catch {}
 
                                 return (
-                                    <div key={cv.id} className="bg-white rounded-xl p-4 cursor-pointer" onClick={() => location.href = `/cv/${cv.id}`}>
+                                    <div key={cv.id} className="group relative bg-white rounded-xl p-4 cursor-pointer" onClick={() => location.href = `/cv/${cv.id}`}>
+                                        <button
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                setCvToDelete(cv);
+                                                setIsDeleteDialogOpen(true);
+                                            }}
+                                            disabled={deletingCvId === cv.id}
+                                            className="absolute top-2 right-2 z-10 w-6 h-6 rounded-[12px] bg-red-600 hover:bg-red-700 disabled:opacity-60 disabled:cursor-not-allowed text-white flex items-center justify-center shadow-sm opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity"
+                                            title="Xóa CV"
+                                        >
+                                            <Trash2 size={12} />
+                                        </button>
                                         <div className="w-full aspect-[3/4] overflow-hidden rounded-lg bg-gray-50">
                                             <CVCanvas
                                                 projectName={cv.name}
@@ -327,9 +419,14 @@ export default function CVManager() {
                                                 setImageState={() => {}}
                                                 defaultZoom={0.21}
                                                 cvTitle={cv.title || ""}
+                                                cvSubTitle={cv.subtitle || ""}
                                                 primaryColor={cv.primary_color || "#0C6A4E"}
                                                 sections={sections}
                                                 backgroundElements={bgEls}
+                                                titleStyle={cv.title_style || undefined}
+                                                subtitleStyle={cv.subtitle_style || undefined}
+                                                hasAvatar={cv.has_avatar ?? true}
+                                                avatarStyle={cv.avatar_style || undefined}
                                             />
                                         </div>
                                         <h3 className="font-bold text-gray-800 text-sm mt-2 mb-1 truncate">{cv.name}</h3>
@@ -394,6 +491,10 @@ export default function CVManager() {
                                                     primaryColor={tpl.primary_color}
                                                     sections={secs}
                                                     backgroundElements={bgEls}
+                                                    titleStyle={tpl.title_style}
+                                                    subtitleStyle={tpl.subtitle_style}
+                                                    hasAvatar={tpl.has_avatar ?? true}
+                                                    avatarStyle={tpl.avatar_style}
                                                 />
                                             </div>
                                             <div className="px-3 py-2">

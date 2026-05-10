@@ -23,6 +23,12 @@ export interface CVTemplate {
     primary_color: string;
     design_data: string;
     default_sections: string;
+    default_title?: string;
+    default_subtitle?: string;
+    title_style?: string;
+    subtitle_style?: string;
+    has_avatar?: boolean;
+    avatar_style?: string;
     created_at: string;
     updated_at: string;
 }
@@ -33,6 +39,12 @@ export interface TemplateCreate {
     design_data: any;
     default_sections: string; // JSON string của mảng sections mặc định
     primary_color: string;
+    default_title?: string;
+    default_subtitle?: string;
+    title_style?: string;
+    subtitle_style?: string;
+    has_avatar?: boolean;
+    avatar_style?: string;
     
 }
 
@@ -58,7 +70,7 @@ export const cvTemplateAPI = {
     // Cập nhật thiết kế (Lưu từ trang Canvas)
     updateTemplateDesign: (id: string, designData: any, thumbnailBase64?: string) =>
         api.put<{ status: string; message: string }>(`/cv-templates/update-design/${id}`, {
-            design_data: designData,
+            ...designData,
             thumbnail: thumbnailBase64, // Gửi ảnh chụp canvas để làm preview
         }),
 

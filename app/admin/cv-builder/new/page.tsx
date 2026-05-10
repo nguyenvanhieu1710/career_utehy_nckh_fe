@@ -7,10 +7,40 @@ import { PropertyEditor } from "../components/PropertyEditor";
 import { cvTemplateAPI } from "@/services/cvTemplate";
 import { toast } from "sonner";
 import { Save, Eye, EyeOff, Loader2, Download, Palette, FileText } from "lucide-react";
-
+import { GroupHeader, Row, NumInput, ColorInput, SelectInput } from "@/components/ui/input-field";
 const DEFAULT_DATA: TemplateData = {
     name: "New Template",
     primaryColor: "#1d7057",
+    defaultTitle: "Họ và Tên",
+    defaultSubTitle: "Vị trí ứng tuyển",
+    titleStyle: {
+        x: 292,
+        y: 68,
+        font_size: 34,
+        font_family: "Arial",
+        font_weight: "bold",
+        color: "#111827",
+    },
+    subTitleStyle: {
+        x: 292,
+        y: 94,
+        font_size: 15,
+        font_family: "Arial",
+        font_weight: "normal",
+        color: "#1d7057ff",
+    },
+    hasAvatar: true,
+    avatarStyle: {
+        x: 50,
+        y: 18,
+        width: 160,
+        height: 160,
+        border_radius: 999,
+        rotation: 0,
+        scale: 1,
+        offsetX: 0,
+        offsetY: 0,
+    },
     backgroundElements: [
         { id: "init-sidebar", type: "rect", x: 0, y: 0, width: 260, height: 1123, fill: "#1d7057", opacity: 1, zIndex: 0 },
     ],
@@ -28,7 +58,15 @@ export default function TemplateEditorPage({ templateId, initialData }: PageProp
     const [previewMode, setPreviewMode] = useState(false);
     const [saving, setSaving] = useState(false);
     const canvasRef = useRef<{ toDataURL: () => string }>(null);
-
+    const [open, setOpen] = useState<{
+        title: boolean;
+        sub: boolean;
+        avatar: boolean;
+    }>({
+        title: true,
+        sub: true,
+        avatar: true
+    });
     // ── Patch data ────────────────────────────────────────────────────────────
     const handleChange = useCallback((patch: Partial<TemplateData>) => {
         setData(prev => ({
@@ -102,6 +140,12 @@ export default function TemplateEditorPage({ templateId, initialData }: PageProp
                 design_data: JSON.stringify(data.backgroundElements),
                 default_sections: JSON.stringify(data.sections),
                 primary_color: data.primaryColor,
+                default_title: data.defaultTitle,
+                default_subtitle: data.defaultSubTitle,
+                title_style: JSON.stringify(data.titleStyle),
+                subtitle_style: JSON.stringify(data.subTitleStyle),
+                has_avatar: data.hasAvatar,
+                avatar_style: JSON.stringify(data.avatarStyle),
             };
 
             if (templateId) {
@@ -214,12 +258,184 @@ export default function TemplateEditorPage({ templateId, initialData }: PageProp
             </main>
 
             {/* ── Right property panel ── */}
-            <aside className="w-64 flex flex-col bg-white border-l border-gray-200 shadow-sm overflow-hidden">
+            <div className="w-64 flex flex-col bg-white border-l border-gray-200 shadow-sm overflow-hidden overflow-y-auto">
+                <div className="text-[12px] border border-gray-200 bg-white">
+
+                    {/* ─── TITLE ───────────────────── */}
+                    <GroupHeader label="Title" open={open.title} onToggle={() => setOpen(prev => ({ ...prev, title: !prev.title }))} />
+                    {open.title && (
+                        <>
+                            <Row label="Text">
+                                <input
+                                    value={data.defaultTitle}
+                                    onChange={(e) => handleChange({ defaultTitle: e.target.value })}
+                                    className="w-full bg-transparent border-0 focus:outline-none h-[22px] px-1"
+                                />
+                            </Row>
+
+                            <Row label="X">
+                                <NumInput value={data.titleStyle.x} onChange={(v: number) =>
+                                    handleChange({ titleStyle: { ...data.titleStyle, x: v } })}
+                                />
+                            </Row>
+
+                            <Row label="Y">
+                                <NumInput value={data.titleStyle.y} onChange={(v: number) =>
+                                    handleChange({ titleStyle: { ...data.titleStyle, y: v } })}
+                                />
+                            </Row>
+
+                            <Row label="Font Size">
+                                <NumInput value={data.titleStyle.font_size} onChange={(v: number) =>
+                                    handleChange({ titleStyle: { ...data.titleStyle, font_size: v } })}
+                                />
+                            </Row>
+
+                            <Row label="Font Weight">
+                                <SelectInput
+                                    value={data.titleStyle.font_weight}
+                                    onChange={(v) => handleChange({
+                                        titleStyle: { ...data.titleStyle, font_weight: v as "normal" | "bold" }
+                                    })}
+                                    options={[
+                                        { label: "Normal", value: "normal" },
+                                        { label: "Bold", value: "bold" }
+                                    ]}
+                                />
+                            </Row>
+
+                            <Row label="Font Family">
+                                <input
+                                    value={data.titleStyle.font_family}
+                                    onChange={(e) => handleChange({
+                                        titleStyle: { ...data.titleStyle, font_family: e.target.value }
+                                    })}
+                                    className="w-full bg-transparent border-0 focus:outline-none h-[22px] px-1"
+                                />
+                            </Row>
+
+                            <Row label="Color">
+                                <ColorInput
+                                    value={data.titleStyle.color}
+                                    onChange={(v: string) =>
+                                        handleChange({ titleStyle: { ...data.titleStyle, color: v } })}
+                                />
+                            </Row>
+                        </>
+                    )}
+
+                    {/* ─── SUBTITLE ───────────────────── */}
+                    <GroupHeader label="SubTitle" open={open.sub} onToggle={() => setOpen(prev => ({ ...prev, sub: !prev.sub }))} />
+                    {open.sub && (
+                        <>
+                            <Row label="Text">
+                                <input
+                                    value={data.defaultSubTitle}
+                                    onChange={(e) => handleChange({ defaultSubTitle: e.target.value })}
+                                    className="w-full bg-transparent border-0 focus:outline-none h-[22px] px-1"
+                                />
+                            </Row>
+
+                            <Row label="X">
+                                <NumInput value={data.subTitleStyle.x} onChange={(v: number) =>
+                                    handleChange({ subTitleStyle: { ...data.subTitleStyle, x: v } })}
+                                />
+                            </Row>
+
+                            <Row label="Y">
+                                <NumInput value={data.subTitleStyle.y} onChange={(v: number) =>
+                                    handleChange({ subTitleStyle: { ...data.subTitleStyle, y: v } })}
+                                />
+                            </Row>
+
+                            <Row label="Font Size">
+                                <NumInput value={data.subTitleStyle.font_size} onChange={(v: number) =>
+                                    handleChange({ subTitleStyle: { ...data.subTitleStyle, font_size: v } })}
+                                />
+                            </Row>
+
+                            <Row label="Font Weight">
+                                <SelectInput
+                                    value={data.subTitleStyle.font_weight}
+                                    onChange={(v) => handleChange({
+                                        subTitleStyle: { ...data.subTitleStyle, font_weight: v as "normal" | "bold" }
+                                    })}
+                                    options={[
+                                        { label: "Normal", value: "normal" },
+                                        { label: "Bold", value: "bold" }
+                                    ]}
+                                />
+                            </Row>
+
+                            <Row label="Font Family">
+                                <input
+                                    value={data.subTitleStyle.font_family}
+                                    onChange={(e) => handleChange({
+                                        subTitleStyle: { ...data.subTitleStyle, font_family: e.target.value }
+                                    })}
+                                    className="w-full bg-transparent border-0 focus:outline-none h-[22px] px-1"
+                                />
+                            </Row>
+
+                            <Row label="Color">
+                                <ColorInput
+                                    value={data.subTitleStyle.color}
+                                    onChange={(v: string) =>
+                                        handleChange({ subTitleStyle: { ...data.subTitleStyle, color: v } })}
+                                />
+                            </Row>
+                        </>
+                    )}
+
+                    {/* ─── AVATAR ───────────────────── */}
+                    <GroupHeader label="Avatar" open={open.avatar} onToggle={() => setOpen(prev => ({ ...prev, avatar: !prev.avatar }))} />
+                    {open.avatar && (
+                        <>
+                            <Row label="Visible">
+                                <input
+                                    type="checkbox"
+                                    checked={data.hasAvatar}
+                                    onChange={(e) => handleChange({ hasAvatar: e.target.checked })}
+                                />
+                            </Row>
+
+                            <Row label="X">
+                                <NumInput value={data.avatarStyle.x} onChange={(v: number) =>
+                                    handleChange({ avatarStyle: { ...data.avatarStyle, x: v } })}
+                                />
+                            </Row>
+
+                            <Row label="Y">
+                                <NumInput value={data.avatarStyle.y} onChange={(v: number) =>
+                                    handleChange({ avatarStyle: { ...data.avatarStyle, y: v } })}
+                                />
+                            </Row>
+
+                            <Row label="Width">
+                                <NumInput value={data.avatarStyle.width} onChange={(v: number) =>
+                                    handleChange({ avatarStyle: { ...data.avatarStyle, width: v } })}
+                                />
+                            </Row>
+
+                            <Row label="Height">
+                                <NumInput value={data.avatarStyle.height} onChange={(v: number) =>
+                                    handleChange({ avatarStyle: { ...data.avatarStyle, height: v } })}
+                                />
+                            </Row>
+
+                            <Row label="Radius">
+                                <NumInput value={data.avatarStyle.border_radius} onChange={(v: number) =>
+                                    handleChange({ avatarStyle: { ...data.avatarStyle, border_radius: v } })}
+                                />
+                            </Row>
+                        </>
+                    )}
+                </div>
                 <div className="px-3 py-2 bg-[#f0f4fa] border-b border-[#c8d0e0] flex items-center gap-2">
                     <FileText size={13} className="text-[#1a3060]" />
                     <span className="text-[11px] font-bold text-[#1a3060] uppercase tracking-wide">Properties</span>
                 </div>
-                <div className="flex-1 overflow-hidden">
+                <div className="flex-1">
                     <PropertyEditor
                         selectedId={selectedId}
                         data={data}
@@ -227,7 +443,7 @@ export default function TemplateEditorPage({ templateId, initialData }: PageProp
                         onDelete={handleDelete}
                     />
                 </div>
-            </aside>
+            </div>
         </div>
     );
 }

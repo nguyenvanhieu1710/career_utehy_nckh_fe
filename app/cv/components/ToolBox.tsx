@@ -47,6 +47,11 @@ interface CVToolBoxProps {
     onImageSelected: (url: string) => void;
     onCVColorChange: (color: string) => void;
     cvColor: string,
+    titleStyle?: string,
+    subtitleStyle?: string,
+    hasAvatar?: boolean,
+    setHasAvatar?: Dispatch<SetStateAction<boolean>>,
+    avatarStyle?: string,
     imageURL?: string,
     onSectionLocationChange: (data: { id: string, field: string, value: number }) => void;
     setCvTitle: Dispatch<SetStateAction<string>>;
@@ -63,6 +68,11 @@ export default function CVToolBox({
     cv_id,
     cvTitle,
     cvColor,
+    titleStyle,
+    subtitleStyle,
+    hasAvatar,
+    setHasAvatar,
+    avatarStyle,
     imageURL,
     onImageSelected,
     onCVColorChange,
@@ -281,6 +291,20 @@ export default function CVToolBox({
             sections: JSON.stringify(cvState.sections),
             title: cvState.cvTitle,
             subtitle: cvState.cvSubTitle,
+            title_style: titleStyle,
+            subtitle_style: subtitleStyle,
+            has_avatar: hasAvatar,
+            avatar_style: JSON.stringify({
+                x: imageState.x,
+                y: imageState.y,
+                width: imageState.width,
+                height: imageState.height,
+                border_radius: imageState.borderRadius,
+                rotation: imageState.rotation,
+                scale: imageState.scale,
+                offsetX: imageState.offsetX,
+                offsetY: imageState.offsetY,
+            }),
             name: cvState.projectName
         }).then(res => {
             toast.success('Saved!')
@@ -505,6 +529,14 @@ export default function CVToolBox({
                 {/* ----- CV TITLE INPUT ----- */}
                 <div className="flex flex-col gap-2">
                     <label className="text-sm font-medium text-gray-700">Ảnh CV</label>
+                    <label className="text-xs flex items-center gap-2 text-gray-600">
+                        <input
+                            type="checkbox"
+                            checked={hasAvatar ?? true}
+                            onChange={(e) => setHasAvatar?.(e.target.checked)}
+                        />
+                        Hiển thị ảnh theo template
+                    </label>
                     <div className="flex gap-1 border border-gray-300 px-3 py-2 rounded-md text-gray-800 placeholder-gray-400 focus:border-[#0C6A4E] focus:ring-2 focus:ring-[#0C6A4E]/20 outline-none transition-all">
                         <ImageUp />
                         <input
@@ -606,6 +638,7 @@ export default function CVToolBox({
                                 <div className="mt-3 flex flex-col gap-2">
                                     <div>
                                         <div className="flex gap-1">
+                                            <div className="flex items-center"><label className="text-[11px]">Name:</label><Input type="text" value={section.title} onChange={(event) => setSections(prev => prev.map(sec => sec.id === section.id ? { ...sec, title: event.target.value } : sec))} /></div>
                                             <div className="flex items-center"><label className="text-[11px]">X:</label><Input type="number" value={section.x.toFixed(2)} onChange={(event) => handleSectionEditLocation(section.id, 'x', Number(event.target.value))} /></div>
                                             <div className="flex items-center"><label className="text-[11px]">Y:</label><Input type="number" value={section.y.toFixed(2)} onChange={(event) => handleSectionEditLocation(section.id, 'y', Number(event.target.value))} /></div>
                                         </div>

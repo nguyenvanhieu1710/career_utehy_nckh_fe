@@ -9,7 +9,6 @@ import { useParams } from "next/navigation";
 import { cvAPI } from "@/services/cv";
 import { CVProfile } from "@/types/cv";
 import { DEFAULT_SECTIONS, DEFAULT_SECTIONS_VI } from "../page";
-import { set } from "date-fns";
 
 export interface TextStyle {
   bold: boolean;
@@ -106,6 +105,7 @@ const INITIAL_IMAGE_STATE: ImageState = {
   y: 20,
   width: 160,
   height: 160,
+  borderRadius: 999,
   rotation: 0,
   scale: 1,
   offsetX: 0,
@@ -115,6 +115,10 @@ export default function CVDesktop() {
   const [cvTitle, setCvTitle] = useState<string>("");
   const [cvColorPrimary, setCVColorPrimary] = useState<string>("#1d7057ff");
   const [cvSubTitle, setSubCvTitle] = useState<string>("");
+  const [titleStyle, setTitleStyle] = useState<string>("{\"x\":292,\"y\":68,\"font_size\":34,\"font_family\":\"Arial\",\"font_weight\":\"bold\",\"color\":\"#111827\"}");
+  const [subtitleStyle, setSubtitleStyle] = useState<string>("{\"x\":292,\"y\":94,\"font_size\":15,\"font_family\":\"Arial\",\"font_weight\":\"normal\",\"color\":\"#1d7057ff\"}");
+  const [hasAvatar, setHasAvatar] = useState<boolean>(true);
+  const [avatarStyle, setAvatarStyle] = useState<string>("{\"x\":50,\"y\":18,\"width\":160,\"height\":160,\"border_radius\":999,\"rotation\":0,\"scale\":1,\"offsetX\":0,\"offsetY\":0}");
   const [projectName, setProjectName] = useState<string>("New project");
   const [patternSideExtend, setPatternSideExtend] = useState(true);
   const imgRef = useRef<HTMLImageElement | null>(null);
@@ -149,6 +153,10 @@ export default function CVDesktop() {
       const cv = res.data?.data?.[0] as CVProfile;
       setCvTitle(cv.title || "");
       setSubCvTitle(cv.subtitle || "");
+      setTitleStyle(cv.title_style || "{\"x\":292,\"y\":68,\"font_size\":34,\"font_family\":\"Arial\",\"font_weight\":\"bold\",\"color\":\"#111827\"}");
+      setSubtitleStyle(cv.subtitle_style || "{\"x\":292,\"y\":94,\"font_size\":15,\"font_family\":\"Arial\",\"font_weight\":\"normal\",\"color\":\"#1d7057ff\"}");
+      setHasAvatar(cv.has_avatar ?? true);
+      setAvatarStyle(cv.avatar_style || "{\"x\":50,\"y\":18,\"width\":160,\"height\":160,\"border_radius\":999,\"rotation\":0,\"scale\":1,\"offsetX\":0,\"offsetY\":0}");
       setCVColorPrimary(cv.primary_color || "#1d7057ff")
       setProjectName(cv.name);
       let secs = [];
@@ -158,11 +166,31 @@ export default function CVDesktop() {
         secs = JSON.parse(cv.sections);
       }
       setBackgroundElements(JSON.parse(cv.design_data || "[]"))
+      try {
+        const parsedAvatarStyle = JSON.parse(cv.avatar_style || "{}");
+        const toNum = (value: unknown, defaultValue: number) => {
+          const n = Number(value);
+          return Number.isFinite(n) ? n : defaultValue;
+        };
+        setImageState(prev => ({
+          ...prev,
+          x: toNum(parsedAvatarStyle.x, prev.x),
+          y: toNum(parsedAvatarStyle.y, prev.y),
+          width: toNum(parsedAvatarStyle.width, prev.width),
+          height: toNum(parsedAvatarStyle.height, prev.height),
+          borderRadius: toNum(parsedAvatarStyle.border_radius ?? parsedAvatarStyle.borderRadius, prev.borderRadius),
+          rotation: toNum(parsedAvatarStyle.rotation, prev.rotation),
+          scale: toNum(parsedAvatarStyle.scale, prev.scale),
+          offsetX: toNum(parsedAvatarStyle.offsetX, prev.offsetX),
+          offsetY: toNum(parsedAvatarStyle.offsetY, prev.offsetY),
+        }));
+      } catch { }
       setSections(secs)
     }).catch(err => {
 
     })
   }, [cv_id])
+
   const handleItemTextChange = ({ sectionIndex, itemPath, newText } : { sectionIndex: number, itemPath: number[], newText: string }) => {
     setSections(prev => {
       const updated = [...prev];
@@ -186,6 +214,11 @@ export default function CVDesktop() {
         cv_id={cv_id as string}
         imageState={imageState}
         cvColor={cvColorPrimary}
+        titleStyle={titleStyle}
+        subtitleStyle={subtitleStyle}
+        hasAvatar={hasAvatar}
+        setHasAvatar={setHasAvatar}
+        avatarStyle={avatarStyle}
         imageURL={imageURL as string}
         cvTitle={cvTitle}
         cvCanvasRef={cvCanvasRef}
@@ -224,6 +257,10 @@ export default function CVDesktop() {
           imageURL={imageURL || ""}
           cvTitle={cvTitle}
           cvSubTitle={cvSubTitle}
+          titleStyle={titleStyle}
+          subtitleStyle={subtitleStyle}
+          hasAvatar={hasAvatar}
+          avatarStyle={avatarStyle}
           sections={sections}
           onSectionDrag={(data) => {
             setSections(prev => prev.map(sec => sec.id === data.id ? { ...sec, x: data.x, y: data.y } : sec))
@@ -265,10 +302,15 @@ export default function CVDesktop() {
                 setImageState={() => { }}
                 defaultZoom={0.21}
                 cvTitle={cv.title || ""}
+                cvSubTitle={cv.subtitle || ""}
                 key={cv.id}
                 primaryColor={cv.primary_color || "#0C6A4E"}
                 sections={sections}
                 onItemTextChange={handleItemTextChange}
+                titleStyle={cv.title_style || undefined}
+                subtitleStyle={cv.subtitle_style || undefined}
+                hasAvatar={cv.has_avatar ?? true}
+                avatarStyle={cv.avatar_style || undefined}
               />
 
               <h3 className="font-medium text-gray-500 text-sm text-ellipsis w-40">

@@ -1,6 +1,6 @@
 "use client";
 
-import { Dispatch, SetStateAction, useEffect, useRef, useState } from "react";
+import { Dispatch, SetStateAction, useEffect, useMemo, useRef, useState } from "react";
 import { ZoomIn, ZoomOut, Maximize, Move } from "lucide-react";
 import { Section } from "../[cv_id]/page";
 import jsPDF from "jspdf";
@@ -53,6 +53,8 @@ interface SectionLayout {
 export interface CVState {
     cvTitle: string;
     cvSubTitle: string;
+    titleStyle?: string;
+    subtitleStyle?: string;
     primaryColor: string;
     imageURL?: string;
     imageState: ImageState;
@@ -66,6 +68,7 @@ export interface ImageState {
     y: number;
     width: number;
     height: number;
+    borderRadius: number;
     rotation: number;
     scale: number;
     offsetX: number;
@@ -87,6 +90,10 @@ interface CVCanvasProps {
     imageURL?: string;
     cvTitle?: string;
     cvSubTitle?: string;
+    titleStyle?: string;
+    subtitleStyle?: string;
+    hasAvatar?: boolean;
+    avatarStyle?: string;
     sections?: Section[];
     onSectionDrag?: (data: { id: string; x: number; y: number }) => void;
     primaryColor?: string;
@@ -111,9 +118,79 @@ interface DragState { sectionIndex: number; offsetX: number; offsetY: number; }
 interface ResizeState { sectionIndex: number; handle: ResizeHandle; startX: number; startY: number; startLayout: SectionLayout; }
 interface ImageResizeState { handle: ResizeHandle; startX: number; startY: number; startState: ImageState; }
 
+interface HeaderTextStyle {
+    x: number;
+    y: number;
+    font_size: number;
+    font_family: string;
+    font_weight: "normal" | "bold";
+    color: string;
+}
+
+const DEFAULT_TITLE_STYLE: HeaderTextStyle = {
+    x: 292,
+    y: 68,
+    font_size: 34,
+    font_family: "Arial",
+    font_weight: "bold",
+    color: "#111827",
+};
+
+const DEFAULT_SUBTITLE_STYLE: HeaderTextStyle = {
+    x: 292,
+    y: 94,
+    font_size: 15,
+    font_family: "Arial",
+    font_weight: "normal",
+    color: "#1d7057ff",
+};
+
+const parseHeaderStyle = (raw: string | undefined, fallback: HeaderTextStyle): HeaderTextStyle => {
+    if (!raw) return fallback;
+    try {
+        const parsed = JSON.parse(raw);
+        return {
+            x: Number(parsed?.x ?? fallback.x),
+            y: Number(parsed?.y ?? fallback.y),
+            font_size: Number(parsed?.font_size ?? fallback.font_size),
+            font_family: parsed?.font_family || fallback.font_family,
+            font_weight: parsed?.font_weight === "bold" ? "bold" : "normal",
+            color: parsed?.color || fallback.color,
+        };
+    } catch {
+        return fallback;
+    }
+};
+
+const parseAvatarStyle = (raw: string | undefined, fallback: ImageState): ImageState => {
+    if (!raw) return fallback;
+    try {
+        const parsed = JSON.parse(raw);
+        const toNum = (value: unknown, defaultValue: number) => {
+            const n = Number(value);
+            return Number.isFinite(n) ? n : defaultValue;
+        };
+        return {
+            ...fallback,
+            x: toNum(parsed?.x, fallback.x),
+            y: toNum(parsed?.y, fallback.y),
+            width: toNum(parsed?.width, fallback.width),
+            height: toNum(parsed?.height, fallback.height),
+            borderRadius: toNum(parsed?.border_radius ?? parsed?.borderRadius, fallback.borderRadius),
+            rotation: toNum(parsed?.rotation, fallback.rotation),
+            scale: toNum(parsed?.scale, fallback.scale),
+            offsetX: toNum(parsed?.offsetX, fallback.offsetX),
+            offsetY: toNum(parsed?.offsetY, fallback.offsetY),
+        };
+    } catch {
+        return fallback;
+    }
+};
+
 // ─── Exports / helpers ────────────────────────────────────────────────────────
 export const INITIAL_IMAGE_STATE: ImageState = {
     x: 50, y: 18, width: 160, height: 160,
+    borderRadius: 999,
     rotation: 0, scale: 1, offsetX: 0, offsetY: 0,
 };
 
@@ -121,9 +198,10 @@ export const getFullCVState = (
     cvTitle: string, cvSubTitle: string, primaryColor: string,
     imageURL: string | undefined, imageState: ImageState,
     sections: Section[], projectName: string,
+    titleStyle?: string, subtitleStyle?: string,
     backgroundElements?: ShapeElement[],
 ): CVState => ({
-    cvTitle, cvSubTitle, primaryColor, imageURL, imageState,
+    cvTitle, cvSubTitle, titleStyle, subtitleStyle, primaryColor, imageURL, imageState,
     sections: sections.map(s => ({ ...s, items: JSON.parse(JSON.stringify(s.items)) })),
     projectName, backgroundElements,
 });
@@ -138,6 +216,18 @@ const roundRect = (ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
     ctx.lineTo(x + r, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - r);
     ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y);
     ctx.closePath();
+};
+
+const drawAvatarPath = (ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, radius: number) => {
+    const maxR = Math.min(w, h) / 2;
+    const r = Math.max(0, Math.min(radius, maxR));
+    if (Math.abs(w - h) < 0.5 && r >= maxR - 0.5) {
+        ctx.beginPath();
+        ctx.arc(x + w / 2, y + h / 2, maxR, 0, Math.PI * 2);
+        ctx.closePath();
+        return;
+    }
+    roundRect(ctx, x, y, w, h, r);
 };
 
 // ─── PDF generation ───────────────────────────────────────────────────────────
@@ -199,12 +289,15 @@ export const generatePDFFromState = (state: CVState): void => {
         ctx.restore();
     }
 
+    const titleStyle = parseHeaderStyle(state.titleStyle, DEFAULT_TITLE_STYLE);
+    const subTitleStyle = parseHeaderStyle(state.subtitleStyle, DEFAULT_SUBTITLE_STYLE);
+
     // Header text
-    ctx.fillStyle = "#111827"; ctx.font = "bold 34px Arial";
+    ctx.fillStyle = titleStyle.color; ctx.font = `${titleStyle.font_weight} ${titleStyle.font_size}px ${titleStyle.font_family}`;
     ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
-    ctx.fillText(state.cvTitle || "Your Name", 292, 68);
-    ctx.fillStyle = state.primaryColor; ctx.font = "15px Arial";
-    ctx.fillText(state.cvSubTitle || "Professional Title", 292, 94);
+    ctx.fillText(state.cvTitle || "Your Name", titleStyle.x, titleStyle.y);
+    ctx.fillStyle = subTitleStyle.color; ctx.font = `${subTitleStyle.font_weight} ${subTitleStyle.font_size}px ${subTitleStyle.font_family}`;
+    ctx.fillText(state.cvSubTitle || "Professional Title", subTitleStyle.x, subTitleStyle.y);
 
     const drawSections = () => {
         state.sections.forEach(sec => {
@@ -250,14 +343,15 @@ export const generatePDFFromState = (state: CVState): void => {
     const doRender = (img?: HTMLImageElement) => {
         if (img) {
             const s = state.imageState;
+            const radius = Math.max(0, Math.min(s.borderRadius ?? (Math.min(s.width, s.height) / 2), Math.min(s.width, s.height) / 2));
             ctx.save();
-            ctx.beginPath(); ctx.arc(s.x + s.width / 2, s.y + s.height / 2, Math.min(s.width, s.height) / 2, 0, Math.PI * 2); ctx.clip();
+            drawAvatarPath(ctx, s.x, s.y, s.width, s.height, radius); ctx.clip();
             ctx.save();
             ctx.translate(s.x + s.width / 2, s.y + s.height / 2);
             ctx.rotate((s.rotation * Math.PI) / 180);
             ctx.drawImage(img, -s.width * s.scale / 2 + s.offsetX, -s.height * s.scale / 2 + s.offsetY, s.width * s.scale, s.height * s.scale);
             ctx.restore(); ctx.restore();
-            ctx.beginPath(); ctx.arc(s.x + s.width / 2, s.y + s.height / 2, Math.min(s.width, s.height) / 2, 0, Math.PI * 2);
+            drawAvatarPath(ctx, s.x, s.y, s.width, s.height, radius);
             ctx.lineWidth = 2; ctx.strokeStyle = "rgba(255,255,255,0.5)"; ctx.stroke();
         }
         drawSections();
@@ -277,6 +371,10 @@ export default function CVCanvas({
     imageURL,
     cvTitle = "",
     cvSubTitle = "",
+    titleStyle,
+    subtitleStyle,
+    hasAvatar = true,
+    avatarStyle,
     sections = [],
     onSectionDrag,
     onSectionResize,
@@ -330,6 +428,21 @@ export default function CVCanvas({
     const SNAP_THRESHOLD = 8;
     const ITEM_LINE_HEIGHT = 20;
     const ITEM_SECTION_OFFSET_Y = 42;
+    const parsedTitleStyle = parseHeaderStyle(titleStyle, DEFAULT_TITLE_STYLE);
+    const parsedSubTitleStyle = parseHeaderStyle(subtitleStyle, DEFAULT_SUBTITLE_STYLE);
+    const lastAppliedAvatarStyleRef = useRef<string | null>(null);
+
+    useEffect(() => {
+        if (!avatarStyle) return;
+        if (lastAppliedAvatarStyleRef.current === avatarStyle) return;
+        setImageState(prev => parseAvatarStyle(avatarStyle, prev));
+        lastAppliedAvatarStyleRef.current = avatarStyle;
+    }, [avatarStyle, setImageState]);
+
+    const iconImageState = useMemo(() => {
+        if (!isIcon) return imageState;
+        return parseAvatarStyle(avatarStyle, imageState);
+    }, [isIcon, avatarStyle, imageState]);
 
     // ── Preload avatar ────────────────────────────────────────────────────────
     useEffect(() => {
@@ -376,7 +489,7 @@ export default function CVCanvas({
         };
         window.addEventListener("keydown", onKey);
         return () => window.removeEventListener("keydown", onKey);
-    }, [isSavable, sections, cvTitle, cvSubTitle, primaryColor, projectName, cv_id]);
+    }, [isSavable, sections, cvTitle, cvSubTitle, primaryColor, projectName, cv_id, titleStyle, subtitleStyle]);
 
     useEffect(() => {
         if (!isIcon) {
@@ -394,7 +507,7 @@ export default function CVCanvas({
         const container = containerRef.current;
         if (container) { canvas.width = container.clientWidth; canvas.height = container.clientHeight; }
         drawCanvas(ctx, canvas.width, canvas.height);
-    }, [primaryColor, zoom, pan, cvTitle, cvSubTitle, sections, hoveredSection,
+    }, [primaryColor, zoom, pan, cvTitle, cvSubTitle, titleStyle, subtitleStyle, sections, hoveredSection,
         sectionLayouts, hoveredHandle, imageState, loadedImage, hoveredImage,
         hoveredImageHandle, editingOverlay, backgroundElements]);
 
@@ -409,7 +522,24 @@ export default function CVCanvas({
     const handleSave = () => {
         cvAPI.update({
             id: cv_id, primary_color: primaryColor,
-            sections: JSON.stringify(sections), title: cvTitle, subtitle: cvSubTitle, name: projectName,
+            sections: JSON.stringify(sections),
+            title: cvTitle,
+            subtitle: cvSubTitle,
+            title_style: titleStyle,
+            subtitle_style: subtitleStyle,
+            has_avatar: hasAvatar,
+            avatar_style: JSON.stringify({
+                x: imageState.x,
+                y: imageState.y,
+                width: imageState.width,
+                height: imageState.height,
+                border_radius: imageState.borderRadius,
+                rotation: imageState.rotation,
+                scale: imageState.scale,
+                offsetX: imageState.offsetX,
+                offsetY: imageState.offsetY,
+            }),
+            name: projectName,
         }).then(() => toast.success("Saved!")).catch(() => {});
     };
 
@@ -554,8 +684,9 @@ export default function CVCanvas({
     // ─── Rounded avatar ───────────────────────────────────────────────────────
     const drawRoundedImage = (ctx: CanvasRenderingContext2D, img: HTMLImageElement | null, state: ImageState, ox: number, oy: number) => {
         const x = ox + state.x, y = oy + state.y;
+        const r = Math.max(0, Math.min(state.borderRadius ?? (Math.min(state.width, state.height) / 2), Math.min(state.width, state.height) / 2));
         ctx.save();
-        ctx.beginPath(); ctx.arc(x + state.width / 2, y + state.height / 2, Math.min(state.width, state.height) / 2, 0, Math.PI * 2); ctx.clip();
+        drawAvatarPath(ctx, x, y, state.width, state.height, r); ctx.clip();
         if (img?.complete) {
             ctx.save();
             ctx.translate(x + state.width / 2, y + state.height / 2);
@@ -564,7 +695,7 @@ export default function CVCanvas({
             ctx.restore();
         } else { ctx.fillStyle = "rgba(255,255,255,0.2)"; ctx.fillRect(x, y, state.width, state.height); }
         ctx.restore();
-        ctx.beginPath(); ctx.arc(x + state.width / 2, y + state.height / 2, Math.min(state.width, state.height) / 2, 0, Math.PI * 2);
+        drawAvatarPath(ctx, x, y, state.width, state.height, r);
         ctx.lineWidth = 2; ctx.strokeStyle = "rgba(255,255,255,0.5)"; ctx.stroke();
     };
 
@@ -612,22 +743,25 @@ export default function CVCanvas({
             .sort((a, b) => b.width - a.width)[0];
         const SIDEBAR_W = sidebarEl?.width ?? 260;
         const RIGHT_PAD = 32;
-        const RIGHT_START = cx + SIDEBAR_W + RIGHT_PAD;
+        const dividerStart = cx + parsedSubTitleStyle.x;
 
         // ── Name + subtitle ────────────────────────────────────────────────
-        ctx.fillStyle = "#111827";
-        ctx.font = "bold 34px Arial";
+        ctx.fillStyle = parsedTitleStyle.color;
+        ctx.font = `${parsedTitleStyle.font_weight} ${parsedTitleStyle.font_size}px ${parsedTitleStyle.font_family}`;
         ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
-        ctx.fillText(cvTitle || "Your Name", RIGHT_START, cy + 68);
-        ctx.fillStyle = primaryColor;
-        ctx.font = "15px Arial";
-        ctx.fillText(cvSubTitle || "Professional Title", RIGHT_START, cy + 94);
+        ctx.fillText(cvTitle || "Your Name", cx + parsedTitleStyle.x, cy + parsedTitleStyle.y);
+        ctx.fillStyle = parsedSubTitleStyle.color;
+        ctx.font = `${parsedSubTitleStyle.font_weight} ${parsedSubTitleStyle.font_size}px ${parsedSubTitleStyle.font_family}`;
+        ctx.fillText(cvSubTitle || "Professional Title", cx + parsedSubTitleStyle.x, cy + parsedSubTitleStyle.y);
         ctx.fillStyle = "rgba(0,0,0,0.09)";
-        ctx.fillRect(RIGHT_START, cy + 108, A4_WIDTH - SIDEBAR_W - RIGHT_PAD * 2, 1);
+        ctx.fillRect(dividerStart, cy + parsedSubTitleStyle.y + 14, A4_WIDTH - SIDEBAR_W - RIGHT_PAD * 2, 1);
 
         // ── Avatar ─────────────────────────────────────────────────────────
-        drawRoundedImage(ctx, loadedImage, imageState, cx, cy);
-        if (!isIcon && (hoveredImage || imageDragState || imageResizeState)) drawImageHandles(ctx, imageState, cx, cy);
+        if (hasAvatar) {
+            const imageToDraw = isIcon ? iconImageState : imageState;
+            drawRoundedImage(ctx, loadedImage, imageToDraw, cx, cy);
+            if (!isIcon && (hoveredImage || imageDragState || imageResizeState)) drawImageHandles(ctx, imageState, cx, cy);
+        }
 
         // ── Sections ───────────────────────────────────────────────────────
         const drawSidebarHeader = (title: string, sx: number, sy: number, width: number) => {
@@ -754,6 +888,7 @@ export default function CVCanvas({
         return null;
     };
     const getImageAtPoint = (x: number, y: number) =>
+        hasAvatar &&
         x >= imageState.x - 5 && x <= imageState.x + imageState.width + 5 &&
         y >= imageState.y - 5 && y <= imageState.y + imageState.height + 5;
 

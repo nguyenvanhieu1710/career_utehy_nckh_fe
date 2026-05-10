@@ -65,6 +65,7 @@ export interface ImageState {
     y: number;
     width: number;
     height: number;
+    borderRadius: number;
     rotation: number;
     scale: number;
     offsetX: number;
@@ -153,6 +154,7 @@ export const INITIAL_IMAGE_STATE: ImageState = {
     y: 18,
     width: 160,
     height: 160,
+    borderRadius: 999,
     rotation: 0,
     scale: 1,
     offsetX: 0,
@@ -261,9 +263,9 @@ export const generatePDFFromState = (state: CVState): void => {
     // ── IMAGE ─────────────────────────────────────────────────────────────────
     const drawRounded = (img: HTMLImageElement) => {
         const s = state.imageState;
+        const radius = Math.max(0, Math.min(s.borderRadius ?? (Math.min(s.width, s.height) / 2), Math.min(s.width, s.height) / 2));
         ctx.save();
-        ctx.beginPath();
-        ctx.arc(s.x + s.width / 2, s.y + s.height / 2, Math.min(s.width, s.height) / 2, 0, Math.PI * 2);
+        drawAvatarPath(s.x, s.y, s.width, s.height, radius);
         ctx.clip();
         if (img.complete) {
             ctx.save();
@@ -276,8 +278,7 @@ export const generatePDFFromState = (state: CVState): void => {
             ctx.fillRect(s.x, s.y, s.width, s.height);
         }
         ctx.restore();
-        ctx.beginPath();
-        ctx.arc(s.x + s.width / 2, s.y + s.height / 2, Math.min(s.width, s.height) / 2, 0, Math.PI * 2);
+        drawAvatarPath(s.x, s.y, s.width, s.height, radius);
         ctx.lineWidth = 2; ctx.strokeStyle = "rgba(255,255,255,0.5)"; ctx.stroke();
     };
 
@@ -611,8 +612,21 @@ export default function CVCanvas({
 
     const drawRoundedImage = (ctx: CanvasRenderingContext2D, img: HTMLImageElement | null, state: ImageState, ox: number, oy: number) => {
         const x = ox + state.x, y = oy + state.y;
+        const radius = Math.max(0, Math.min(state.borderRadius ?? (Math.min(state.width, state.height) / 2), Math.min(state.width, state.height) / 2));
+        const drawAvatarPathCanvas = () => {
+            const maxR = Math.min(state.width, state.height) / 2;
+            const r = Math.max(0, Math.min(radius, maxR));
+            if (Math.abs(state.width - state.height) < 0.5 && r >= maxR - 0.5) {
+                ctx.beginPath();
+                ctx.arc(x + state.width / 2, y + state.height / 2, maxR, 0, Math.PI * 2);
+                ctx.closePath();
+                return;
+            }
+            ctx.beginPath();
+            (ctx as any).roundRect(x, y, state.width, state.height, r);
+        };
         ctx.save();
-        ctx.beginPath(); ctx.arc(x + state.width / 2, y + state.height / 2, Math.min(state.width, state.height) / 2, 0, Math.PI * 2); ctx.clip();
+        drawAvatarPathCanvas(); ctx.clip();
         if (img?.complete) {
             ctx.save();
             ctx.translate(x + state.width / 2, y + state.height / 2);
@@ -621,7 +635,7 @@ export default function CVCanvas({
             ctx.restore();
         } else { ctx.fillStyle = "#E5E7EB"; ctx.fillRect(x, y, state.width, state.height); }
         ctx.restore();
-        ctx.beginPath(); ctx.arc(x + state.width / 2, y + state.height / 2, Math.min(state.width, state.height) / 2, 0, Math.PI * 2);
+        drawAvatarPathCanvas();
         ctx.lineWidth = 1; ctx.strokeStyle = primaryColor; ctx.stroke();
     };
 
@@ -1355,3 +1369,15 @@ export default function CVCanvas({
         </div>
     );
 }
+    const drawAvatarPath = (x: number, y: number, w: number, h: number, radius: number) => {
+        const maxR = Math.min(w, h) / 2;
+        const r = Math.max(0, Math.min(radius, maxR));
+        if (Math.abs(w - h) < 0.5 && r >= maxR - 0.5) {
+            ctx.beginPath();
+            ctx.arc(x + w / 2, y + h / 2, maxR, 0, Math.PI * 2);
+            ctx.closePath();
+            return;
+        }
+        ctx.beginPath();
+        (ctx as any).roundRect(x, y, w, h, r);
+    };

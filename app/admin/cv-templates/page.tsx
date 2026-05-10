@@ -66,17 +66,6 @@ export default function TemplateManagementPage() {
   // };
 
   const columns: Column<CVTemplate>[] = [
-    {
-      label: "Xem trước",
-      render: (tpl) => (
-        <div className="w-16 h-20 bg-gray-100 rounded border overflow-hidden relative group">
-          <img src={tpl.thumbnail} alt={tpl.name} className="w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-            <Layout className="text-white w-5 h-5" />
-          </div>
-        </div>
-      ),
-    },
     { label: "Tên mẫu", field: "name", render: (tpl) => <span className="font-medium text-blue-600">{tpl.name}</span> },
     { label: "Danh mục", field: "category" },
     {

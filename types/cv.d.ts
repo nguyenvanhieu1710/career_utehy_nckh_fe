@@ -28,6 +28,10 @@ export interface CVProfile extends BaseModel {
   name: string;
   title?: string | null;
   subtitle?: string | null;
+  title_style?: string | null;
+  subtitle_style?: string | null;
+  has_avatar?: boolean | null;
+  avatar_style?: string | null;
   primary_color?: string | null;
   sections: string;
   design_data?: string;
