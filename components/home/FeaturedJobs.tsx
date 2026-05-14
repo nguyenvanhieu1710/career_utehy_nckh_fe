@@ -1,8 +1,14 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import SectionTitle from "@/components/common/SectionTitle";
 import JobCard from "@/components/common/JobCard";
 import PaginationArrows from "@/components/common/PaginationArrows";
+import { jobAPI } from "@/services/job";
+import { Loader2 } from "lucide-react";
 
-const featuredJobs = [
+// Mock data as fallback
+const MOCK_FEATURED_JOBS = [
   {
     job_id: "job-001",
     logo: "/logo/kyna-english.png",
@@ -36,7 +42,7 @@ const featuredJobs = [
     logo: "/logo/x-media.png",
     title: "Chuyên viên tuyển dụng",
     company: "Công ty cổ phần X-Media",
-    location: "",
+    location: "Toàn quốc",
   },
   {
     job_id: "job-006",
@@ -48,16 +54,70 @@ const featuredJobs = [
 ];
 
 export default function FeaturedJobs() {
+  const [jobs, setJobs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchFeaturedJobs = async () => {
+      try {
+        // Fetch 6 newest jobs
+        const response = await jobAPI.getJobs({ 
+            page: 1, 
+            row: 6,
+            sortBy: "posted_at",
+            sortOrder: "desc"
+        });
+        
+        if (response?.data && response.data.length > 0) {
+          // Map real data
+          const mappedJobs = response.data.map((j: any) => ({
+            job_id: j.id,
+            title: j.title,
+            company: j.company?.name || "Đang cập nhật",
+            logo: j.company?.logo || "/logo/default-company.png",
+            location: j.location || "Toàn quốc",
+            image_url: j.image_url,
+            url_source: j.url_source,
+          }));
+          setJobs(mappedJobs);
+        } else {
+          setJobs(MOCK_FEATURED_JOBS);
+        }
+      } catch (error) {
+        console.error("Failed to fetch featured jobs, using fallback:", error);
+        setJobs(MOCK_FEATURED_JOBS);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchFeaturedJobs();
+  }, []);
+
   return (
     <section className="py-16 bg-gray-50">
       <div className="w-full px-4">
         <SectionTitle title="VIỆC LÀM NỔI BẬT" />
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
-          {featuredJobs.map((job, index) => (
-            <JobCard key={index} {...job} />
-          ))}
-        </div>
+        {loading ? (
+          <div className="flex justify-center py-20">
+            <Loader2 className="w-10 h-10 text-green-600 animate-spin" />
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            {jobs.map((job: any, index: number) => (
+              <JobCard
+                key={job.job_id || index}
+                job_id={job.job_id}
+                title={job.title}
+                company={job.company}
+                logo={job.image_url || job.logo || "/logo/default-company.png"}
+                location={job.location}
+                url_source={job.url_source}
+                index={index}
+              />
+            ))}
+          </div>
+        )}
 
         <div className="flex justify-center mt-12">
           <PaginationArrows />

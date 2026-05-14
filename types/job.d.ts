@@ -41,6 +41,7 @@ export interface Job {
   work_arrangement: "remote" | "hybrid" | "onsite";
   posted_date: string;
   posted_at?: string;
+  expired_at?: string;
   description: string;
   requirements: string | string[];
   skills: string[];
@@ -51,6 +52,7 @@ export interface Job {
   status?: JobStatusType;
   application_url?: string;
   url_source?: string;
+  image_url?: string;
   job_level?: string;
   years_of_experience?: number;
 }

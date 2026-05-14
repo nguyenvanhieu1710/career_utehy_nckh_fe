@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { Filter, Heart } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import { Job, JobFilters, JobGetSchema } from "@/types/job";
 import { jobAPI } from "@/services/job";
 import { JobSearch } from "@/components/jobs/JobSearch";
@@ -12,6 +13,15 @@ import { SavedJobsPanel } from "@/components/jobs/SavedJobsPanel";
 import { NotificationDialog } from "@/components/common/NotificationDialog";
 
 export default function JobsPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <JobsContent />
+    </Suspense>
+  );
+}
+
+function JobsContent() {
+  const searchParams = useSearchParams();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -29,6 +39,7 @@ export default function JobsPage() {
   const [total, setTotal] = useState(0);
   const [globalTotal, setGlobalTotal] = useState(0);
   const [favoriteJobIds, setFavoriteJobIds] = useState<string[]>([]);
+  const [savedJobsData, setSavedJobsData] = useState<Job[]>([]);
 
   // Modal states
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
@@ -67,7 +78,6 @@ export default function JobsPage() {
         salary_max: newFilters.salary_range?.max,
         work_arrangement: newFilters.work_arrangements?.[0] as any,
         remote_allowed: newFilters.work_arrangements?.includes("remote"),
-        status: "approved",
         page: newPage,
         row: 10,
       };
@@ -93,9 +103,70 @@ export default function JobsPage() {
     }
   };
 
+  // Effect to load full data for favorited jobs
+  useEffect(() => {
+    const fetchSavedJobsData = async () => {
+      if (favoriteJobIds.length === 0) {
+        setSavedJobsData([]);
+        return;
+      }
+
+      // Find jobs we already have in the current list
+      const alreadyLoadedJobs = jobs.filter((j) =>
+        favoriteJobIds.includes(j.id),
+      );
+
+      // For IDs that aren't in 'jobs', we need to fetch them
+      const missingIds = favoriteJobIds.filter(
+        (id) => !alreadyLoadedJobs.find((j) => j.id === id),
+      );
+
+      if (missingIds.length === 0) {
+        setSavedJobsData(alreadyLoadedJobs);
+        return;
+      }
+
+      try {
+        // Fetch missing jobs individually or via a bulk API if available
+        // For now, let's fetch them individually
+        const missingJobsPromises = missingIds.map((id) =>
+          jobAPI.getJobById(id),
+        );
+        const responses = await Promise.all(missingJobsPromises);
+        const missingJobs = responses
+          .filter((r) => r.status === "success")
+          .map((r) => r.data);
+
+        setSavedJobsData([...alreadyLoadedJobs, ...missingJobs]);
+      } catch (error) {
+        console.error("Failed to fetch saved jobs data:", error);
+        setSavedJobsData(alreadyLoadedJobs);
+      }
+    };
+
+    fetchSavedJobsData();
+  }, [favoriteJobIds, jobs]);
+
   // Initial load
   useEffect(() => {
-    loadJobs(filters, 1);
+    const query = searchParams.get("query") || "";
+    const location = searchParams.get("location") || "";
+    const industry = searchParams.get("industry") || "";
+    const jobType = searchParams.get("jobType") || "";
+    const salary = searchParams.get("salary") || "";
+    const level = searchParams.get("level") || "";
+    const experience = searchParams.get("experience") || "";
+
+    const initialFilters: JobFilters = {
+      ...filters,
+      search: query || undefined,
+      location: location || undefined,
+      job_types: jobType ? [jobType] : [],
+    };
+
+    if (query) setSearchQuery(query);
+    setFilters(initialFilters);
+    loadJobs(initialFilters, 1);
 
     // Load favorite job IDs from localStorage
     const savedFavorites = localStorage.getItem("favorite_job_ids");
@@ -106,7 +177,7 @@ export default function JobsPage() {
         console.error("Failed to parse favorite job IDs:", error);
       }
     }
-  }, []); // Empty dependency array ensures this only runs once on mount
+  }, [searchParams]); // Re-run if search params change
 
   // Handle search
   const handleSearch = (query: string) => {
@@ -164,7 +235,9 @@ export default function JobsPage() {
   };
 
   const handleJobApply = (jobId: string) => {
-    const job = jobs.find((j) => j.id === jobId);
+    const job =
+      jobs.find((j) => j.id === jobId) ||
+      savedJobsData.find((j) => j.id === jobId);
     if (job) {
       const applyUrl = job.url_source || job.application_url;
       if (applyUrl) {
@@ -181,7 +254,9 @@ export default function JobsPage() {
   };
 
   const handleJobView = (jobId: string) => {
-    const job = jobs.find((j) => j.id === jobId);
+    const job =
+      jobs.find((j) => j.id === jobId) ||
+      savedJobsData.find((j) => j.id === jobId);
     if (job) {
       setSelectedJob(job);
       setShowJobDetail(true);
@@ -205,19 +280,8 @@ export default function JobsPage() {
     }
   };
 
-  // Get saved jobs for the panel
-  const savedJobs = jobs.filter((job) => favoriteJobIds.includes(job.id));
-
   const handleRemoveSavedJob = (jobId: string) => {
-    const nextFavoriteIds = favoriteJobIds.filter((id) => id !== jobId);
-    setFavoriteJobIds(nextFavoriteIds);
-    localStorage.setItem("favorite_job_ids", JSON.stringify(nextFavoriteIds));
-    setMsgDialog({
-      isOpen: true,
-      title: "Thông báo",
-      message: "Công việc đã được xóa khỏi danh sách yêu thích.",
-      type: "info",
-    });
+    handleJobFavorite(jobId, false);
   };
 
   return (
@@ -339,7 +403,7 @@ export default function JobsPage() {
       />
 
       <SavedJobsPanel
-        savedJobs={savedJobs}
+        savedJobs={savedJobsData}
         isOpen={showSavedJobs}
         onClose={() => setShowSavedJobs(false)}
         onRemoveJob={handleRemoveSavedJob}

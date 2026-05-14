@@ -30,23 +30,26 @@ export const JobCard = ({
   isFavorited = false,
   className = "",
 }: JobCardProps) => {
-  const formatJobType = (jobType: string) => {
+  const formatJobType = (jobType?: string) => {
+    if (!jobType) return "---";
     const typeMap: Record<string, string> = {
       "full-time": "Toàn thời gian",
       "part-time": "Bán thời gian",
       contract: "Hợp đồng",
       internship: "Thực tập",
+      intern: "Thực tập",
     };
-    return typeMap[jobType] || jobType;
+    return typeMap[jobType.toLowerCase()] || jobType;
   };
 
-  const formatWorkArrangement = (arrangement: string) => {
+  const formatWorkArrangement = (arrangement?: string) => {
+    if (!arrangement) return "---";
     const arrangementMap: Record<string, string> = {
       remote: "Làm việc từ xa",
       hybrid: "Hybrid",
       onsite: "Tại văn phòng",
     };
-    return arrangementMap[arrangement] || arrangement;
+    return arrangementMap[arrangement.toLowerCase()] || arrangement;
   };
 
   const formatPostedDate = (dateString?: string) => {
@@ -144,8 +147,8 @@ export const JobCard = ({
                 {/* Job Location*/}
                 <div className="flex items-center gap-1 text-sm text-gray-500 mb-1.5 max-w-[90%]">
                   <MapPin className="h-4 w-4 flex-shrink-0 text-gray-400" />
-                  <span className="line-clamp-1 flex-1" title={job.location}>
-                    {job.location}
+                  <span className="line-clamp-1 flex-1" title={job.location || "---"}>
+                    {job.location || "---"}
                   </span>
                 </div>
 
@@ -193,7 +196,7 @@ export const JobCard = ({
                 {/* Salary */}
                 <div className="mb-3">
                   <div className="text-lg font-bold text-green-600 mb-1 whitespace-nowrap">
-                    {job.salary_display || job.salary}
+                    {job.salary_display || job.salary || "---"}
                   </div>
                 </div>
 

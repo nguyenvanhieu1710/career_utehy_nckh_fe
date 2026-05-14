@@ -13,6 +13,7 @@ interface JobCardProps {
   location: string;
   job_id: string;
   index?: number;
+  url_source?: string;
 }
 
 export default function JobCard({
@@ -22,14 +23,66 @@ export default function JobCard({
   location,
   job_id,
   index = 0,
+  url_source,
 }: JobCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [isHeartFilled, setIsHeartFilled] = useState(false);
 
+  // Sync with localStorage on mount
+  useState(() => {
+    if (typeof window !== "undefined") {
+      const savedFavorites = localStorage.getItem("favorite_job_ids");
+      if (savedFavorites) {
+        try {
+          const favoriteIds = JSON.parse(savedFavorites);
+          if (Array.isArray(favoriteIds)) {
+            setIsHeartFilled(favoriteIds.includes(String(job_id)));
+          }
+        } catch (e) {
+          console.error("Error parsing favorites", e);
+        }
+      }
+    }
+  });
+
   const handleHeartClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setIsHeartFilled(!isHeartFilled);
+    
+    const savedFavorites = localStorage.getItem("favorite_job_ids");
+    let favoriteIds: string[] = [];
+    if (savedFavorites) {
+      try {
+        favoriteIds = JSON.parse(savedFavorites);
+      } catch (e) {
+        favoriteIds = [];
+      }
+    }
+
+    const jobIdStr = String(job_id);
+    let nextFavorites: string[];
+
+    if (favoriteIds.includes(jobIdStr)) {
+      nextFavorites = favoriteIds.filter((id) => id !== jobIdStr);
+      setIsHeartFilled(false);
+    } else {
+      nextFavorites = [...favoriteIds, jobIdStr];
+      setIsHeartFilled(true);
+    }
+
+    localStorage.setItem("favorite_job_ids", JSON.stringify(nextFavorites));
+  };
+
+  const handleLinkClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (url_source) {
+      let finalUrl = url_source;
+      if (!finalUrl.startsWith("http")) {
+        finalUrl = "https://" + finalUrl;
+      }
+      window.open(finalUrl, "_blank", "noopener,noreferrer");
+    }
   };
   return (
     <motion.div
@@ -149,6 +202,7 @@ export default function JobCard({
                 }`}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
+                onClick={handleLinkClick}
               >
                 Link
                 <motion.div

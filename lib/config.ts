@@ -3,7 +3,7 @@ export const config = {
   api: {
     baseUrl:
       process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1",
-    timeout: 30000, // 30 seconds
+    timeout: 120000, // 120 seconds
   },
 
   // Static Files & Uploads Configuration
@@ -24,7 +24,7 @@ export const config = {
   recommendation: {
     baseUrl:
       process.env.NEXT_PUBLIC_RECOMMENDATION_API_BASE_URL || "http://127.0.0.1:8000",
-    timeout: 30000, // 30 seconds
+    timeout: 120000, // 120 seconds
   },
 
   // File Upload Configuration

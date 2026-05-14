@@ -49,6 +49,7 @@ export interface CVSection {
 
 export interface TemplateData {
     name: string;
+    category: string;
     primaryColor: string;
     backgroundElements: BgElement[];
     sections: CVSection[];
