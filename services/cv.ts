@@ -23,5 +23,5 @@ export const cvAPI = {
     },
     getRecommendations: (id: string, top_k: number = 10) => api.get(`/cv/recommendations/${id}`, { params: { top_k } }),
     getRecommendationsFromFile: (id: string, top_k: number = 10) => api.get(`/cv/recommendations/file/${id}`, { params: { top_k } }),
-    getAutoRecommendations: (top_k: number = 10) => api.get(`/cv/recommendations-auto`, { params: { top_k } }),
+    getAutoRecommendations: (top_k: number = 10, source?: string) => api.get(`/cv/recommendations-auto`, { params: { top_k, source } }),
 };

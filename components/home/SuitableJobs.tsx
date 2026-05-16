@@ -295,6 +295,10 @@ export default function SuitableJobs() {
   const [error, setError] = useState<string | null>(null);
   const [noCv, setNoCv] = useState(false);
   const [visibleCount, setVisibleCount] = useState(2);
+  const [selectedSource, setSelectedSource] = useState<
+    "profile" | "file" | "auto"
+  >("profile");
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [recommendationSource, setRecommendationSource] = useState<
     "profile" | "file" | "none"
   >("none");
@@ -325,7 +329,14 @@ export default function SuitableJobs() {
     setNoCv(false);
 
     try {
-      const res = await cvAPI.getAutoRecommendations(10);
+      const res = await cvAPI.getAutoRecommendations(
+        10,
+        forceRefresh
+          ? selectedSource === "auto"
+            ? undefined
+            : selectedSource
+          : undefined,
+      );
       // console.log("Recommend API Response:", res.data); // Added log for debugging
 
       if (res.data?.success) {
@@ -335,7 +346,8 @@ export default function SuitableJobs() {
         if (matches && matches.length > 0) {
           const mappedJobs = matches.map((rec: any) => ({
             id: rec.job_id,
-            logo: rec.logo_url || rec.logo || rec.image_url || "/default-job.png",
+            logo:
+              rec.logo_url || rec.logo || rec.image_url || "/default-job.png",
             title: rec.job_title,
             company: rec.company,
             location: rec.location || rec.location_city,
@@ -370,7 +382,11 @@ export default function SuitableJobs() {
           if (fallbackRes?.data) {
             const fallbackJobs = fallbackRes.data.map((j: any) => ({
               id: j.id,
-              logo: j.company?.logo_url || j.company?.logo || j.image_url || "/default-job.png",
+              logo:
+                j.company?.logo_url ||
+                j.company?.logo ||
+                j.image_url ||
+                "/default-job.png",
               title: j.title,
               company: j.company?.name || "Đang cập nhật",
               location: j.location,
@@ -403,8 +419,8 @@ export default function SuitableJobs() {
   };
 
   useEffect(() => {
-    fetchRecommendations();
-  }, [isAuthenticated]);
+    fetchRecommendations(true);
+  }, [isAuthenticated, selectedSource]);
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -453,22 +469,86 @@ export default function SuitableJobs() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
         <SectionTitle title="CÔNG VIỆC PHÙ HỢP VỚI BẠN" />
 
-        {recommendationSource !== "none" && (
+        <div className="relative">
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="flex items-center gap-2 px-4 py-2 bg-[#0C6A4E]/10 border border-[#0C6A4E]/20 rounded-full"
+            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+            className="flex items-center gap-2 px-4 py-2 bg-[#0C6A4E]/10 border border-[#0C6A4E]/20 rounded-full cursor-pointer hover:bg-[#0C6A4E]/20 transition-all duration-300"
           >
             <div className="flex h-2 w-2 relative">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#0C6A4E] opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-[#0C6A4E]"></span>
             </div>
-            <span className="text-xs font-bold text-[#0C6A4E] uppercase tracking-wider">
+            <span className="text-xs font-bold text-[#0C6A4E] uppercase tracking-wider flex items-center gap-1">
               AI Gợi ý từ:{" "}
-              {recommendationSource === "profile" ? "CV Online" : "CV Upload"}
+              <span className="underline decoration-dotted underline-offset-4">
+                {selectedSource === "profile"
+                  ? "CV Online"
+                  : selectedSource === "file"
+                    ? "CV PDF"
+                    : "Tự động"}
+              </span>
+              <ChevronDown
+                className={clsx(
+                  "w-3 h-3 transition-transform duration-300",
+                  isDropdownOpen && "rotate-180",
+                )}
+              />
             </span>
           </motion.div>
-        )}
+
+          {isDropdownOpen && (
+            <>
+              <div
+                className="fixed inset-0 z-40"
+                onClick={() => setIsDropdownOpen(false)}
+              />
+              <motion.div
+                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                className="absolute right-0 mt-2 w-48 bg-white border border-gray-100 rounded-2xl shadow-xl z-50 overflow-hidden"
+              >
+                <div className="p-1">
+                  {[
+                    {
+                      id: "profile",
+                      label: "CV Online",
+                      icon: <Eye className="w-4 h-4" />,
+                    },
+                    {
+                      id: "file",
+                      label: "CV PDF",
+                      icon: <FileText className="w-4 h-4" />,
+                    },
+                    {
+                      id: "auto",
+                      label: "Tự động",
+                      icon: <AlertCircle className="w-4 h-4" />,
+                    },
+                  ].map((option) => (
+                    <button
+                      key={option.id}
+                      onClick={() => {
+                        setSelectedSource(option.id as any);
+                        setIsDropdownOpen(false);
+                      }}
+                      className={clsx(
+                        "w-full flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors duration-200",
+                        selectedSource === option.id
+                          ? "bg-[#0C6A4E] text-white"
+                          : "text-gray-600 hover:bg-gray-50",
+                      )}
+                    >
+                      {option.icon}
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
+            </>
+          )}
+        </div>
       </div>
 
       {noCv && (
