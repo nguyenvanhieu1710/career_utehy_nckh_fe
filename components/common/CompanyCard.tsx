@@ -4,12 +4,14 @@ import Image from "next/image";
 import { Link } from "lucide-react";
 import { motion } from "framer-motion";
 import { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 
 interface CompanyCardProps {
   logo: string;
   name: string;
   jobsCount: number;
   index?: number;
+  website?: string;
 }
 
 export default function CompanyCard({
@@ -17,7 +19,9 @@ export default function CompanyCard({
   name,
   jobsCount,
   index = 0,
+  website,
 }: CompanyCardProps) {
+  const router = useRouter();
   const [isHovered, setIsHovered] = useState(false);
 
   // Pre-generate random values to avoid Math.random() in render
@@ -128,6 +132,7 @@ export default function CompanyCard({
 
         {/* Link button with enhanced hover effects */}
         <motion.button
+          onClick={() => website ? window.open(website, "_blank") : null}
           className={`flex items-center justify-center gap-2 w-36 px-4 py-2 rounded-lg cursor-pointer transition-all duration-300 ${
             isHovered
               ? "bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg"

@@ -29,7 +29,12 @@ export interface Job {
     id: string;
     name: string;
     logo?: string;
+    logo_url?: string;
     location?: string;
+    website?: string;
+    industry?: string;
+    size?: string;
+    address?: string;
   };
   location: string;
   other_locations?: string[];
@@ -38,7 +43,7 @@ export interface Job {
   salary_min?: number;
   salary_max?: number;
   job_type: JobType;
-  work_arrangement: "remote" | "hybrid" | "onsite";
+  work_arrangement: string;
   posted_date: string;
   posted_at?: string;
   expired_at?: string;

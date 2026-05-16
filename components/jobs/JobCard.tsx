@@ -8,6 +8,7 @@ import {
   Star,
   Heart,
   ExternalLink,
+  Users,
 } from "lucide-react";
 import { Job } from "@/types/job";
 
@@ -92,23 +93,17 @@ export const JobCard = ({
       <div className="p-6">
         <div className="flex items-start gap-4">
           {/* Company Logo */}
-          <div className="w-16 h-16 bg-gradient-to-br from-green-50 to-green-100 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:from-green-100 group-hover:to-green-200 transition-colors">
-            {job.company.logo ? (
-              <img
-                src={job.company.logo}
-                alt={`${job.company.name} logo`}
-                className="w-12 h-12 object-contain rounded"
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.style.display = "none";
-                  target.nextElementSibling?.classList.remove("hidden");
-                }}
-              />
-            ) : null}
-            <Briefcase
-              className={`h-8 w-8 text-green-600 ${
-                job.company.logo ? "hidden" : ""
-              }`}
+          <div className="w-16 h-16 bg-gradient-to-br from-green-50 to-green-100 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:from-green-100 group-hover:to-green-200 transition-colors p-1">
+            <img
+              src={job.company.logo_url || job.company.logo || job.image_url || "/default-job.png"}
+              alt={`${job.company.name || "Job"} logo`}
+              className="w-full h-full object-contain rounded"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                if (!target.src.includes("default-job.png")) {
+                  target.src = "/default-job.png";
+                }
+              }}
             />
           </div>
 
@@ -153,7 +148,7 @@ export const JobCard = ({
                 </div>
 
                 {/* Other Job Details */}
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-600 mb-3">
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-600 mb-3">
                   <div className="flex items-center gap-1">
                     <Clock className="h-4 w-4 flex-shrink-0 text-gray-400" />
                     <span className="whitespace-nowrap">
@@ -161,12 +156,23 @@ export const JobCard = ({
                     </span>
                   </div>
                   <div className="flex items-center gap-1">
+                    <Users className="h-4 w-4 flex-shrink-0 text-gray-400" />
+                    <span className="whitespace-nowrap">
+                      {job.job_level || "---"}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1">
                     <Briefcase className="h-4 w-4 flex-shrink-0 text-gray-400" />
                     <span className="whitespace-nowrap">
+                      {job.years_of_experience !== undefined ? (job.years_of_experience === 0 ? "Không yêu cầu KN" : `${job.years_of_experience} năm KN`) : "Kinh nghiệm: ---"}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="whitespace-nowrap bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-xs">
                       {formatJobType(job.job_type)}
                     </span>
                   </div>
-                  {job.work_arrangement && (
+                  {job.work_arrangement && job.work_arrangement.toLowerCase() !== job.job_type?.toLowerCase() && (
                     <div className="bg-blue-50 text-blue-700 text-xs font-medium px-2 py-1 rounded-full">
                       {formatWorkArrangement(job.work_arrangement)}
                     </div>

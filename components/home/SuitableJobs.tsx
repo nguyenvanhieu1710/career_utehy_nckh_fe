@@ -184,9 +184,15 @@ const JobItem = ({
               className="w-16 h-16 sm:w-25 sm:h-25 shrink-0 rounded-xl bg-white shadow-md flex items-center justify-center p-2 border border-gray-100"
             >
               <img
-                src={logo}
+                src={logo || "/default-job.png"}
                 alt={company}
                 className="max-w-full max-h-full object-contain"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  if (!target.src.includes("default-job.png")) {
+                    target.src = "/default-job.png";
+                  }
+                }}
               />
             </motion.div>
 
@@ -329,7 +335,7 @@ export default function SuitableJobs() {
         if (matches && matches.length > 0) {
           const mappedJobs = matches.map((rec: any) => ({
             id: rec.job_id,
-            logo: "/logo/default-company.png",
+            logo: rec.logo_url || rec.logo || rec.image_url || "/default-job.png",
             title: rec.job_title,
             company: rec.company,
             location: rec.location || rec.location_city,
@@ -364,7 +370,7 @@ export default function SuitableJobs() {
           if (fallbackRes?.data) {
             const fallbackJobs = fallbackRes.data.map((j: any) => ({
               id: j.id,
-              logo: "/logo/default-company.png",
+              logo: j.company?.logo_url || j.company?.logo || j.image_url || "/default-job.png",
               title: j.title,
               company: j.company?.name || "Đang cập nhật",
               location: j.location,

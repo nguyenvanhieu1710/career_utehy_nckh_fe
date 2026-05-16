@@ -1,10 +1,9 @@
 // components/common/JobCard.tsx
 "use client";
-import Image from "next/image";
 import { Heart, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface JobCardProps {
   logo: string;
@@ -27,6 +26,11 @@ export default function JobCard({
 }: JobCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [isHeartFilled, setIsHeartFilled] = useState(false);
+  const [imgSrc, setImgSrc] = useState(logo || "/default-job.png");
+
+  useEffect(() => {
+    setImgSrc(logo || "/default-job.png");
+  }, [logo]);
 
   // Sync with localStorage on mount
   useState(() => {
@@ -136,12 +140,15 @@ export default function JobCard({
                 }}
                 transition={{ duration: 0.3 }}
               />
-              <Image
-                src={logo}
-                alt={company}
-                fill
-                className="object-contain rounded-lg relative z-10"
-                sizes="(max-width: 768px) 25vw, 100px"
+              <img
+                src={imgSrc}
+                alt={company || "Job"}
+                className="w-full h-full object-contain rounded-lg relative z-10"
+                onError={() => {
+                  if (imgSrc !== "/default-job.png") {
+                    setImgSrc("/default-job.png");
+                  }
+                }}
               />
             </motion.div>
           </div>

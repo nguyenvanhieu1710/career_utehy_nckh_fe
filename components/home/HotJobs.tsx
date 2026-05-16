@@ -61,20 +61,24 @@ export default function HotJobs() {
     const fetchHotJobs = async () => {
       try {
         // Fetch top 6 highest salary jobs
-        const response = await jobAPI.getJobs({ 
-            page: 1, 
-            row: 6, 
-            sortBy: "salary", 
-            sortOrder: "desc" 
+        const response = await jobAPI.getJobs({
+          page: 1,
+          row: 6,
+          sortBy: "salary",
+          sortOrder: "desc",
         });
-        
+
         if (response?.data && response.data.length > 0) {
           // Map real data
           const mappedJobs = response.data.map((j: any) => ({
             job_id: j.id,
             title: j.title,
             company: j.company?.name || "Đang cập nhật",
-            logo: j.company?.logo || "/logo/default-company.png",
+            logo:
+              j.company?.logo_url ||
+              j.company?.logo ||
+              j.image_url ||
+              "/default-job.png",
             location: j.location || "Toàn quốc",
             image_url: j.image_url,
             url_source: j.url_source,
@@ -110,7 +114,7 @@ export default function HotJobs() {
                 job_id={job.job_id}
                 title={job.title}
                 company={job.company}
-                logo={job.image_url || job.logo || "/logo/default-company.png"}
+                logo={job.image_url || job.logo || "/default-job.png"}
                 location={job.location}
                 url_source={job.url_source}
                 index={index}
