@@ -338,7 +338,7 @@ export const generatePDFFromState = (state: CVState): void => {
         ctx.font = 'bold 11px Arial';
         ctx.fillText(section.title.toUpperCase(), sx + 18, sy + 15);
         let iy = sy + 34;
-        section.items.forEach((item) => {
+        section.items?.forEach((item) => {
           ctx.fillStyle = 'rgba(255,255,255,0.55)';
           ctx.fillRect(sx + 10, iy - 4, 7, 1.5);
           ctx.fillStyle = 'rgba(255,255,255,0.93)';
@@ -372,7 +372,7 @@ export const generatePDFFromState = (state: CVState): void => {
         ctx.fillStyle = state.primaryColor;
         ctx.fillRect(sx, sy + 22, 32, 2);
         let iy = sy + 42;
-        section.items.forEach((item) => {
+        section.items?.forEach((item) => {
           iy = drawItem(item, sx + 10, iy, sw - 20, 0);
         });
       }
@@ -980,7 +980,7 @@ export default function CVCanvas({
         drawSidebarSectionHeader(section.title, sx, sy, layout.width);
 
         let itemY = sy + 34;
-        section.items.forEach((item, itemIdx) => {
+        section.items?.forEach((item, itemIdx) => {
           const isEditingThis =
             editingOverlay !== null &&
             editingOverlay.sectionIndex === index &&
@@ -1030,7 +1030,7 @@ export default function CVCanvas({
         drawRightSectionHeader(section.title, sx, sy, layout.width);
 
         let itemY = sy + 42;
-        section.items.forEach((item, itemIdx) => {
+        section.items?.forEach((item, itemIdx) => {
           const isEditingThis =
             editingOverlay !== null &&
             editingOverlay.sectionIndex === index &&
