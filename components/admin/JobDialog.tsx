@@ -1,34 +1,28 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import Button from "@/components/ui/Button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { useState, useEffect } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import Button from '@/components/ui/Button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/Select";
-import { Job, JobType, JobStatusType } from "@/types/job";
-import { companyAPI } from "@/services/company";
+} from '@/components/ui/Select';
+import { Job, JobType, JobStatusType } from '@/types/job';
+import { companyAPI } from '@/services/company';
 import {
   JOB_TYPE_OPTIONS,
   JOB_STATUS_OPTIONS,
   WORK_ARRANGEMENT_OPTIONS,
   VIETNAM_CITIES,
-} from "@/constants/job";
-import { logger } from "@/lib/logger";
-import { cn } from "@/lib/utils";
+} from '@/constants/job';
+import { logger } from '@/lib/logger';
+import { cn } from '@/lib/utils';
 
 interface Company {
   id: string;
@@ -39,7 +33,7 @@ interface JobDialogData {
   title: string;
   company_id: string;
   location?: string;
-  work_arrangement?: "remote" | "hybrid" | "onsite";
+  work_arrangement?: 'remote' | 'hybrid' | 'onsite';
   job_type: JobType;
   salary_display?: string;
   salary_min?: number;
@@ -57,26 +51,19 @@ interface JobDialogProps {
   onSuccess: (data: JobDialogData) => void;
 }
 
-export const JobDialog = ({
-  open,
-  onOpenChange,
-  job,
-  onSuccess,
-}: JobDialogProps) => {
-  const [title, setTitle] = useState("");
-  const [companyId, setCompanyId] = useState("");
-  const [location, setLocation] = useState("");
-  const [workArrangement, setWorkArrangement] = useState<
-    "remote" | "hybrid" | "onsite" | ""
-  >("");
-  const [jobType, setJobType] = useState<JobType>("full-time");
-  const [salaryDisplay, setSalaryDisplay] = useState("");
+export const JobDialog = ({ open, onOpenChange, job, onSuccess }: JobDialogProps) => {
+  const [title, setTitle] = useState('');
+  const [companyId, setCompanyId] = useState('');
+  const [location, setLocation] = useState('');
+  const [workArrangement, setWorkArrangement] = useState<'remote' | 'hybrid' | 'onsite' | ''>('');
+  const [jobType, setJobType] = useState<JobType>('full-time');
+  const [salaryDisplay, setSalaryDisplay] = useState('');
   const [salaryMin, setSalaryMin] = useState<number | undefined>();
   const [salaryMax, setSalaryMax] = useState<number | undefined>();
-  const [requirements, setRequirements] = useState("");
-  const [description, setDescription] = useState("");
-  const [benefits, setBenefits] = useState("");
-  const [status, setStatus] = useState<JobStatusType>("pending");
+  const [requirements, setRequirements] = useState('');
+  const [description, setDescription] = useState('');
+  const [benefits, setBenefits] = useState('');
+  const [status, setStatus] = useState<JobStatusType>('pending');
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{
@@ -89,11 +76,11 @@ export const JobDialog = ({
     const loadCompanies = async () => {
       try {
         const response = await companyAPI.getCompaniesDropdown();
-        if (response.status === "success") {
+        if (response.status === 'success') {
           setCompanies(response.data);
         }
       } catch (error) {
-        logger.error("Failed to load companies", error);
+        logger.error('Failed to load companies', error);
       }
     };
 
@@ -110,34 +97,32 @@ export const JobDialog = ({
       if (job) {
         setTitle(job.title);
         setCompanyId(job.company.id);
-        setLocation(job.location || "");
-        setWorkArrangement(job.work_arrangement || "");
+        setLocation(job.location || '');
+        setWorkArrangement((job.work_arrangement as 'remote' | 'hybrid' | 'onsite' | '') || '');
         setJobType(job.job_type);
-        setSalaryDisplay(job.salary_display || job.salary || "");
+        setSalaryDisplay(job.salary_display || job.salary || '');
         setSalaryMin(job.salary_min || undefined);
         setSalaryMax(job.salary_max || undefined);
         setRequirements(
-          Array.isArray(job.requirements)
-            ? job.requirements.join("\n")
-            : job.requirements || "",
+          Array.isArray(job.requirements) ? job.requirements.join('\n') : job.requirements || ''
         );
-        setDescription(job.description || "");
-        setBenefits(Array.isArray(job.benefits) ? job.benefits.join("\n") : "");
-        setStatus(job.status || "pending");
+        setDescription(job.description || '');
+        setBenefits(Array.isArray(job.benefits) ? job.benefits.join('\n') : '');
+        setStatus(job.status || 'pending');
       } else {
         // Reset form for new job
-        setTitle("");
-        setCompanyId("");
-        setLocation("");
-        setWorkArrangement("");
-        setJobType("full-time");
-        setSalaryDisplay("");
+        setTitle('');
+        setCompanyId('');
+        setLocation('');
+        setWorkArrangement('');
+        setJobType('full-time');
+        setSalaryDisplay('');
         setSalaryMin(undefined);
         setSalaryMax(undefined);
-        setRequirements("");
-        setDescription("");
-        setBenefits("");
-        setStatus("pending");
+        setRequirements('');
+        setDescription('');
+        setBenefits('');
+        setStatus('pending');
       }
       setErrors({});
     };
@@ -151,11 +136,11 @@ export const JobDialog = ({
     const newErrors: { title?: string; company_id?: string } = {};
 
     if (!title.trim()) {
-      newErrors.title = "Tiêu đề công việc là bắt buộc";
+      newErrors.title = 'Tiêu đề công việc là bắt buộc';
     }
 
     if (!companyId) {
-      newErrors.company_id = "Vui lòng chọn công ty";
+      newErrors.company_id = 'Vui lòng chọn công ty';
     }
 
     setErrors(newErrors);
@@ -192,97 +177,89 @@ export const JobDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-5xl w-[95vw] max-h-[90vh] overflow-y-auto">
+      <DialogContent className='sm:max-w-5xl w-[95vw] max-h-[90vh] overflow-y-auto'>
         <DialogHeader>
-          <DialogTitle>
-            {job ? "Chỉnh sửa tin tuyển dụng" : "Thêm tin tuyển dụng mới"}
-          </DialogTitle>
+          <DialogTitle>{job ? 'Chỉnh sửa tin tuyển dụng' : 'Thêm tin tuyển dụng mới'}</DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-12 gap-8">
+        <form onSubmit={handleSubmit} className='space-y-6'>
+          <div className='grid grid-cols-12 gap-8'>
             {/* Left Column: Core Content */}
-            <div className="col-span-12 lg:col-span-8 space-y-6">
-              <div className="space-y-4">
+            <div className='col-span-12 lg:col-span-8 space-y-6'>
+              <div className='space-y-4'>
                 <div>
-                  <Label htmlFor="title" className="text-base font-semibold">
+                  <Label htmlFor='title' className='text-base font-semibold'>
                     Tiêu đề công việc *
                   </Label>
                   <Input
-                    id="title"
+                    id='title'
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    placeholder="VD: Senior Frontend Developer (ReactJS)"
+                    placeholder='VD: Senior Frontend Developer (ReactJS)'
                     className={cn(
-                      "mt-1.5 h-11 text-lg font-medium",
-                      errors.title && "border-red-500 ring-red-500/20",
+                      'mt-1.5 h-11 text-lg font-medium',
+                      errors.title && 'border-red-500 ring-red-500/20'
                     )}
                   />
-                  {errors.title && (
-                    <p className="text-red-500 text-sm mt-1">{errors.title}</p>
-                  )}
+                  {errors.title && <p className='text-red-500 text-sm mt-1'>{errors.title}</p>}
                 </div>
 
-                <div className="pt-4 border-t">
-                  <Label htmlFor="description" className="font-semibold">
+                <div className='pt-4 border-t'>
+                  <Label htmlFor='description' className='font-semibold'>
                     Mô tả công việc
                   </Label>
                   <Textarea
-                    id="description"
+                    id='description'
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Mô tả chi tiết về công việc..."
+                    placeholder='Mô tả chi tiết về công việc...'
                     rows={6}
-                    className="mt-1.5"
+                    className='mt-1.5'
                   />
                 </div>
 
-                <div className="pt-2">
-                  <Label htmlFor="requirements" className="font-semibold">
+                <div className='pt-2'>
+                  <Label htmlFor='requirements' className='font-semibold'>
                     Yêu cầu ứng viên
                   </Label>
                   <Textarea
-                    id="requirements"
+                    id='requirements'
                     value={requirements}
                     onChange={(e) => setRequirements(e.target.value)}
-                    placeholder="Các yêu cầu về kinh nghiệm, kỹ năng..."
+                    placeholder='Các yêu cầu về kinh nghiệm, kỹ năng...'
                     rows={6}
-                    className="mt-1.5"
+                    className='mt-1.5'
                   />
                 </div>
 
-                <div className="pt-2">
-                  <Label htmlFor="benefits" className="font-semibold">
+                <div className='pt-2'>
+                  <Label htmlFor='benefits' className='font-semibold'>
                     Quyền lợi & Chế độ
                   </Label>
                   <Textarea
-                    id="benefits"
+                    id='benefits'
                     value={benefits}
                     onChange={(e) => setBenefits(e.target.value)}
-                    placeholder="Các quyền lợi và phúc lợi..."
+                    placeholder='Các quyền lợi và phúc lợi...'
                     rows={4}
-                    className="mt-1.5"
+                    className='mt-1.5'
                   />
                 </div>
               </div>
             </div>
 
             {/* Right Column: Metadata & Settings */}
-            <div className="col-span-12 lg:col-span-4 space-y-6">
-              <div className="bg-gray-50/50 p-6 rounded-xl border border-gray-100 space-y-5">
-                <h3 className="font-bold text-gray-900 border-b pb-2">
-                  Thông tin chung
-                </h3>
+            <div className='col-span-12 lg:col-span-4 space-y-6'>
+              <div className='bg-gray-50/50 p-6 rounded-xl border border-gray-100 space-y-5'>
+                <h3 className='font-bold text-gray-900 border-b pb-2'>Thông tin chung</h3>
 
-                <div className="space-y-2">
-                  <Label htmlFor="company" className="font-medium">
+                <div className='space-y-2'>
+                  <Label htmlFor='company' className='font-medium'>
                     Công ty *
                   </Label>
                   <Select value={companyId} onValueChange={setCompanyId}>
-                    <SelectTrigger
-                      className={errors.company_id ? "border-red-500" : ""}
-                    >
-                      <SelectValue placeholder="Chọn công ty" />
+                    <SelectTrigger className={errors.company_id ? 'border-red-500' : ''}>
+                      <SelectValue placeholder='Chọn công ty' />
                     </SelectTrigger>
                     <SelectContent>
                       {companies.map((company) => (
@@ -293,21 +270,16 @@ export const JobDialog = ({
                     </SelectContent>
                   </Select>
                   {errors.company_id && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.company_id}
-                    </p>
+                    <p className='text-red-500 text-sm mt-1'>{errors.company_id}</p>
                   )}
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-2">
-                    <Label htmlFor="job_type" className="font-medium text-xs">
+                <div className='grid grid-cols-2 gap-3'>
+                  <div className='space-y-2'>
+                    <Label htmlFor='job_type' className='font-medium text-xs'>
                       Loại công việc
                     </Label>
-                    <Select
-                      value={jobType}
-                      onValueChange={(value) => setJobType(value as JobType)}
-                    >
+                    <Select value={jobType} onValueChange={(value) => setJobType(value as JobType)}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -320,15 +292,13 @@ export const JobDialog = ({
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="status" className="font-medium text-xs">
+                  <div className='space-y-2'>
+                    <Label htmlFor='status' className='font-medium text-xs'>
                       Trạng thái
                     </Label>
                     <Select
                       value={status}
-                      onValueChange={(value) =>
-                        setStatus(value as JobStatusType)
-                      }
+                      onValueChange={(value) => setStatus(value as JobStatusType)}
                     >
                       <SelectTrigger>
                         <SelectValue />
@@ -344,20 +314,18 @@ export const JobDialog = ({
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="work_arrangement" className="font-medium">
+                <div className='space-y-2'>
+                  <Label htmlFor='work_arrangement' className='font-medium'>
                     Hình thức làm việc
                   </Label>
                   <Select
                     value={workArrangement}
                     onValueChange={(value) =>
-                      setWorkArrangement(
-                        value as "remote" | "hybrid" | "onsite" | "",
-                      )
+                      setWorkArrangement(value as 'remote' | 'hybrid' | 'onsite' | '')
                     }
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Chọn hình thức" />
+                      <SelectValue placeholder='Chọn hình thức' />
                     </SelectTrigger>
                     <SelectContent>
                       {WORK_ARRANGEMENT_OPTIONS.map((option) => (
@@ -369,13 +337,13 @@ export const JobDialog = ({
                   </Select>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="location" className="font-medium">
+                <div className='space-y-2'>
+                  <Label htmlFor='location' className='font-medium'>
                     Địa điểm
                   </Label>
                   <Select value={location} onValueChange={setLocation}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Chọn địa điểm" />
+                      <SelectValue placeholder='Chọn địa điểm' />
                     </SelectTrigger>
                     <SelectContent>
                       {VIETNAM_CITIES.map((city) => (
@@ -389,61 +357,55 @@ export const JobDialog = ({
               </div>
 
               {/* Salary Section */}
-              <div className="bg-blue-50/30 p-6 rounded-xl border border-blue-100/50 space-y-4">
-                <h3 className="font-bold text-green-900 flex items-center">
-                  Thông tin lương
-                </h3>
+              <div className='bg-blue-50/30 p-6 rounded-xl border border-blue-100/50 space-y-4'>
+                <h3 className='font-bold text-green-900 flex items-center'>Thông tin lương</h3>
 
-                <div className="space-y-2">
-                  <Label htmlFor="salary" className="text-xs">
+                <div className='space-y-2'>
+                  <Label htmlFor='salary' className='text-xs'>
                     Mức lương hiển thị
                   </Label>
                   <Input
-                    id="salary"
+                    id='salary'
                     value={salaryDisplay}
                     onChange={(e) => setSalaryDisplay(e.target.value)}
-                    placeholder="VD: 15-25 triệu VND"
-                    className="bg-white"
+                    placeholder='VD: 15-25 triệu VND'
+                    className='bg-white'
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-2">
+                <div className='grid grid-cols-2 gap-3'>
+                  <div className='space-y-2'>
                     <Label
-                      htmlFor="salary_min"
-                      className="text-[10px] uppercase tracking-wider text-gray-500"
+                      htmlFor='salary_min'
+                      className='text-[10px] uppercase tracking-wider text-gray-500'
                     >
                       Lương Min (Tr.)
                     </Label>
                     <Input
-                      id="salary_min"
-                      type="number"
-                      value={salaryMin || ""}
+                      id='salary_min'
+                      type='number'
+                      value={salaryMin || ''}
                       onChange={(e) =>
-                        setSalaryMin(
-                          e.target.value ? parseInt(e.target.value) : undefined,
-                        )
+                        setSalaryMin(e.target.value ? parseInt(e.target.value) : undefined)
                       }
-                      className="bg-white"
+                      className='bg-white'
                     />
                   </div>
-                  <div className="space-y-2">
+                  <div className='space-y-2'>
                     <Label
-                      htmlFor="salary_max"
-                      className="text-[10px] uppercase tracking-wider text-gray-500"
+                      htmlFor='salary_max'
+                      className='text-[10px] uppercase tracking-wider text-gray-500'
                     >
                       Lương Max (Tr.)
                     </Label>
                     <Input
-                      id="salary_max"
-                      type="number"
-                      value={salaryMax || ""}
+                      id='salary_max'
+                      type='number'
+                      value={salaryMax || ''}
                       onChange={(e) =>
-                        setSalaryMax(
-                          e.target.value ? parseInt(e.target.value) : undefined,
-                        )
+                        setSalaryMax(e.target.value ? parseInt(e.target.value) : undefined)
                       }
-                      className="bg-white"
+                      className='bg-white'
                     />
                   </div>
                 </div>
@@ -451,26 +413,20 @@ export const JobDialog = ({
             </div>
           </div>
 
-          <div className="flex justify-end gap-3 pt-6 pb-6 border-t sticky bottom-[-25px] bg-white z-10">
+          <div className='flex justify-end gap-3 pt-6 pb-6 border-t sticky bottom-[-25px] bg-white z-10'>
             <Button
-              type="button"
+              type='button'
               onClick={() => onOpenChange(false)}
-              value="Hủy bỏ"
-              backgroundColor="#f3f4f6"
-              color="#374151"
-              border="1px solid #d1d5db"
+              value='Hủy bỏ'
+              backgroundColor='#f3f4f6'
+              color='#374151'
+              border='1px solid #d1d5db'
             />
             <Button
-              type="submit"
+              type='submit'
               disable={loading}
-              value={
-                loading
-                  ? "Đang xử lý..."
-                  : job
-                    ? "Lưu thay đổi"
-                    : "Đăng tin ngay"
-              }
-              backgroundColor="green"
+              value={loading ? 'Đang xử lý...' : job ? 'Lưu thay đổi' : 'Đăng tin ngay'}
+              backgroundColor='green'
             />
           </div>
         </form>
