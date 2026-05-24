@@ -22,6 +22,9 @@ export interface RecommendationJob {
   loc_score: number;
   exp_score: number;
   final_score: number;
+  url_source?: string;
+  image_url?: string;
+  salary?: string;
 }
 
 export interface RecommendationResponse {
