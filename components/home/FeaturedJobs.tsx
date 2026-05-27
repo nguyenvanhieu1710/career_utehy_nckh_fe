@@ -13,10 +13,11 @@ interface FeaturedJobItem {
   title: string;
   company: string;
   location: string;
+  url_source?: string;
 }
 
 const PAGE_SIZE = 6;
-const DEFAULT_LOGO = "/logo/default-company.png";
+const DEFAULT_LOGO = "/default-job.png";
 
 function pickLogo(rawLogo: string | null | undefined): string {
   if (!rawLogo) return DEFAULT_LOGO;
@@ -41,10 +42,11 @@ export default function FeaturedJobs() {
         setJobs(
           items.map((m) => ({
             job_id: String(m.id),
-            logo: pickLogo(m.image_url),
+            logo: pickLogo(m.company?.logo_url || m.image_url),
             title: m.title || "Việc làm nổi bật",
             company: m.company?.name || "Đang cập nhật",
             location: m.location || "",
+            url_source: m.url_source || undefined,
           })),
         );
       })
@@ -69,6 +71,7 @@ export default function FeaturedJobs() {
     () => jobs.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE),
     [jobs, page],
   );
+
 
   return (
     <section className="py-16 bg-gray-50">

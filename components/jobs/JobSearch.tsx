@@ -101,7 +101,19 @@ export const JobSearch = ({
     } else {
       setFilteredSuggestions(popularSearches.slice(0, 6));
     }
-  }, [searchValue]);
+
+    // Debounce auto-search
+    const handler = setTimeout(() => {
+      // Only trigger if the user actually typed something different from the current prop
+      if (searchValue !== value) {
+        onSearch(searchValue.trim());
+      }
+    }, 500);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [searchValue, value, onSearch]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;

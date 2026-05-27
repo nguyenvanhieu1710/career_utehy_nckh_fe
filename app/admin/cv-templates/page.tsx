@@ -17,17 +17,19 @@ import { toast } from "sonner";
 export interface CVTemplate {
   id: string;
   name: string;
-  thumbnail: string;
   category: string;
   status: "active" | "draft";
-  updated_at: string;
+  created_at: string;
+  updated_at?: string;
 }
 
 export default function TemplateManagementPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [templates, setTemplates] = useState<CVTemplate[]>([]);
-  const [selectedTemplate, setSelectedTemplate] = useState<CVTemplate | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<CVTemplate | null>(
+    null,
+  );
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const [filters, setFilter] = useState({
@@ -35,7 +37,7 @@ export default function TemplateManagementPage() {
     page: 1,
     row: 10,
     category: "all",
-    status: "all"
+    status: "all",
   });
 
   const loadTemplates = useCallback(async () => {
@@ -50,7 +52,9 @@ export default function TemplateManagementPage() {
     }
   }, [filters]);
 
-  useEffect(() => { loadTemplates(); }, [loadTemplates]);
+  useEffect(() => {
+    loadTemplates();
+  }, [loadTemplates]);
 
   // Điều hướng sang trang kéo thả Canvas
   const handleEditDesign = (id: string) => {
@@ -66,37 +70,55 @@ export default function TemplateManagementPage() {
   // };
 
   const columns: Column<CVTemplate>[] = [
-    { label: "Tên mẫu", field: "name", render: (tpl) => <span className="font-medium text-blue-600">{tpl.name}</span> },
+    {
+      label: "STT",
+      render: (tpl, index) => index + 1,
+    },
+    {
+      label: "Tên mẫu",
+      field: "name",
+      render: (tpl) => (
+        <span className="font-semibold text-gray-800">{tpl.name}</span>
+      ),
+    },
     { label: "Danh mục", field: "category" },
     {
       label: "Trạng thái",
       render: (tpl) => <StatusBadge status={tpl.status} size="sm" showIcon />,
     },
-    { label: "Cập nhật cuối", field: "updated_at" },
+    {
+      label: "Cập nhật cuối",
+      render: (tpl) => {
+        const dateToShow = tpl.updated_at || tpl.created_at;
+        return (
+          <span className="text-gray-500 text-xs">
+            {dateToShow
+              ? new Date(dateToShow).toLocaleDateString("vi-VN")
+              : "---"}
+          </span>
+        );
+      },
+    },
     {
       label: "Hành động",
       render: (tpl) => (
         <div className="flex gap-2">
           <button
             onClick={() => handleEditDesign(tpl.id)}
-            className="p-2 hover:bg-blue-50 text-blue-600 rounded-md border border-blue-200"
-            title="Thiết kế Canvas"
+            className="p-2 hover:bg-blue-50 text-blue-600 rounded-md border border-blue-200 cursor-pointer"
+            title="Chỉnh sửa mẫu CV"
           >
-            <Palette size={16} />
+            <Edit3 size={16} />
           </button>
 
-          {/* <button 
-            onClick={() => handleClone(tpl.id)}
-            className="p-2 hover:bg-gray-50 text-gray-600 rounded-md border border-gray-200"
-            title="Nhân bản"
-          >
-            <Copy size={16} />
-          </button> */}
-
-          <ActionButtons permission="admin" type="delete" onClick={() => {
-            setSelectedTemplate(tpl);
-            setIsDeleteDialogOpen(true);
-          }} />
+          <ActionButtons
+            permission="admin"
+            type="delete"
+            onClick={() => {
+              setSelectedTemplate(tpl);
+              setIsDeleteDialogOpen(true);
+            }}
+          />
         </div>
       ),
     },
@@ -108,12 +130,14 @@ export default function TemplateManagementPage() {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Quản lý Mẫu CV</h1>
-          <p className="text-sm text-gray-500">Tạo và thiết kế các mẫu CV kéo thả cho hệ thống</p>
+          <p className="text-sm text-gray-500">
+            Tạo và thiết kế các mẫu CV kéo thả cho hệ thống
+          </p>
         </div>
         <AddButton
           permission="admin"
           text="Tạo mẫu mới"
-          onClick={() => router.push('/admin/cv-builder/new')}
+          onClick={() => router.push("/admin/cv-builder/new")}
         />
       </div>
 
@@ -122,15 +146,22 @@ export default function TemplateManagementPage() {
         <input
           placeholder="Tìm tên mẫu..."
           className="border rounded-md px-3 py-2 text-sm"
-          onChange={(e) => setFilter({ ...filters, searchKeyword: e.target.value })}
+          onChange={(e) =>
+            setFilter({ ...filters, searchKeyword: e.target.value })
+          }
         />
         <select
-          className="border rounded-md px-3 py-2 text-sm"
-          onChange={(e) => setFilter({ ...filters, category: e.target.value })}
+          className="border rounded-md px-3 py-2 text-sm bg-white"
+          value={filters.category}
+          onChange={(e) =>
+            setFilter({ ...filters, category: e.target.value, page: 1 })
+          }
         >
           <option value="all">Tất cả ngành nghề</option>
-          <option value="it">Công nghệ thông tin</option>
-          <option value="marketing">Marketing</option>
+          <option value="Chung">Chung</option>
+          <option value="IT">Công nghệ thông tin</option>
+          <option value="Marketing">Marketing</option>
+          <option value="Design">Thiết kế</option>
         </select>
       </div>
 
@@ -149,9 +180,16 @@ export default function TemplateManagementPage() {
         open={isDeleteDialogOpen}
         onOpenChange={setIsDeleteDialogOpen}
         onConfirm={async () => {
-          // Logic xóa ở đây
-          setIsDeleteDialogOpen(false);
-          toast.success("Đã xóa mẫu");
+          if (!selectedTemplate) return;
+          try {
+            await cvTemplateAPI.deleteTemplate(selectedTemplate.id);
+            toast.success("Đã xóa mẫu");
+            loadTemplates();
+          } catch (error) {
+            toast.error("Xóa thất bại");
+          } finally {
+            setIsDeleteDialogOpen(false);
+          }
         }}
         title="Xóa mẫu thiết kế"
         description={`Mẫu "${selectedTemplate?.name}" sẽ bị xóa vĩnh viễn. Người dùng đang sử dụng mẫu này sẽ không bị ảnh hưởng.`}

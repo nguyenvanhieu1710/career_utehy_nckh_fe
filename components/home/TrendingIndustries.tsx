@@ -4,9 +4,21 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import SectionTitle from "@/components/common/SectionTitle";
 import PaginationArrows from "../common/PaginationArrows";
+import { LayoutGrid } from "lucide-react";
 import { categoryAPI } from "@/services/category";
 import { PublicCategory } from "@/types/category";
 import { logger } from "@/lib/logger";
+
+const mockCategories: PublicCategory[] = [
+  { id: "mock-1", name: "Công nghệ thông tin", avatar_url: "/industries/it.jpg" },
+  { id: "mock-2", name: "Kinh doanh / Bán hàng", avatar_url: "/industries/sales.jpg" },
+  { id: "mock-3", name: "Tài chính / Kế toán", avatar_url: "/industries/finance.jpg" },
+  { id: "mock-4", name: "Nhân sự / Hành chính", avatar_url: "/industries/hr.jpg" },
+  { id: "mock-5", name: "Giáo dục / Đào tạo", avatar_url: "/industries/education.jpg" },
+  { id: "mock-6", name: "Y tế / Chăm sóc sức khỏe", avatar_url: "/industries/healthcare.jpg" },
+  { id: "mock-7", name: "Nhà hàng / Khách sạn", avatar_url: "/industries/hotel.jpeg" },
+  { id: "mock-8", name: "Marketing & Truyền thông", avatar_url: "/industries/sales.jpg" },
+];
 
 export default function TrendingIndustries() {
   // Data states
@@ -26,10 +38,14 @@ export default function TrendingIndustries() {
 
         const response = await categoryAPI.getPublicCategories();
 
-        setCategories(response.data.data || []);
+        if (response.data.data && response.data.data.length > 0) {
+          setCategories(response.data.data);
+        } else {
+          setCategories(mockCategories);
+        }
       } catch (err) {
         logger.error("Failed to fetch categories", err);
-        setError("Failed to load categories");
+        setCategories(mockCategories); // Fallback to mock data
       } finally {
         setLoading(false);
       }
@@ -124,7 +140,9 @@ export default function TrendingIndustries() {
         {!loading && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10 max-w-6xl mx-auto">
             {currentCategories.map((category, index) => {
-              const avatarUrl = categoryAPI.getPublicAvatarUrl(category);
+              const avatarUrl = category.id.startsWith("mock-") && category.avatar_url
+                ? category.avatar_url
+                : categoryAPI.getPublicAvatarUrl(category);
 
               return (
                 <motion.div
@@ -137,16 +155,18 @@ export default function TrendingIndustries() {
                   className="group cursor-pointer"
                 >
                   <div className="bg-white rounded-3xl hover:shadow-2xl transition-all duration-300 p-4 h-full flex flex-col">
-                    <div className="w-full h-32 mb-6 overflow-hidden rounded-lg">
+                    <div className="w-full h-32 mb-6 overflow-hidden rounded-lg flex items-center justify-center bg-green-50 relative">
                       <img
                         src={avatarUrl}
                         alt={category.name}
-                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110 z-10"
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
-                          target.src = "/default-category.png";
+                          target.style.display = "none";
+                          target.nextElementSibling?.classList.remove("hidden");
                         }}
                       />
+                      <LayoutGrid className="h-12 w-12 text-green-300 absolute hidden" />
                     </div>
                     <div className="flex flex-col flex-grow">
                       <h3 className="text-lg text-center font-bold text-gray-800 leading-tight mb-2">

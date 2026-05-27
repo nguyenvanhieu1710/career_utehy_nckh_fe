@@ -48,7 +48,7 @@ export const cvAPI = {
     },
     getRecommendations: async (id: string, top_k: number = 10) => { return await api.get(`/cv/recommendations/${id}`, { params: { top_k } }); },
     getRecommendationsFromFile: async (id: string, top_k: number = 10) => { return await api.get(`/cv/recommendations/file/${id}`, { params: { top_k } }); },
-    getAutoRecommendations: async (top_k: number = 10) => { return await api.get(`/cv/recommendations-auto`, { params: { top_k } }); },
+    getAutoRecommendations: async (top_k: number = 10, source?: string) => { return await api.get(`/cv/recommendations-auto`, { params: { top_k, source } }); },
     getHotJobs: async (top_k: number = 10) => { return await api.get(`/cv/hot-jobs`, { params: { top_k } }); },
     analyzeMatch: async (jobId: string, cvId?: string) => {
         if (cvId) {

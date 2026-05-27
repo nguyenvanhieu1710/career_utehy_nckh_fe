@@ -74,10 +74,11 @@ export default function JobDescription({ job }: JobDescriptionProps) {
 
   const skills = (job.skills || []).filter(Boolean);
 
+
   return (
     <div className="bg-white p-6 mt-1">
       <div className="bg-white mt-1 mb-1">
-        <div className="text-xl sm:text-2xl font-bold text-[#0C6A4E] mb-1">
+        <div className="text-xl sm:text-2xl font-bold text-[#0C6A4E] mb-3">
           Chi tiết công việc
         </div>
         <div className="flex flex-col gap-1 text-xs sm:text-sm text-[#5C5C5C]">

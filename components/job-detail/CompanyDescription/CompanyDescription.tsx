@@ -27,11 +27,11 @@ export default function CompanyDescription({ company }: CompanyDescriptionProps)
 
   return (
     <div className="bg-white p-4 sm:p-6 mt-1">
-      <h2 className="text-xl sm:text-2xl font-bold text-[#0C6A4E] mb-3 sm:mb-4">
+      <h2 className="text-xl sm:text-2xl font-bold text-[#0C6A4E] mb-4">
         Giới thiệu công ty
       </h2>
 
-      <div className="space-y-4 sm:space-y-6">
+      <div className="space-y-6">
         <div>
           <h3 className="text-base sm:text-lg font-semibold text-gray-800">
             {company.name || "Đang cập nhật"}

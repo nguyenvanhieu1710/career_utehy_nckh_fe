@@ -27,4 +27,6 @@ export interface GetSchema {
   row?: number;
   role_id?: string;
   status?: string;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
 }

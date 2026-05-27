@@ -126,21 +126,19 @@ export const JobDetailModal = ({
           <div className="flex items-start justify-between p-6">
             <div className="flex-1 pr-4">
               <div className="flex items-center gap-3 mb-2">
-                <div className="w-22 h-22 bg-gradient-to-br from-green-50 to-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                  {job.image_url ? (
-                    <img
-                      src={job.image_url}
-                      alt={`${job.company.name} logo`}
-                      className="w-22 h-22 object-contain rounded"
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.style.display = "none";
-                        target.nextElementSibling?.classList.remove("hidden");
-                      }}
-                    />
-                  ) : (
-                    <Briefcase className="h-8 w-8 text-green-600" />
-                  )}
+                <div className="w-22 h-22 bg-gradient-to-br from-green-50 to-green-100 rounded-lg flex items-center justify-center flex-shrink-0 p-1">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={job.company.logo_url || job.company.logo || job.image_url || "/default-job.png"}
+                    alt={`${job.company.name} logo`}
+                    className="w-full h-full object-contain rounded-lg"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      if (!target.src.includes("default-job.png")) {
+                        target.src = "/default-job.png";
+                      }
+                    }}
+                  />
                 </div>
                 <div>
                   <div className="flex items-center gap-2 mb-1">
@@ -163,22 +161,37 @@ export const JobDetailModal = ({
               </div>
 
               {/* Quick Info */}
-              <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
+              <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 mt-4">
                 <div className="flex items-center gap-1">
                   <MapPin className="h-4 w-4" />
-                  {job.location}
+                  {job.location || "---"}
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1" title="Ngày đăng">
                   <Clock className="h-4 w-4" />
                   {formatPostedDate(job.posted_at || job.posted_date)}
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 text-red-600" title="Hạn nộp hồ sơ">
+                  <Calendar className="h-4 w-4" />
+                  {job.expired_at ? new Date(job.expired_at).toLocaleDateString("vi-VN") : "---"}
+                </div>
+                <div className="flex items-center gap-1 font-medium text-green-600">
                   <DollarSign className="h-4 w-4" />
-                  {job.salary_display || job.salary}
+                  {job.salary_display || job.salary || "---"}
                 </div>
                 <div className="flex items-center gap-1">
                   <Briefcase className="h-4 w-4" />
                   {formatJobType(job.job_type)}
+                </div>
+                <div className="flex items-center gap-1">
+                  <Users className="h-4 w-4" />
+                  {job.job_level || "---"}
+                </div>
+                <div className="flex items-center gap-1 bg-gray-100 px-2 py-0.5 rounded">
+                  {job.years_of_experience !== undefined
+                    ? job.years_of_experience === 0
+                      ? "Không yêu cầu KN"
+                      : `${job.years_of_experience} năm KN`
+                    : "Kinh nghiệm: ---"}
                 </div>
                 {job.url_source && (
                   <a
@@ -354,20 +367,64 @@ export const JobDetailModal = ({
                 <div className="space-y-8">
                   {/* Company Info */}
                   <div className="bg-gray-50 rounded-lg p-6">
-                    <div className="flex items-start gap-4">
-                      <div className="w-16 h-16 bg-white rounded-lg flex items-center justify-center border border-gray-200">
-                        <Building className="h-8 w-8 text-gray-400" />
+                    <div className="flex items-start gap-4 mb-6">
+                      <div className="w-20 h-20 bg-white rounded-lg flex items-center justify-center border border-gray-200 flex-shrink-0 p-1">
+                        <img
+                          src={job.company.logo_url || job.company.logo || job.image_url || "/default-company.png"}
+                          alt={job.company.name}
+                          className="w-full h-full object-contain rounded-lg"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            if (!target.src.includes("default-company.png")) {
+                              target.src = "/default-company.png";
+                            }
+                          }}
+                        />
                       </div>
                       <div className="flex-1">
                         <h3 className="text-xl font-bold text-gray-900 mb-2">
                           {job.company.name}
                         </h3>
-                        {job.company.location && (
-                          <div className="flex items-center gap-1 text-gray-600">
-                            <MapPin className="h-4 w-4" />
-                            {job.company.location}
-                          </div>
+                        {job.company.website && (
+                          <a
+                            href={job.company.website}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-green-600 hover:text-green-700 text-sm font-medium mb-2"
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                            Ghé thăm Website
+                          </a>
                         )}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Quy mô */}
+                      <div className="flex gap-3">
+                        <Users className="h-5 w-5 text-gray-400 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <div className="text-sm text-gray-500 mb-1">Quy mô công ty</div>
+                          <div className="font-medium text-gray-900">{job.company.size || "---"}</div>
+                        </div>
+                      </div>
+
+                      {/* Lĩnh vực */}
+                      <div className="flex gap-3">
+                        <Briefcase className="h-5 w-5 text-gray-400 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <div className="text-sm text-gray-500 mb-1">Ngành nghề / Lĩnh vực</div>
+                          <div className="font-medium text-gray-900">{job.company.industry || "---"}</div>
+                        </div>
+                      </div>
+
+                      {/* Địa điểm */}
+                      <div className="flex gap-3 md:col-span-2">
+                        <MapPin className="h-5 w-5 text-gray-400 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <div className="text-sm text-gray-500 mb-1">Địa điểm</div>
+                          <div className="font-medium text-gray-900">{job.company.address || job.company.location || "---"}</div>
+                        </div>
                       </div>
                     </div>
                   </div>

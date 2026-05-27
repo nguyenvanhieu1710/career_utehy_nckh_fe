@@ -14,10 +14,11 @@ interface HotJobItem {
   title: string;
   company: string;
   location: string;
+  url_source?: string;
 }
 
 const PAGE_SIZE = 6;
-const DEFAULT_LOGO = "/logo/default-company.png";
+const DEFAULT_LOGO = "/default-job.png";
 
 /** next/image only loads remote URLs from whitelisted hosts (see next.config.ts).
  *  Company logo URLs from crawled sources are arbitrary, so we only keep ones
@@ -45,10 +46,11 @@ export default function HotJobs() {
         setJobs(
           matches.map((m) => ({
             job_id: String(m.job_id),
-            logo: pickLogo(m.image_url),
+            logo: pickLogo(m.logo_url || m.image_url),
             title: m.job_title || "Việc làm mới",
             company: m.company || "Đang cập nhật",
             location: m.location || "",
+            url_source: m.url_source || undefined,
           })),
         );
       })
@@ -73,6 +75,7 @@ export default function HotJobs() {
     () => jobs.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE),
     [jobs, page],
   );
+
 
   return (
     <section className="py-16 bg-gray-50">

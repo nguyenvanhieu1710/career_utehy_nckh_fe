@@ -70,6 +70,7 @@ export interface AvatarStyle {
 
 export interface TemplateData {
     name: string;
+    category: string;
     primaryColor: string;
     defaultTitle: string;
     defaultSubTitle: string;

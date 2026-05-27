@@ -27,34 +27,30 @@ FROM node:20-alpine AS runner
 
 WORKDIR /app
 
-# Install libc6-compat for Alpine compatibility
-RUN apk add --no-cache libc6-compat
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
 
-# Create non-root user for security
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Copy package files
-COPY package*.json ./
+# Set correct permissions for prerender cache
+RUN mkdir .next
+RUN chown nextjs:nodejs .next
 
-# Install only production dependencies
-RUN npm ci --only=production && npm cache clean --force
+# Automatically leverage output traces to reduce image size
+# https://nextjs.org/docs/advanced-features/output-file-tracing
+COPY --from=builder /app/public ./public
+# Standalone mode outputs a compiled Node server
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Copy built application from builder stage
-COPY --from=builder --chown=nextjs:nodejs /app/.next ./.next
-COPY --from=builder --chown=nextjs:nodejs /app/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
-
-# Switch to non-root user
+# Switch to non-root user for security
 USER nextjs
 
 # Expose port
 EXPOSE 3000
+ENV PORT=3000 \
+    HOSTNAME=0.0.0.0
 
-# Set environment variables
-ENV NODE_ENV=production
-ENV PORT=3000
-ENV NEXT_TELEMETRY_DISABLED=1
-
-# Start the application
-CMD ["npm", "start"]
+# Start server.js directly using Node (bypasses npm CLI overhead)
+CMD ["node", "server.js"]

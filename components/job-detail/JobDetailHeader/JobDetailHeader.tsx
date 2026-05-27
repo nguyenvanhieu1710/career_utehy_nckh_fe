@@ -16,7 +16,7 @@ interface JobDetailHeaderProps {
   job: PublicJobDetail;
 }
 
-const DEFAULT_LOGO = "/logo/default-company.png";
+const DEFAULT_LOGO = "/default-job.png";
 
 function pickLogo(rawLogo: string | null | undefined): string {
   if (!rawLogo) return DEFAULT_LOGO;
@@ -117,7 +117,8 @@ export default function JobDetailHeader({ job }: JobDetailHeaderProps) {
   const deadline = formatDeadline(job.expired_at);
   const posted = formatPostedAt(job.posted_at || job.created_at);
   const companyName = job.company?.name || "Đang cập nhật";
-  const logo = pickLogo(job?.image_url);
+  const logo = pickLogo(job.company?.logo_url || job?.image_url);
+
 
   return (
     <div className="bg-white mt-1 mb-1 p-4 sm:p-6">
@@ -126,7 +127,7 @@ export default function JobDetailHeader({ job }: JobDetailHeaderProps) {
           <img
             src={logo}
             alt={companyName}
-            className="object-contain w-14 h-14 sm:w-32 sm:h-32"
+            className="object-contain w-full h-full p-2"
           />
         </div>
 
