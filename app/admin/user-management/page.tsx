@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { Filters } from "@/components/admin/Filters";
 import { AddButton } from "@/components/admin/AddButton";
 import { Column, Table } from "@/components/admin/Table";
@@ -21,6 +22,7 @@ import { DialogState, AccountDialogSubmitData } from "@/types/dialog";
 import { logger } from "@/lib/logger";
 
 export default function UserManagementPage() {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<User[]>([]);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -311,6 +313,12 @@ export default function UserManagementPage() {
       label: "Hành động",
       render: (user) => (
         <div className="flex gap-2">
+          <ActionButtons
+            type="view"
+            permission="user.read"
+            title="Xem chi tiết"
+            onClick={() => router.push(`/admin/user-management/${user.id}`)}
+          />
           <ActionButtons
             type="edit"
             permission="user.update"

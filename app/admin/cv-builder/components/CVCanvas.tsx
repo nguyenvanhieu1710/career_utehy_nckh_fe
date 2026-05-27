@@ -47,10 +47,37 @@ export interface CVSection {
     size: { width: number; height: number };
 }
 
+export interface HeaderTextStyle {
+    x: number;
+    y: number;
+    font_size: number;
+    font_family: string;
+    font_weight: "normal" | "bold";
+    color: string;
+}
+
+export interface AvatarStyle {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    border_radius: number;
+    rotation: number;
+    scale: number;
+    offsetX: number;
+    offsetY: number;
+}
+
 export interface TemplateData {
     name: string;
     category: string;
     primaryColor: string;
+    defaultTitle: string;
+    defaultSubTitle: string;
+    titleStyle: HeaderTextStyle;
+    subTitleStyle: HeaderTextStyle;
+    hasAvatar: boolean;
+    avatarStyle: AvatarStyle;
     backgroundElements: BgElement[];
     sections: CVSection[];
 }
@@ -93,6 +120,18 @@ const drawRoundRect = (ctx: CanvasRenderingContext2D, x: number, y: number, w: n
     ctx.closePath();
 };
 
+const drawAvatarPath = (ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, radius: number) => {
+    const maxR = Math.min(w, h) / 2;
+    const r = Math.max(0, Math.min(radius, maxR));
+    if (Math.abs(w - h) < 0.5 && r >= maxR - 0.5) {
+        ctx.beginPath();
+        ctx.arc(x + w / 2, y + h / 2, maxR, 0, Math.PI * 2);
+        ctx.closePath();
+        return;
+    }
+    drawRoundRect(ctx, x, y, w, h, r);
+};
+
 const getHandleRects = (x: number, y: number, w: number, h: number) => {
     const hs = HANDLE_SIZE;
     const hw = hs / 2;
@@ -121,6 +160,36 @@ const resizeCursor: Record<string, string> = {
     ne: "nesw-resize", sw: "nesw-resize",
     n: "ns-resize",  s: "ns-resize",
     e: "ew-resize",  w: "ew-resize",
+};
+
+const DEFAULT_TITLE_STYLE: HeaderTextStyle = {
+    x: 292,
+    y: 68,
+    font_size: 34,
+    font_family: "Arial",
+    font_weight: "bold",
+    color: "#111827",
+};
+
+const DEFAULT_SUBTITLE_STYLE: HeaderTextStyle = {
+    x: 292,
+    y: 94,
+    font_size: 15,
+    font_family: "Arial",
+    font_weight: "normal",
+    color: "#1d7057ff",
+};
+
+const DEFAULT_AVATAR_STYLE: AvatarStyle = {
+    x: 50,
+    y: 18,
+    width: 160,
+    height: 160,
+    border_radius: 999,
+    rotation: 0,
+    scale: 1,
+    offsetX: 0,
+    offsetY: 0,
 };
 
 // ─── Main Component ───────────────────────────────────────────────────────────
@@ -334,6 +403,37 @@ export const CVCanvas = forwardRef<{ toDataURL: () => string }, CVCanvasProps>(
                     ctx.fillText(name.charAt(0).toUpperCase(), el.x + el.width / 2, el.y + el.height / 2);
                 }
             }
+            ctx.restore();
+        }
+
+        // Header text
+        const titleStyle = data.titleStyle || DEFAULT_TITLE_STYLE;
+        const subTitleStyle = data.subTitleStyle || DEFAULT_SUBTITLE_STYLE;
+        ctx.textAlign = "left";
+        ctx.textBaseline = "alphabetic";
+
+        ctx.fillStyle = titleStyle.color || "#111827";
+        ctx.font = `${titleStyle.font_weight || "bold"} ${titleStyle.font_size || 34}px ${titleStyle.font_family || "Arial"}`;
+        ctx.fillText(data.defaultTitle || "Họ và Tên", titleStyle.x || 292, titleStyle.y || 68);
+
+        ctx.fillStyle = subTitleStyle.color || "#1d7057ff";
+        ctx.font = `${subTitleStyle.font_weight || "normal"} ${subTitleStyle.font_size || 15}px ${subTitleStyle.font_family || "Arial"}`;
+        ctx.fillText(data.defaultSubTitle || "Vị trí ứng tuyển", subTitleStyle.x || 292, subTitleStyle.y || 94);
+
+        if (data.hasAvatar) {
+            const av = data.avatarStyle || DEFAULT_AVATAR_STYLE;
+            ctx.save();
+            ctx.fillStyle = "#ffffffcc";
+            drawAvatarPath(ctx, av.x, av.y, av.width, av.height, Math.max(0, av.border_radius ?? Math.min(av.width, av.height) / 2));
+            ctx.fill();
+            ctx.strokeStyle = "#d1d5db";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.fillStyle = "#9ca3af";
+            ctx.font = "12px Arial";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText("ẢNH", av.x + av.width / 2, av.y + av.height / 2);
             ctx.restore();
         }
 

@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion';
 import { MapPin, Briefcase, Clock, Star, Heart, ExternalLink, Users } from 'lucide-react';
 import { Job } from '@/types/job';
+import { AnalyzeMatchButton } from './AnalyzeMatchButton';
 
 interface JobCardProps {
   job: Job;
@@ -172,7 +173,7 @@ export const JobCard = ({
 
                 {/* Skills */}
                 <div className='flex flex-wrap gap-2 mb-3'>
-                  {job.skills.slice(0, 4).map((skill) => (
+                  {(Array.isArray(job.skills) ? job.skills : []).slice(0, 4).map((skill) => (
                     <span
                       key={skill}
                       className='bg-gray-50 text-gray-700 text-xs font-medium px-2 py-1 rounded-full border border-gray-200 hover:bg-gray-100 transition-colors'
@@ -180,12 +181,27 @@ export const JobCard = ({
                       {skill}
                     </span>
                   ))}
-                  {job.skills.length > 4 && (
+                  {Array.isArray(job.skills) && job.skills.length > 4 && (
                     <span className='text-gray-500 text-xs font-medium px-2 py-1'>
                       +{job.skills.length - 4} kỹ năng khác
                     </span>
                   )}
                 </div>
+
+                {/* Source URL — direct link to original posting */}
+                {job.url_source && (
+                  <a
+                    href={job.url_source}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="inline-flex items-center gap-1 text-xs text-green-700 hover:text-green-900 hover:underline mb-2 max-w-full"
+                    title={job.url_source}
+                  >
+                    <ExternalLink className="h-3 w-3 flex-shrink-0" />
+                    <span className="truncate">Mở tin gốc</span>
+                  </a>
+                )}
               </div>
 
               {/* Right Side - Salary & Actions */}
@@ -198,7 +214,10 @@ export const JobCard = ({
                 </div>
 
                 {/* Actions */}
-                <div className='flex flex-col gap-2'>
+                <div className='flex flex-col items-stretch gap-2'>
+                  {/* AI analysis CTA — most prominent action */}
+                  <AnalyzeMatchButton jobId={job.id} size='sm' className='self-end' />
+
                   <button
                     onClick={handleApplyClick}
                     className='bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm font-medium min-w-[100px] flex items-center justify-center gap-1 cursor-pointer'

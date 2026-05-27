@@ -25,6 +25,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { AnalyzeMatchButton } from "./AnalyzeMatchButton";
 
 interface JobDetailModalProps {
   job: Job | null;
@@ -125,7 +126,8 @@ export const JobDetailModal = ({
           <div className="flex items-start justify-between p-6">
             <div className="flex-1 pr-4">
               <div className="flex items-center gap-3 mb-2">
-                <div className="w-12 h-12 bg-gradient-to-br from-green-50 to-green-100 rounded-lg flex items-center justify-center flex-shrink-0 p-1">
+                <div className="w-22 h-22 bg-gradient-to-br from-green-50 to-green-100 rounded-lg flex items-center justify-center flex-shrink-0 p-1">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={job.company.logo_url || job.company.logo || job.image_url || "/default-job.png"}
                     alt={`${job.company.name} logo`}
@@ -185,8 +187,24 @@ export const JobDetailModal = ({
                   {job.job_level || "---"}
                 </div>
                 <div className="flex items-center gap-1 bg-gray-100 px-2 py-0.5 rounded">
-                  {job.years_of_experience !== undefined ? (job.years_of_experience === 0 ? "Không yêu cầu KN" : `${job.years_of_experience} năm KN`) : "Kinh nghiệm: ---"}
+                  {job.years_of_experience !== undefined
+                    ? job.years_of_experience === 0
+                      ? "Không yêu cầu KN"
+                      : `${job.years_of_experience} năm KN`
+                    : "Kinh nghiệm: ---"}
                 </div>
+                {job.url_source && (
+                  <a
+                    href={job.url_source}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-green-700 hover:text-green-900 hover:underline"
+                    title={job.url_source}
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    <span>Mở tin gốc</span>
+                  </a>
+                )}
               </div>
             </div>
 
@@ -292,7 +310,7 @@ export const JobDetailModal = ({
                       Kỹ năng yêu cầu
                     </h3>
                     <div className="flex flex-wrap gap-2">
-                      {job.skills.map((skill, index) => (
+                      {(Array.isArray(job.skills) ? job.skills : []).map((skill: string, index: number) => (
                         <span
                           key={`${skill}-${index}`}
                           className="bg-green-50 text-green-700 text-sm font-medium px-3 py-1 rounded-full border border-green-200"
@@ -418,8 +436,14 @@ export const JobDetailModal = ({
 
         {/* Footer Actions */}
         <div className="flex-shrink-0 bg-white border-t border-gray-200 p-6">
-          <div className="flex items-center justify-end">
-            <div className="flex items-center gap-3">
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-gray-600">
+              <span className="font-medium">{job.application_count}</span> người
+              đã ứng tuyển
+            </div>
+
+            <div className="flex items-center gap-4">
+              <AnalyzeMatchButton jobId={job.id} size="md" />
               <button
                 onClick={handleApply}
                 className="bg-green-600 text-white px-8 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center gap-2 cursor-pointer"

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Heart,
@@ -13,6 +13,7 @@ import {
   Search,
 } from "lucide-react";
 import { Job } from "@/types/job";
+import { jobAPI } from "@/services/job";
 import { Input } from "@/components/ui/input";
 
 interface SavedJobsPanelProps {
@@ -38,6 +39,72 @@ export const SavedJobsPanel = ({
   const [sortBy, setSortBy] = useState<
     "newest" | "oldest" | "company" | "salary"
   >("newest");
+  const [loadedJobs, setLoadedJobs] = useState<Job[]>(savedJobs);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Load saved jobs from localStorage when panel opens
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const loadSavedJobs = async () => {
+      setIsLoading(true);
+      try {
+        const savedFavorites = localStorage.getItem("favorite_job_ids");
+        if (!savedFavorites) {
+          setLoadedJobs([]);
+          setIsLoading(false);
+          return;
+        }
+
+        const favoriteIds = JSON.parse(savedFavorites) as string[];
+        if (favoriteIds.length === 0) {
+          setLoadedJobs([]);
+          setIsLoading(false);
+          return;
+        }
+
+        // Find jobs we already have from props
+        const alreadyLoaded = savedJobs.filter((j) =>
+          favoriteIds.includes(j.id)
+        );
+
+        // For IDs that aren't in savedJobs, fetch them
+        const missingIds = favoriteIds.filter(
+          (id) => !alreadyLoaded.find((j) => j.id === id)
+        );
+
+        if (missingIds.length === 0) {
+          setLoadedJobs(alreadyLoaded);
+          setIsLoading(false);
+          return;
+        }
+
+        // Fetch missing jobs
+        const missingJobsPromises = missingIds.map((id) =>
+          jobAPI.getJobById(id).catch(() => null)
+        );
+        const responses = await Promise.all(missingJobsPromises);
+        const missingJobs = responses
+          .filter((r) => r && r.data)
+          .map((r) => r.data);
+
+        setLoadedJobs([...alreadyLoaded, ...missingJobs]);
+      } catch (error) {
+        console.error("Failed to load saved jobs:", error);
+        setLoadedJobs(savedJobs);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadSavedJobs();
+  }, [isOpen, savedJobs]);
+
+  // Update loaded jobs when a job is removed
+  const handleRemoveJobClick = (jobId: string) => {
+    setLoadedJobs((prev) => prev.filter((job) => job.id !== jobId));
+    onRemoveJob(jobId);
+  };
 
   const formatPostedDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -64,7 +131,7 @@ export const SavedJobsPanel = ({
   };
 
   // Filter and sort jobs
-  const filteredAndSortedJobs = savedJobs
+  const filteredAndSortedJobs = loadedJobs
     .filter((job) => {
       if (!searchQuery) return true;
       const query = searchQuery.toLowerCase();
@@ -113,7 +180,7 @@ export const SavedJobsPanel = ({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black bg-opacity-50 z-40"
+            className="fixed inset-0 bg-[rgba(0,0,0,0.5)] z-40"
           />
 
           {/* Panel */}
@@ -135,7 +202,7 @@ export const SavedJobsPanel = ({
                     Việc làm đã yêu thích
                   </h2>
                   <p className="text-sm text-gray-600">
-                    {savedJobs.length} việc làm đã yêu thích
+                    {loadedJobs.length} việc làm đã yêu thích
                   </p>
                 </div>
               </div>
@@ -192,7 +259,14 @@ export const SavedJobsPanel = ({
 
             {/* Job List */}
             <div className="flex-1 overflow-y-auto">
-              {filteredAndSortedJobs.length > 0 ? (
+              {isLoading ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Đang tải danh sách yêu thích...</p>
+                  </div>
+                </div>
+              ) : filteredAndSortedJobs.length > 0 ? (
                 <div className="divide-y divide-gray-200">
                   {filteredAndSortedJobs.map((job, index) => (
                     <motion.div
@@ -205,7 +279,20 @@ export const SavedJobsPanel = ({
                       <div className="flex items-start gap-4">
                         {/* Company Logo */}
                         <div className="w-12 h-12 bg-gradient-to-br from-green-50 to-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                          <Briefcase className="h-6 w-6 text-green-600" />
+                          {job.image_url ? (
+                            <img
+                              src={job.image_url}
+                              alt={`${job.company.name} logo`}
+                              className="w-12 h-12 object-contain rounded"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = "none";
+                                target.nextElementSibling?.classList.remove("hidden");
+                              }}
+                            />
+                          ) : (
+                            <Briefcase className="h-6 w-6 text-green-600" />
+                          )}
                         </div>
 
                         {/* Job Info */}
@@ -225,7 +312,7 @@ export const SavedJobsPanel = ({
 
                             {/* Remove Button */}
                             <button
-                              onClick={() => onRemoveJob(job.id)}
+                              onClick={() => handleRemoveJobClick(job.id)}
                               className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors opacity-0 group-hover:opacity-100 cursor-pointer"
                               title="Bỏ lưu"
                             >
@@ -256,7 +343,7 @@ export const SavedJobsPanel = ({
 
                           {/* Skills */}
                           <div className="flex flex-wrap gap-1 mb-3">
-                            {job.skills.slice(0, 3).map((skill) => (
+                            {(job.skills || []).map((skill) => (
                               <span
                                 key={skill}
                                 className="bg-gray-100 text-gray-700 text-xs font-medium px-2 py-1 rounded-full"
@@ -264,7 +351,7 @@ export const SavedJobsPanel = ({
                                 {skill}
                               </span>
                             ))}
-                            {job.skills.length > 3 && (
+                            {job.skills?.length > 3 && (
                               <span className="text-gray-500 text-xs">
                                 +{job.skills.length - 3}
                               </span>
@@ -343,7 +430,7 @@ export const SavedJobsPanel = ({
                   <button
                     onClick={() => {
                       filteredAndSortedJobs.forEach((job) =>
-                        onRemoveJob(job.id)
+                        handleRemoveJobClick(job.id)
                       );
                     }}
                     className="text-red-600 hover:text-red-700 font-medium flex items-center gap-1 cursor-pointer"

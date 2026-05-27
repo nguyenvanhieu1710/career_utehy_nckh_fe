@@ -7,6 +7,8 @@ import { useState } from 'react';
 
 import { JobCardProps } from '@/types/job';
 
+const DEFAULT_LOGO = '/default-job.png';
+
 export default function JobCard({
   logo,
   title,
@@ -19,11 +21,11 @@ export default function JobCard({
   const [isHovered, setIsHovered] = useState(false);
   const [isHeartFilled, setIsHeartFilled] = useState(false);
   const [prevLogo, setPrevLogo] = useState(logo);
-  const [imgSrc, setImgSrc] = useState(logo || '/default-job.png');
+  const [logoSrc, setLogoSrc] = useState(logo || DEFAULT_LOGO);
 
   if (logo !== prevLogo) {
     setPrevLogo(logo);
-    setImgSrc(logo || '/default-job.png');
+    setLogoSrc(logo || DEFAULT_LOGO);
   }
 
   // Sync with localStorage on mount
@@ -134,15 +136,16 @@ export default function JobCard({
                 }}
                 transition={{ duration: 0.3 }}
               />
+              {/* Plain <img> rather than next/image because company logos come
+                  from arbitrary external CDNs (TopCV, ITViec, …) that we
+                  can't pre-whitelist in next.config.ts. */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={imgSrc}
+                src={logoSrc}
                 alt={company || 'Job'}
                 className='w-full h-full object-contain rounded-lg relative z-10'
                 onError={() => {
-                  if (imgSrc !== '/default-job.png') {
-                    setImgSrc('/default-job.png');
-                  }
+                  if (logoSrc !== DEFAULT_LOGO) setLogoSrc(DEFAULT_LOGO);
                 }}
               />
             </motion.div>

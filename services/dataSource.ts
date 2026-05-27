@@ -1,8 +1,11 @@
 import api from "@/cores/api";
+import { config } from "@/lib/config";
 import {
+  CrawlUrlEntry,
   DataSource,
   DataSourceCreate,
   DataSourceUpdate,
+  ScrapeResponse,
 } from "@/types/data-source";
 
 export interface DataSourceListResponse {
@@ -89,7 +92,41 @@ export const dataSourceAPI = {
 
   // Trigger manual crawl for a data source
   triggerCrawl: (id: string) => {
-    return api.post(`/data-sources/${id}/crawl`);
+    return api.post(`/data-sources/${id}/crawl`, undefined, {
+      timeout: config.api.scrapeTimeout,
+    });
+  },
+
+  // Run the unified scrape pipeline (provider API -> extraction service -> jobs)
+  scrape: (id: string) => {
+    return api.post<ScrapeResponse>(`/data-sources/${id}/scrape`, undefined, {
+      timeout: config.api.scrapeTimeout,
+    });
+  },
+
+  // Manual scrape against a user-supplied URL, tagged with a category.
+  // Also appends the URL to the data source's crawl_urls history.
+  scrapeUrl: (id: string, payload: { url: string; category_id: string }) => {
+    return api.post<ScrapeResponse>(
+      `/data-sources/${id}/scrape-url`,
+      payload,
+      { timeout: config.api.scrapeTimeout },
+    );
+  },
+
+  // List saved URL history (most-recent first).
+  listCrawlUrls: (id: string) => {
+    return api.get<{ data: CrawlUrlEntry[] }>(
+      `/data-sources/${id}/crawl-urls`,
+    );
+  },
+
+  // Remove a URL from history (chip's "X" button).
+  deleteCrawlUrl: (id: string, url: string) => {
+    return api.delete<{ data: CrawlUrlEntry[] }>(
+      `/data-sources/${id}/crawl-urls`,
+      { data: { url } },
+    );
   },
 
   // Helper function to get avatar URL (placeholder for now)

@@ -28,9 +28,14 @@ export interface CVProfile extends BaseModel {
   name: string;
   title?: string | null;
   subtitle?: string | null;
+  title_style?: string | null;
+  subtitle_style?: string | null;
+  has_avatar?: boolean | null;
+  avatar_style?: string | null;
   primary_color?: string | null;
   sections: string;
   design_data?: string;
+  is_primary?: boolean;
 }
 
 export interface CVProfileCreate {
@@ -63,6 +68,8 @@ export interface SectionItem {
 export interface Section {
   id: string;
   title: string;
+  /** Optional override for the section title color on the canvas. */
+  titleColor?: string;
   open: boolean;
   items: SectionItem[];
   adding: boolean;
@@ -81,4 +88,5 @@ export interface CVUploaded extends BaseModel {
   user_id: string;
   name: string;
   file_path: string;
+  is_primary?: boolean;
 }

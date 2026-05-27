@@ -1,295 +1,449 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
-import {
-  CVCanvas,
-  CVSection,
-  SectionItem,
-  TemplateData,
-} from "../components/CVCanvas";
+import { CVCanvas, CVSection, SectionItem, TemplateData } from "../components/CVCanvas";
 import { SidebarTools } from "../components/SidebarTools";
 import { PropertyEditor } from "../components/PropertyEditor";
 import { cvTemplateAPI } from "@/services/cvTemplate";
 import { toast } from "sonner";
-import {
-  Save,
-  Eye,
-  EyeOff,
-  Loader2,
-  Download,
-  Palette,
-  FileText,
-} from "lucide-react";
-
+import { Save, Eye, EyeOff, Loader2, Download, Palette, FileText } from "lucide-react";
+import { GroupHeader, Row, NumInput, ColorInput, SelectInput } from "@/components/ui/input-field";
 const DEFAULT_DATA: TemplateData = {
-  name: "Mẫu CV mới",
-  category: "Chung",
-  primaryColor: "#1d7057",
-  backgroundElements: [
-    {
-      id: "init-sidebar",
-      type: "rect",
-      x: 0,
-      y: 0,
-      width: 260,
-      height: 1123,
-      fill: "#1d7057",
-      opacity: 1,
-      zIndex: 0,
+    name: "New Template",
+    primaryColor: "#1d7057",
+    defaultTitle: "Họ và Tên",
+    defaultSubTitle: "Vị trí ứng tuyển",
+    titleStyle: {
+        x: 292,
+        y: 68,
+        font_size: 34,
+        font_family: "Arial",
+        font_weight: "bold",
+        color: "#111827",
     },
-  ],
-  sections: [],
+    subTitleStyle: {
+        x: 292,
+        y: 94,
+        font_size: 15,
+        font_family: "Arial",
+        font_weight: "normal",
+        color: "#1d7057ff",
+    },
+    hasAvatar: true,
+    avatarStyle: {
+        x: 50,
+        y: 18,
+        width: 160,
+        height: 160,
+        border_radius: 999,
+        rotation: 0,
+        scale: 1,
+        offsetX: 0,
+        offsetY: 0,
+    },
+    backgroundElements: [
+        { id: "init-sidebar", type: "rect", x: 0, y: 0, width: 260, height: 1123, fill: "#1d7057", opacity: 1, zIndex: 0 },
+    ],
+    sections: [],
 };
 
 interface PageProps {
-  templateId?: string; // if editing existing template
-  initialData?: TemplateData;
+    templateId?: string;      // if editing existing template
+    initialData?: TemplateData;
 }
 
-export default function TemplateEditorPage({
-  templateId,
-  initialData,
-}: PageProps) {
-  const [data, setData] = useState<TemplateData>(initialData ?? DEFAULT_DATA);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [previewMode, setPreviewMode] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const canvasRef = useRef<{ toDataURL: () => string }>(null);
-
-  // ── Patch data ────────────────────────────────────────────────────────────
-  const handleChange = useCallback((patch: Partial<TemplateData>) => {
-    setData((prev) => ({
-      ...prev,
-      ...patch,
-      backgroundElements: patch.backgroundElements ?? prev.backgroundElements,
-      sections: patch.sections ?? prev.sections,
-    }));
-  }, []);
-  const createDefaultItem = (text: string): SectionItem => ({
-    text,
-    editing: false,
-    tempText: "",
-    style: {
-      bold: false,
-      italic: false,
-      underline: false,
-      color: "#000000",
-    },
-    children: [],
-    expanded: true,
-  });
-  // ── Add element ───────────────────────────────────────────────────────────
-  const handleAddElement = (el: any) => {
-    const newId = el.id || `el-${Date.now()}`;
-    if (el.type === "section") {
-      const sec: CVSection = {
-        id: `section-${Date.now()}`,
-        title: el.title || "Section",
-        items: (el.items || ["New item"]).map((t: any) =>
-          typeof t === "string"
-            ? createDefaultItem(t)
-            : {
-                ...createDefaultItem(t.text || ""),
-                ...t,
-              },
-        ),
-        x: el.x ?? 300,
-        y: el.y ?? 200,
-        size: {
-          width: el.width || 400,
-          height: el.height || 200,
+export default function TemplateEditorPage({ templateId, initialData }: PageProps) {
+    const [data, setData] = useState<TemplateData>(initialData ?? DEFAULT_DATA);
+    const [selectedId, setSelectedId] = useState<string | null>(null);
+    const [previewMode, setPreviewMode] = useState(false);
+    const [saving, setSaving] = useState(false);
+    const canvasRef = useRef<{ toDataURL: () => string }>(null);
+    const [open, setOpen] = useState<{
+        title: boolean;
+        sub: boolean;
+        avatar: boolean;
+    }>({
+        title: true,
+        sub: true,
+        avatar: true
+    });
+    // ── Patch data ────────────────────────────────────────────────────────────
+    const handleChange = useCallback((patch: Partial<TemplateData>) => {
+        setData(prev => ({
+            ...prev,
+            ...patch,
+            backgroundElements: patch.backgroundElements ?? prev.backgroundElements,
+            sections: patch.sections ?? prev.sections,
+        }));
+    }, []);
+    const createDefaultItem = (text: string): SectionItem => ({
+        text,
+        editing: false,
+        tempText: "",
+        style: {
+            bold: false,
+            italic: false,
+            underline: false,
+            color: "#000000",
         },
-      };
-      setData((prev) => ({ ...prev, sections: [...prev.sections, sec] }));
-      setSelectedId(sec.id);
-    } else {
-      const newEl = {
-        ...el,
-        id: newId,
-        x: el.x ?? 300,
-        y: el.y ?? 200,
-        zIndex: data.backgroundElements.length + 1,
-      };
-      setData((prev) => ({
-        ...prev,
-        backgroundElements: [...prev.backgroundElements, newEl],
-      }));
-      setSelectedId(newId);
-    }
-  };
+        children: [],
+        expanded: true,
+    });
+    // ── Add element ───────────────────────────────────────────────────────────
+    const handleAddElement = (el: any) => {
+        const newId = el.id || `el-${Date.now()}`;
+        if (el.type === "section") {
+            const sec: CVSection = {
+                id: `section-${Date.now()}`,
+                title: el.title || "Section",
+                items: (el.items || ["New item"]).map((t: any) =>
+                    typeof t === "string" ? createDefaultItem(t) : {
+                        ...createDefaultItem(t.text || ""),
+                        ...t,
+                    }
+                ),
+                x: el.x ?? 300,
+                y: el.y ?? 200,
+                size: {
+                    width: el.width || 400,
+                    height: el.height || 200,
+                },
+            };
+            setData(prev => ({ ...prev, sections: [...prev.sections, sec] }));
+            setSelectedId(sec.id);
+        } else {
+            const newEl = { ...el, id: newId, x: el.x ?? 300, y: el.y ?? 200, zIndex: (data.backgroundElements.length + 1) };
+            setData(prev => ({ ...prev, backgroundElements: [...prev.backgroundElements, newEl] }));
+            setSelectedId(newId);
+        }
+    };
 
-  // ── Delete ────────────────────────────────────────────────────────────────
-  const handleDelete = (id: string) => {
-    setData((prev) => ({
-      ...prev,
-      backgroundElements: prev.backgroundElements.filter((e) => e.id !== id),
-      sections: prev.sections.filter((s) => s.id !== id),
-    }));
-    setSelectedId(null);
-  };
+    // ── Delete ────────────────────────────────────────────────────────────────
+    const handleDelete = (id: string) => {
+        setData(prev => ({
+            ...prev,
+            backgroundElements: prev.backgroundElements.filter(e => e.id !== id),
+            sections: prev.sections.filter(s => s.id !== id),
+        }));
+        setSelectedId(null);
+    };
 
-  // ── Save ──────────────────────────────────────────────────────────────────
-  const handleSave = async () => {
-    setSaving(true);
-    try {
-      const cvData = {
-        name: data.name,
-        category: data.category,
-        design_data: JSON.stringify(data.backgroundElements),
-        default_sections: JSON.stringify(data.sections),
-        primary_color: data.primaryColor,
-      };
+    // ── Save ──────────────────────────────────────────────────────────────────
+    const handleSave = async () => {
+        setSaving(true);
+        try {
+            const thumbnailB64 = canvasRef.current?.toDataURL();
 
-      if (templateId) {
-        await cvTemplateAPI.updateTemplateDesign(
-          templateId,
-          cvData,
-        );
-        toast.success("Template saved!");
-      } else {
-        const res = await cvTemplateAPI.createTemplate(cvData);
-        toast.success("Template created!");
-      }
-    } catch (err) {
-      toast.error("Failed to save template");
-      console.error(err);
-    } finally {
-      setSaving(false);
-    }
-  };
+            const cvData = {
+                name: data.name,
+                category: "General",
+                design_data: JSON.stringify(data.backgroundElements),
+                default_sections: JSON.stringify(data.sections),
+                primary_color: data.primaryColor,
+                default_title: data.defaultTitle,
+                default_subtitle: data.defaultSubTitle,
+                title_style: JSON.stringify(data.titleStyle),
+                subtitle_style: JSON.stringify(data.subTitleStyle),
+                has_avatar: data.hasAvatar,
+                avatar_style: JSON.stringify(data.avatarStyle),
+            };
 
-  // ── Export PNG ────────────────────────────────────────────────────────────
-  const handleExport = () => {
-    const dataUrl = canvasRef.current?.toDataURL();
-    if (!dataUrl) return;
-    const a = document.createElement("a");
-    a.href = dataUrl;
-    a.download = `${data.name || "template"}.png`;
-    a.click();
-  };
+            if (templateId) {
+                await cvTemplateAPI.updateTemplateDesign(templateId, cvData, thumbnailB64);
+                toast.success("Template saved!");
+            } else {
+                const res = await cvTemplateAPI.createTemplate(cvData);
+                toast.success("Template created!");
+            }
+        } catch (err) {
+            toast.error("Failed to save template");
+            console.error(err);
+        } finally {
+            setSaving(false);
+        }
+    };
 
-  // ── Primary color change → update all elements using old primary color ──
-  const handlePrimaryColor = (newColor: string) => {
-    const oldColor = data.primaryColor;
-    setData((prev) => ({
-      ...prev,
-      primaryColor: newColor,
-      backgroundElements: prev.backgroundElements.map((el) =>
-        el.fill === oldColor ? { ...el, fill: newColor } : el,
-      ),
-    }));
-  };
+    // ── Export PNG ────────────────────────────────────────────────────────────
+    const handleExport = () => {
+        const dataUrl = canvasRef.current?.toDataURL();
+        if (!dataUrl) return;
+        const a = document.createElement("a");
+        a.href = dataUrl;
+        a.download = `${data.name || "template"}.png`;
+        a.click();
+    };
 
-  return (
-    <div className="flex h-screen overflow-hidden bg-gray-100">
-      {/* ── Left sidebar ── */}
-      <aside className="w-60 flex flex-col bg-white border-r border-gray-200 shadow-sm overflow-hidden">
-        <SidebarTools
-          primaryColor={data.primaryColor}
-          data={data}
-          onAddElement={handleAddElement}
-        />
-      </aside>
+    // ── Primary color change → update all elements using old primary color ──
+    const handlePrimaryColor = (newColor: string) => {
+        const oldColor = data.primaryColor;
+        setData(prev => ({
+            ...prev,
+            primaryColor: newColor,
+            backgroundElements: prev.backgroundElements.map(el =>
+                el.fill === oldColor ? { ...el, fill: newColor } : el
+            ),
+        }));
+    };
 
-      {/* ── Center canvas ── */}
-      <main className="flex-1 flex flex-col overflow-hidden">
-        {/* Toolbar */}
-        <div className="h-11 flex items-center gap-2 px-4 bg-white border-b border-gray-200 shadow-sm shrink-0">
-          {/* Template name */}
-          <input
-            type="text"
-            value={data.name}
-            onChange={(e) => handleChange({ name: e.target.value })}
-            className="text-[13px] font-semibold text-gray-700 bg-transparent border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded px-1 w-44"
-            placeholder="Tên mẫu CV..."
-          />
+    return (
+        <div className="flex h-screen overflow-hidden bg-gray-100">
 
-          <div className="w-px h-5 bg-gray-200 mx-1" />
+            {/* ── Left sidebar ── */}
+            <aside className="w-60 flex flex-col bg-white border-r border-gray-200 shadow-sm overflow-hidden">
+                <SidebarTools
+                    primaryColor={data.primaryColor}
+                    data={data}
+                    onAddElement={handleAddElement}
+                />
+            </aside>
 
-          {/* Category Selector */}
-          <select
-            value={data.category}
-            onChange={(e) => handleChange({ category: e.target.value })}
-            className="text-[12px] text-gray-600 bg-gray-50 border border-gray-200 rounded px-2 py-0.5 focus:outline-none focus:ring-1 focus:ring-blue-400"
-          >
-            <option value="Chung">Chung</option>
-            <option value="IT">Công nghệ thông tin</option>
-            <option value="Marketing">Marketing</option>
-            <option value="Design">Thiết kế</option>
-          </select>
+            {/* ── Center canvas ── */}
+            <main className="flex-1 flex flex-col overflow-hidden">
+                {/* Toolbar */}
+                <div className="h-11 flex items-center gap-2 px-4 bg-white border-b border-gray-200 shadow-sm shrink-0">
+                    {/* Template name */}
+                    <input
+                        type="text" value={data.name}
+                        onChange={e => handleChange({ name: e.target.value })}
+                        className="text-[13px] font-semibold text-gray-700 bg-transparent border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded px-1 w-44"
+                    />
 
-          <div className="flex-1" />
+                    <div className="flex-1" />
 
-          {/* Primary color */}
-          <label
-            className="flex items-center gap-1.5 cursor-pointer"
-            title="Màu chủ đạo"
-          >
-            <Palette size={14} className="text-gray-400" />
-            <input
-              type="color"
-              value={data.primaryColor}
-              onChange={(e) => handlePrimaryColor(e.target.value)}
-              className="w-6 h-6 p-0 border border-gray-200 rounded cursor-pointer overflow-hidden"
-            />
-          </label>
+                    {/* Primary color */}
+                    <label className="flex items-center gap-1.5 cursor-pointer" title="Primary Color">
+                        <Palette size={14} className="text-gray-400" />
+                        <input type="color" value={data.primaryColor}
+                            onChange={e => handlePrimaryColor(e.target.value)}
+                            className="w-6 h-6 p-0 border border-gray-200 rounded cursor-pointer" />
+                        <span className="text-[11px] font-mono text-gray-400 hidden sm:inline">{data.primaryColor}</span>
+                    </label>
 
-          <div className="w-px h-5 bg-gray-200 mx-1" />
+                    <div className="w-px h-5 bg-gray-200 mx-1" />
 
-          {/* Export */}
-          <button
-            onClick={handleExport}
-            className="p-2 hover:bg-gray-100 rounded-md text-gray-500 transition-colors"
-            title="Xuất ảnh PNG"
-          >
-            <Download size={16} />
-          </button>
+                    {/* Preview toggle */}
+                    <button
+                        onClick={() => { setPreviewMode(p => !p); setSelectedId(null); }}
+                        className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-[12px] font-medium transition-colors ${previewMode ? "bg-blue-50 text-blue-600" : "text-gray-500 hover:bg-gray-100"}`}>
+                        {previewMode ? <Eye size={13} /> : <EyeOff size={13} />}
+                        {previewMode ? "Preview" : "Edit"}
+                    </button>
 
-          {/* Save */}
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="p-2 bg-[#1a3060] hover:bg-[#2a4580] text-white rounded-md disabled:opacity-50 transition-all shadow-sm flex items-center justify-center"
-            title="Tạo mẫu mới"
-          >
-            {saving ? (
-              <Loader2 size={16} className="animate-spin" />
-            ) : (
-              <Save size={16} />
-            )}
-          </button>
+                    {/* Export */}
+                    <button onClick={handleExport}
+                        className="flex items-center gap-1.5 px-2.5 py-1 rounded text-[12px] font-medium text-gray-500 hover:bg-gray-100 transition-colors">
+                        <Download size={13} />
+                        PNG
+                    </button>
+
+                    {/* Save */}
+                    <button onClick={handleSave} disabled={saving}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded text-[12px] font-semibold bg-[#1a3060] text-white hover:bg-[#162850] disabled:opacity-50 transition-colors">
+                        {saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
+                        {saving ? "Saving…" : "Save"}
+                    </button>
+                </div>
+
+                {/* Canvas area */}
+                <div className="flex-1 overflow-hidden">
+                    <CVCanvas
+                        ref={canvasRef}
+                        data={data}
+                        mode={previewMode ? "preview" : "admin"}
+                        selectedId={previewMode ? null : selectedId}
+                        onSelect={setSelectedId}
+                        onChange={handleChange}
+                    />
+                </div>
+            </main>
+
+            {/* ── Right property panel ── */}
+            <div className="w-64 flex flex-col bg-white border-l border-gray-200 shadow-sm overflow-hidden overflow-y-auto">
+                <div className="text-[12px] border border-gray-200 bg-white">
+
+                    {/* ─── TITLE ───────────────────── */}
+                    <GroupHeader label="Title" open={open.title} onToggle={() => setOpen(prev => ({ ...prev, title: !prev.title }))} />
+                    {open.title && (
+                        <>
+                            <Row label="Text">
+                                <input
+                                    value={data.defaultTitle}
+                                    onChange={(e) => handleChange({ defaultTitle: e.target.value })}
+                                    className="w-full bg-transparent border-0 focus:outline-none h-[22px] px-1"
+                                />
+                            </Row>
+
+                            <Row label="X">
+                                <NumInput value={data.titleStyle.x} onChange={(v: number) =>
+                                    handleChange({ titleStyle: { ...data.titleStyle, x: v } })}
+                                />
+                            </Row>
+
+                            <Row label="Y">
+                                <NumInput value={data.titleStyle.y} onChange={(v: number) =>
+                                    handleChange({ titleStyle: { ...data.titleStyle, y: v } })}
+                                />
+                            </Row>
+
+                            <Row label="Font Size">
+                                <NumInput value={data.titleStyle.font_size} onChange={(v: number) =>
+                                    handleChange({ titleStyle: { ...data.titleStyle, font_size: v } })}
+                                />
+                            </Row>
+
+                            <Row label="Font Weight">
+                                <SelectInput
+                                    value={data.titleStyle.font_weight}
+                                    onChange={(v) => handleChange({
+                                        titleStyle: { ...data.titleStyle, font_weight: v as "normal" | "bold" }
+                                    })}
+                                    options={[
+                                        { label: "Normal", value: "normal" },
+                                        { label: "Bold", value: "bold" }
+                                    ]}
+                                />
+                            </Row>
+
+                            <Row label="Font Family">
+                                <input
+                                    value={data.titleStyle.font_family}
+                                    onChange={(e) => handleChange({
+                                        titleStyle: { ...data.titleStyle, font_family: e.target.value }
+                                    })}
+                                    className="w-full bg-transparent border-0 focus:outline-none h-[22px] px-1"
+                                />
+                            </Row>
+
+                            <Row label="Color">
+                                <ColorInput
+                                    value={data.titleStyle.color}
+                                    onChange={(v: string) =>
+                                        handleChange({ titleStyle: { ...data.titleStyle, color: v } })}
+                                />
+                            </Row>
+                        </>
+                    )}
+
+                    {/* ─── SUBTITLE ───────────────────── */}
+                    <GroupHeader label="SubTitle" open={open.sub} onToggle={() => setOpen(prev => ({ ...prev, sub: !prev.sub }))} />
+                    {open.sub && (
+                        <>
+                            <Row label="Text">
+                                <input
+                                    value={data.defaultSubTitle}
+                                    onChange={(e) => handleChange({ defaultSubTitle: e.target.value })}
+                                    className="w-full bg-transparent border-0 focus:outline-none h-[22px] px-1"
+                                />
+                            </Row>
+
+                            <Row label="X">
+                                <NumInput value={data.subTitleStyle.x} onChange={(v: number) =>
+                                    handleChange({ subTitleStyle: { ...data.subTitleStyle, x: v } })}
+                                />
+                            </Row>
+
+                            <Row label="Y">
+                                <NumInput value={data.subTitleStyle.y} onChange={(v: number) =>
+                                    handleChange({ subTitleStyle: { ...data.subTitleStyle, y: v } })}
+                                />
+                            </Row>
+
+                            <Row label="Font Size">
+                                <NumInput value={data.subTitleStyle.font_size} onChange={(v: number) =>
+                                    handleChange({ subTitleStyle: { ...data.subTitleStyle, font_size: v } })}
+                                />
+                            </Row>
+
+                            <Row label="Font Weight">
+                                <SelectInput
+                                    value={data.subTitleStyle.font_weight}
+                                    onChange={(v) => handleChange({
+                                        subTitleStyle: { ...data.subTitleStyle, font_weight: v as "normal" | "bold" }
+                                    })}
+                                    options={[
+                                        { label: "Normal", value: "normal" },
+                                        { label: "Bold", value: "bold" }
+                                    ]}
+                                />
+                            </Row>
+
+                            <Row label="Font Family">
+                                <input
+                                    value={data.subTitleStyle.font_family}
+                                    onChange={(e) => handleChange({
+                                        subTitleStyle: { ...data.subTitleStyle, font_family: e.target.value }
+                                    })}
+                                    className="w-full bg-transparent border-0 focus:outline-none h-[22px] px-1"
+                                />
+                            </Row>
+
+                            <Row label="Color">
+                                <ColorInput
+                                    value={data.subTitleStyle.color}
+                                    onChange={(v: string) =>
+                                        handleChange({ subTitleStyle: { ...data.subTitleStyle, color: v } })}
+                                />
+                            </Row>
+                        </>
+                    )}
+
+                    {/* ─── AVATAR ───────────────────── */}
+                    <GroupHeader label="Avatar" open={open.avatar} onToggle={() => setOpen(prev => ({ ...prev, avatar: !prev.avatar }))} />
+                    {open.avatar && (
+                        <>
+                            <Row label="Visible">
+                                <input
+                                    type="checkbox"
+                                    checked={data.hasAvatar}
+                                    onChange={(e) => handleChange({ hasAvatar: e.target.checked })}
+                                />
+                            </Row>
+
+                            <Row label="X">
+                                <NumInput value={data.avatarStyle.x} onChange={(v: number) =>
+                                    handleChange({ avatarStyle: { ...data.avatarStyle, x: v } })}
+                                />
+                            </Row>
+
+                            <Row label="Y">
+                                <NumInput value={data.avatarStyle.y} onChange={(v: number) =>
+                                    handleChange({ avatarStyle: { ...data.avatarStyle, y: v } })}
+                                />
+                            </Row>
+
+                            <Row label="Width">
+                                <NumInput value={data.avatarStyle.width} onChange={(v: number) =>
+                                    handleChange({ avatarStyle: { ...data.avatarStyle, width: v } })}
+                                />
+                            </Row>
+
+                            <Row label="Height">
+                                <NumInput value={data.avatarStyle.height} onChange={(v: number) =>
+                                    handleChange({ avatarStyle: { ...data.avatarStyle, height: v } })}
+                                />
+                            </Row>
+
+                            <Row label="Radius">
+                                <NumInput value={data.avatarStyle.border_radius} onChange={(v: number) =>
+                                    handleChange({ avatarStyle: { ...data.avatarStyle, border_radius: v } })}
+                                />
+                            </Row>
+                        </>
+                    )}
+                </div>
+                <div className="px-3 py-2 bg-[#f0f4fa] border-b border-[#c8d0e0] flex items-center gap-2">
+                    <FileText size={13} className="text-[#1a3060]" />
+                    <span className="text-[11px] font-bold text-[#1a3060] uppercase tracking-wide">Properties</span>
+                </div>
+                <div className="flex-1">
+                    <PropertyEditor
+                        selectedId={selectedId}
+                        data={data}
+                        onChange={handleChange}
+                        onDelete={handleDelete}
+                    />
+                </div>
+            </div>
         </div>
-
-        {/* Canvas area */}
-        <div className="flex-1 overflow-hidden">
-          <CVCanvas
-            ref={canvasRef}
-            data={data}
-            mode={previewMode ? "preview" : "admin"}
-            selectedId={previewMode ? null : selectedId}
-            onSelect={setSelectedId}
-            onChange={handleChange}
-          />
-        </div>
-      </main>
-
-      {/* ── Right property panel ── */}
-      <aside className="w-64 flex flex-col bg-white border-l border-gray-200 shadow-sm overflow-hidden">
-        <div className="px-3 py-2 bg-[#f0f4fa] border-b border-[#c8d0e0] flex items-center gap-2">
-          <FileText size={13} className="text-[#1a3060]" />
-          <span className="text-[11px] font-bold text-[#1a3060] uppercase tracking-wide">
-            Properties
-          </span>
-        </div>
-        <div className="flex-1 overflow-hidden">
-          <PropertyEditor
-            selectedId={selectedId}
-            data={data}
-            onChange={handleChange}
-            onDelete={handleDelete}
-          />
-        </div>
-      </aside>
-    </div>
-  );
+    );
 }

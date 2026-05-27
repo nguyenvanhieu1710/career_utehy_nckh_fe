@@ -5,12 +5,18 @@ import { RolesProvider } from "@/contexts/RolesContext";
 import { StatusProvider } from "@/contexts/StatusContext";
 import { PermissionProvider } from "@/contexts/PermissionContext";
 import { useTokenRefresh } from "@/hooks/useTokenRefresh";
-import { ReactNode } from "react";
+import { useBehaviorTracker } from "@/hooks/useBehaviorTracker";
+import { ReactNode, Suspense } from "react";
 
 // Separate component for token refresh to avoid re-render issues
 function TokenRefreshManager() {
   useTokenRefresh();
   return null; // This component doesn't render anything
+}
+
+function BehaviorTrackerManager() {
+  useBehaviorTracker();
+  return null;
 }
 
 export function Providers({ children }: { children: ReactNode }) {
@@ -25,6 +31,9 @@ export function Providers({ children }: { children: ReactNode }) {
         <StatusProvider>
           <PermissionProvider>
             <TokenRefreshManager />
+            <Suspense fallback={null}>
+              <BehaviorTrackerManager />
+            </Suspense>
             {children}
           </PermissionProvider>
         </StatusProvider>

@@ -259,7 +259,7 @@ export const CategoryDialog = ({
                 {/* Large Preview Modal */}
                 {showAvatarPreview && (avatarPreview || currentAvatarUrl) && (
                   <div
-                    className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+                    className="fixed inset-0 bg-[rgba(0,0,0,0.5)] flex items-center justify-center z-50"
                     onClick={() => setShowAvatarPreview(false)}
                   >
                     <div className="relative max-w-md max-h-md cursor-pointer">

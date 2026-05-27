@@ -29,6 +29,8 @@ export interface DataSourceDialogData {
   max_pages?: number;
   fetch_detail?: boolean;
   crawler_payload?: any;
+  api_service?: boolean;
+  api_service_config?: any;
 }
 
 interface DataSourceDialogProps {
@@ -59,10 +61,21 @@ export function DataSourceDialog({
 
   const [isLoading, setIsLoading] = useState(false);
   const [cssConfigJson, setCssConfigJson] = useState("");
+
+  // Raw crawler_payload override — when filled, REPLACES the auto-built payload.
+  // Use this to drop in a full `selector_config` block, etc.
+  const [crawlerPayloadJson, setCrawlerPayloadJson] = useState("");
+
+  // Provider-API extraction step (runs BEFORE the universal extraction service)
+  const [apiServiceEnabled, setApiServiceEnabled] = useState(false);
+  const [apiServiceConfigJson, setApiServiceConfigJson] = useState("");
+
   const [errors, setErrors] = useState<{
     name?: string;
     base_url?: string;
     css_config_json?: string;
+    crawler_payload_json?: string;
+    api_service_config?: string;
   }>({});
 
   // Reset form when dialog opens
@@ -92,6 +105,24 @@ export function DataSourceDialog({
       setCssConfigJson("");
     }
 
+    // Pre-fill the raw payload textarea with the existing crawler_payload so
+    // the operator can see / tweak whatever the source already has (in
+    // particular: selector_config). Empty when there's no payload yet.
+    const existingPayload =
+      (initialData as any)?.crawler_payload ||
+      (initialData as any)?.crawler_config?.crawler_payload;
+    setCrawlerPayloadJson(
+      existingPayload && Object.keys(existingPayload).length > 0
+        ? JSON.stringify(existingPayload, null, 2)
+        : "",
+    );
+
+    setApiServiceEnabled(Boolean((initialData as any)?.api_service));
+    const apiCfg = (initialData as any)?.api_service_config;
+    setApiServiceConfigJson(
+      apiCfg ? JSON.stringify(apiCfg, null, 2) : "",
+    );
+
     setErrors({});
   }, [open, initialData]);
 
@@ -100,6 +131,8 @@ export function DataSourceDialog({
       name?: string;
       base_url?: string;
       css_config_json?: string;
+      crawler_payload_json?: string;
+      api_service_config?: string;
     } = {};
 
     if (!name.trim()) {
@@ -120,6 +153,33 @@ export function DataSourceDialog({
       } catch (e: any) {
         newErrors.css_config_json = "JSON không hợp lệ";
       }
+    }
+
+    if (crawlerPayloadJson.trim()) {
+      try {
+        const parsed = JSON.parse(crawlerPayloadJson);
+        if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
+          newErrors.crawler_payload_json =
+            "crawler_payload phải là một JSON object.";
+        }
+      } catch {
+        newErrors.crawler_payload_json = "JSON không hợp lệ";
+      }
+    }
+
+    if (apiServiceEnabled && apiServiceConfigJson.trim()) {
+      try {
+        const parsed = JSON.parse(apiServiceConfigJson);
+        if (!parsed || typeof parsed !== "object" || !parsed.url) {
+          newErrors.api_service_config =
+            "Cấu hình API phải là object có trường `url`.";
+        }
+      } catch {
+        newErrors.api_service_config = "JSON không hợp lệ";
+      }
+    } else if (apiServiceEnabled && !apiServiceConfigJson.trim()) {
+      newErrors.api_service_config =
+        "Bật API nhà cung cấp thì phải nhập cấu hình.";
     }
 
     setErrors(newErrors);
@@ -144,12 +204,66 @@ export function DataSourceDialog({
     }
   };
 
+  const handleFormatCrawlerPayload = () => {
+    if (!crawlerPayloadJson.trim()) return;
+    try {
+      // eslint-disable-next-line no-new-func
+      const obj = new Function(`return ${crawlerPayloadJson}`)();
+      setCrawlerPayloadJson(JSON.stringify(obj, null, 2));
+      setErrors((prev) => ({ ...prev, crawler_payload_json: undefined }));
+    } catch {
+      setErrors((prev) => ({
+        ...prev,
+        crawler_payload_json: "Không thể định dạng: Kiểm tra lại cú pháp.",
+      }));
+    }
+  };
+
+  const handleInsertSelectorTemplate = () => {
+    const template = {
+      selector_config: {
+        use_browser: true,
+        browser_wait_for: ".job-item-search-result",
+        browser_wait_ms: 3000,
+        max_items: 25,
+        follow_detail: true,
+        detail_concurrency: 3,
+        listing: {
+          url: baseUrl.trim() || "https://www.example.com/jobs",
+          container: ".job-item-search-result",
+          fields: {
+            id: "@data-job-id",
+            title: ".title a ::text",
+            url_source: ".title a @href",
+            company: ".company-name ::text",
+            location: ".address ::text",
+            salary_display: ".title-salary ::text",
+            image_url: ".avatar img @src",
+          },
+        },
+        detail: {
+          fields: {
+            description:
+              ".job-description__item:not(.job-detail-section) .job-description__item--content ::attr-html",
+            requirements:
+              ".job-description__item.requirement .job-description__item--content ::attr-html",
+            benefits:
+              ".job-description__item.benefit .job-description__item--content ::attr-html",
+          },
+        },
+      },
+    };
+    setCrawlerPayloadJson(JSON.stringify(template, null, 2));
+    setErrors((prev) => ({ ...prev, crawler_payload_json: undefined }));
+  };
+
   const handleSubmit = async () => {
     if (!validateForm()) return;
 
     setIsLoading(true);
     try {
-      const payload: any = {
+      // Auto-built payload from convenience fields (max pages, css config…).
+      const autoPayload: any = {
         source: name.trim().toLowerCase(),
         maxPages: maxPages,
         fetchDetail: fetchDetail,
@@ -157,8 +271,20 @@ export function DataSourceDialog({
       };
 
       if (cssConfigJson.trim()) {
-        payload.cssConfig = JSON.parse(cssConfigJson.trim());
+        autoPayload.cssConfig = JSON.parse(cssConfigJson.trim());
       }
+
+      // Raw crawler_payload textarea wins when filled — it's the only way to
+      // ship arbitrary keys (e.g. selector_config) the form doesn't model.
+      // When empty, fall back to the auto-built payload.
+      const payload: any = crawlerPayloadJson.trim()
+        ? JSON.parse(crawlerPayloadJson.trim())
+        : autoPayload;
+
+      const apiServiceConfig =
+        apiServiceEnabled && apiServiceConfigJson.trim()
+          ? JSON.parse(apiServiceConfigJson.trim())
+          : null;
 
       onSubmit?.({
         name: name.trim(),
@@ -170,6 +296,8 @@ export function DataSourceDialog({
         max_pages: maxPages,
         fetch_detail: fetchDetail,
         crawler_payload: payload,
+        api_service: apiServiceEnabled,
+        api_service_config: apiServiceConfig,
       });
     } catch (error) {
       console.error("Submit error:", error);
@@ -330,6 +458,73 @@ export function DataSourceDialog({
               </div>
               */}
 
+              {/* Provider-API extraction step */}
+              <div className="space-y-2 pt-2 border border-amber-100 bg-amber-50 rounded-lg p-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label
+                      htmlFor="api_service"
+                      className="text-amber-900 font-medium cursor-pointer"
+                    >
+                      Gọi API nhà cung cấp trước
+                    </Label>
+                    <p className="text-xs text-amber-800/70 mt-0.5">
+                      Bật để gọi trực tiếp API JSON của trang nguồn trước khi
+                      chạy Parser/AI. Nếu API thất bại, hệ thống sẽ tự
+                      chuyển sang trích xuất HTML.
+                    </p>
+                  </div>
+                  <Switch
+                    id="api_service"
+                    checked={apiServiceEnabled}
+                    onCheckedChange={setApiServiceEnabled}
+                  />
+                </div>
+
+                {apiServiceEnabled && (
+                  <div className="space-y-1 pt-2">
+                    <Label
+                      htmlFor="api_service_config"
+                      className="text-amber-900 flex justify-between font-medium items-center text-xs"
+                    >
+                      <span>Cấu hình API (JSON)</span>
+                      {errors.api_service_config && (
+                        <span className="text-red-500 text-xs font-normal">
+                          {errors.api_service_config}
+                        </span>
+                      )}
+                    </Label>
+                    <textarea
+                      id="api_service_config"
+                      className={`w-full min-h-[160px] p-3 rounded-md border-2 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white ${
+                        errors.api_service_config
+                          ? "border-red-500"
+                          : "border-amber-200"
+                      }`}
+                      placeholder={`{
+  "url": "https://api.provider.com/v1/jobs",
+  "method": "GET",
+  "headers": { "Authorization": "Bearer ..." },
+  "params": { "page": 1, "limit": 50 },
+  "json_path": "data.items",
+  "item_id_field": "id",
+  "mapping": {
+    "title": "title",
+    "company": "company.name",
+    "location": "location.name",
+    "description": "description",
+    "url_source": "url"
+  }
+}`}
+                      value={apiServiceConfigJson}
+                      onChange={(e) =>
+                        setApiServiceConfigJson(e.target.value)
+                      }
+                    />
+                  </div>
+                )}
+              </div>
+
               <div className="space-y-2 pt-2">
                 <Label
                   htmlFor="css_config_json"
@@ -353,7 +548,7 @@ export function DataSourceDialog({
                 </Label>
                 <textarea
                   id="css_config_json"
-                  className={`w-full min-h-[350px] p-3 rounded-md border-2 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-green-500 bg-white ${
+                  className={`w-full min-h-[200px] p-3 rounded-md border-2 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-green-500 bg-white ${
                     errors.css_config_json
                       ? "border-red-500"
                       : "border-green-100"
@@ -361,6 +556,83 @@ export function DataSourceDialog({
                   placeholder='{ "list": { "container": ".job-item", "title": { "selector": "h3", "extract": "text" } } }'
                   value={cssConfigJson}
                   onChange={(e) => setCssConfigJson(e.target.value)}
+                />
+              </div>
+
+              {/* Raw crawler_payload textarea — full control over the JSON sent to the backend. */}
+              <div className="space-y-2 pt-2 border border-emerald-200 bg-emerald-50/40 rounded-lg p-3">
+                <Label
+                  htmlFor="crawler_payload_json"
+                  className="text-emerald-900 flex justify-between font-medium items-center"
+                >
+                  <span>crawler_payload thô (JSON - Nâng cao)</span>
+                  <div className="flex gap-2">
+                    {errors.crawler_payload_json && (
+                      <span className="text-red-500 text-xs font-normal">
+                        {errors.crawler_payload_json}
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={handleInsertSelectorTemplate}
+                      className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-1.5 rounded hover:bg-emerald-200 transition-colors border border-emerald-300 cursor-pointer"
+                    >
+                      Chèn mẫu selector_config
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleFormatCrawlerPayload}
+                      className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-1.5 rounded hover:bg-emerald-200 transition-colors border border-emerald-300 cursor-pointer"
+                    >
+                      Định dạng JSON
+                    </button>
+                  </div>
+                </Label>
+                <p className="text-[11px] text-emerald-800/80 leading-snug">
+                  Nhập trực tiếp toàn bộ <code>crawler_payload</code> ở đây để
+                  ghi đè các trường tự sinh phía trên. Dùng để khai báo
+                  <code> selector_config </code>
+                  (container/fields, fetch chi tiết) cho từng nguồn. Để trống
+                  nếu chỉ dùng các tuỳ chọn ở các ô nhanh phía trên.
+                </p>
+                <textarea
+                  id="crawler_payload_json"
+                  className={`w-full min-h-[260px] p-3 rounded-md border-2 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white ${
+                    errors.crawler_payload_json
+                      ? "border-red-500"
+                      : "border-emerald-200"
+                  }`}
+                  placeholder={`{
+  "selector_config": {
+    "use_browser": true,
+    "browser_wait_for": ".job-item-search-result",
+    "browser_wait_ms": 3000,
+    "max_items": 25,
+    "follow_detail": true,
+    "listing": {
+      "url": "https://www.topcv.vn/tim-viec-lam-it",
+      "container": ".job-item-search-result",
+      "fields": {
+        "id": "@data-job-id",
+        "title": ".title a ::text",
+        "url_source": ".title a @href",
+        "company": ".company-name ::text",
+        "location": ".address ::text",
+        "salary_display": ".title-salary ::text",
+        "image_url": ".avatar img @src"
+      }
+    },
+    "detail": {
+      "fields": {
+        "description": ".job-description__item:not(.job-detail-section) .job-description__item--content ::attr-html",
+        "requirements": ".job-description__item.requirement .job-description__item--content ::attr-html",
+        "benefits": ".job-description__item.benefit .job-description__item--content ::attr-html"
+      }
+    }
+  }
+}`}
+                  value={crawlerPayloadJson}
+                  onChange={(e) => setCrawlerPayloadJson(e.target.value)}
                 />
               </div>
             </div>

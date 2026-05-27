@@ -70,10 +70,6 @@ export default function TemplateManagementPage() {
   // };
 
   const columns: Column<CVTemplate>[] = [
-    // {
-    //   label: "Mã mẫu",
-    //   render: (tpl) => <code className="text-xs font-mono bg-gray-100 px-1 rounded">{tpl.id.substring(0, 8)}</code>
-    // },
     {
       label: "STT",
       render: (tpl, index) => index + 1,
