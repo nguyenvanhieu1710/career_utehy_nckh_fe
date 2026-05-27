@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { AddButton } from "@/components/admin/AddButton";
 import { Column, Table } from "@/components/admin/Table";
 import { Pagination } from "@/components/admin/Pagination";
@@ -17,6 +18,7 @@ import { Search } from "lucide-react";
 import { logger } from "@/lib/logger";
 
 export default function CategoryManagementPage() {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(
@@ -245,20 +247,33 @@ export default function CategoryManagementPage() {
     // },
     {
       label: "Hành động",
-      render: (category) => (
-        <div className="flex gap-2">
-          <ActionButtons
-            type="edit"
-            permission="category.update"
-            onClick={() => handleEdit(category)}
-          />
-          <ActionButtons
-            type="delete"
-            permission="category.delete"
-            onClick={() => handleDelete(category)}
-          />
-        </div>
-      ),
+      render: (category) => {
+        // Prefer UUID for the detail route — the BE now lookups by id first,
+        // then falls back to slug for back-compat with cache-shaped data.
+        const detailKey = category.id?.toString() || category.slug || "";
+        return (
+          <div className="flex gap-2">
+            <ActionButtons
+              type="view"
+              permission="category.read"
+              title="Xem chi tiết"
+              onClick={() =>
+                router.push(`/admin/category-management/${detailKey}`)
+              }
+            />
+            <ActionButtons
+              type="edit"
+              permission="category.update"
+              onClick={() => handleEdit(category)}
+            />
+            <ActionButtons
+              type="delete"
+              permission="category.delete"
+              onClick={() => handleDelete(category)}
+            />
+          </div>
+        );
+      },
     },
   ] as Column<Category>[];
 

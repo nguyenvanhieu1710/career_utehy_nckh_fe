@@ -39,9 +39,8 @@ export function Navbar() {
 
   return (
     <nav
-      className={`sticky top-0 z-50 bg-white transition-shadow ${
-        scrolled ? "shadow-md" : "border-b"
-      }`}
+      className={`sticky top-0 z-50 bg-white transition-shadow ${scrolled ? "shadow-md" : "border-b"
+        }`}
     >
       <div className="w-full px-7">
         <div className="flex h-16 items-center justify-between">
@@ -56,31 +55,28 @@ export function Navbar() {
             <div className="hidden md:flex items-center gap-6 text-sm font-medium">
               <Link
                 href="/career/jobs"
-                className={`hover:text-green-600 transition font-bold ${
-                  isActiveLink("/career/jobs")
+                className={`hover:text-green-600 transition font-bold ${isActiveLink("/career/jobs")
                     ? "text-green-600 border-b-2 border-green-600 pb-1"
                     : "text-[#000000]"
-                }`}
+                  }`}
               >
                 Việc làm
               </Link>
               <Link
                 href="/cv"
-                className={`hover:text-green-600 transition font-bold ${
-                  isActiveLink("/cv")
+                className={`hover:text-green-600 transition font-bold ${isActiveLink("/cv")
                     ? "text-green-600 border-b-2 border-green-600 pb-1"
                     : "text-[#000000]"
-                }`}
+                  }`}
               >
                 Tạo CV
               </Link>
               <Link
                 href="/career/about-us"
-                className={`hover:text-green-600 transition font-bold ${
-                  isActiveLink("/career/about-us")
+                className={`hover:text-green-600 transition font-bold ${isActiveLink("/career/about-us")
                     ? "text-green-600 border-b-2 border-green-600 pb-1"
                     : "text-[#000000]"
-                }`}
+                  }`}
               >
                 Về chúng tôi
               </Link>
@@ -101,16 +97,16 @@ export function Navbar() {
                       {user.fullname}
                     </div>
                     <div className="text-xs text-gray-500">@{user.username}</div>
-                  </div>                
+                  </div>
                   <img
-                  src={userAPI.getAvatarUrl(user)}
-                  alt={`${user.fullname} avatar`}
-                  className="w-10 h-10 rounded-full object-cover border"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.src = "/default-avatar.jpg";
-                  }}
-                />  
+                    src={userAPI.getAvatarUrl(user)}
+                    alt={`${user.fullname} avatar`}
+                    className="w-10 h-10 rounded-full object-cover border"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.src = "/default-avatar.jpg";
+                    }}
+                  />
                 </button>
 
                 {isProfileOpen && (
@@ -142,11 +138,10 @@ export function Navbar() {
 
         {/* Mobile Menu */}
         <div
-          className={`md:hidden transition-all duration-300 ease-in-out ${
-            isOpen
+          className={`md:hidden transition-all duration-300 ease-in-out ${isOpen
               ? "max-h-96 opacity-100"
               : "max-h-0 opacity-0 overflow-hidden"
-          }`}
+            }`}
         >
           <div className="pt-2 pb-4 px-4 space-y-2 bg-white border-t">
             <MobileNavLink href="/career/jobs" onClick={() => setIsOpen(false)}>

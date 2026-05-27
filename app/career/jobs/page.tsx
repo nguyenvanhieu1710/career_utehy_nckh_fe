@@ -1,17 +1,26 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Filter, Heart } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Filter, Heart, Sparkles, X, Wand2 } from "lucide-react";
 import { Job, JobFilters, JobGetSchema } from "@/types/job";
 import { jobAPI } from "@/services/job";
+import { cvAPI } from "@/services/cv";
+import { useAuth } from "@/hooks/useAuth";
 import { JobSearch } from "@/components/jobs/JobSearch";
 import { JobFilters as JobFiltersComponent } from "@/components/jobs/JobFilters";
 import { JobList } from "@/components/jobs/JobList";
 import { JobDetailModal } from "@/components/jobs/JobDetailModal";
 import { SavedJobsPanel } from "@/components/jobs/SavedJobsPanel";
 import { NotificationDialog } from "@/components/common/NotificationDialog";
+import { behaviorAPI } from "@/services/behavior";
+
+const AI_FEATURE_DISMISS_KEY = "ai_analysis_promo_dismissed_v1";
+
+type RecommendationMode = "profile" | "file" | "none";
 
 export default function JobsPage() {
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -29,6 +38,14 @@ export default function JobsPage() {
   const [total, setTotal] = useState(0);
   const [globalTotal, setGlobalTotal] = useState(0);
   const [favoriteJobIds, setFavoriteJobIds] = useState<string[]>([]);
+  const [showAiPromo, setShowAiPromo] = useState(false);
+
+  // Recommendation banner state. When `recommendedMode` is true the list is
+  // a fixed top-k ranked by the user's CV — no pagination, no filters. Any
+  // search/filter switches us back to the regular all-jobs listing.
+  const [recommendedMode, setRecommendedMode] = useState(false);
+  const [recommendationSource, setRecommendationSource] =
+    useState<RecommendationMode>("none");
 
   // Modal states
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
@@ -56,15 +73,20 @@ export default function JobsPage() {
   ) => {
     setLoading(true);
     setError(false);
+    setRecommendedMode(false);
 
     try {
-      // Map UI filters to API parameters
+      // Map UI filters to API parameters. Treat 0 / empty as "no filter":
+      // sending salary_min=0 makes the backend exclude jobs whose salary_max
+      // is NULL (the typical case for scraped jobs that say "Thoả thuận").
+      const sMin = newFilters.salary_range?.min;
+      const sMax = newFilters.salary_range?.max;
       const apiFilters: JobGetSchema = {
         searchKeyword: newFilters.search || searchQuery || undefined,
         location: newFilters.location || undefined,
         job_type: newFilters.job_types?.[0],
-        salary_min: newFilters.salary_range?.min,
-        salary_max: newFilters.salary_range?.max,
+        salary_min: sMin && sMin > 0 ? sMin : undefined,
+        salary_max: sMax && sMax > 0 ? sMax : undefined,
         work_arrangement: newFilters.work_arrangements?.[0] as any,
         remote_allowed: newFilters.work_arrangements?.includes("remote"),
         status: "approved",
@@ -93,11 +115,70 @@ export default function JobsPage() {
     }
   };
 
-  // Initial load
-  useEffect(() => {
-    loadJobs(filters, 1);
+  /**
+   * Try CV-based recommendations. Returns true when we successfully populated
+   * the list with ranked jobs; false means the caller should fall back to the
+   * regular all-jobs listing (e.g. user has no CV, matching service down…).
+   */
+  const loadRecommendations = async (): Promise<boolean> => {
+    setLoading(true);
+    setError(false);
+    try {
+      const res: any = await cvAPI.getAutoRecommendations(20);
+      const payload = res?.data;
+      if (!payload?.success) return false;
 
-    // Load favorite job IDs from localStorage
+      const mode: RecommendationMode = payload.mode || "none";
+      const matches: any[] = Array.isArray(payload.matches)
+        ? payload.matches
+        : [];
+      if (mode === "none" || matches.length === 0) return false;
+
+      // Hydrate each match with the full Job object so the existing JobCard /
+      // JobDetailModal renders correctly (skills, company, description, …).
+      const hydrated = await Promise.all(
+        matches.map(async (m) => {
+          try {
+            const detail: any = await jobAPI.getJobById(m.job_id);
+            const job: Job | null = detail?.data ?? detail ?? null;
+            if (!job) return null;
+            return {
+              ...job,
+              compatibility_score: m.compatibility_score,
+              matched_skills: m.matched_skills,
+              missing_skills: m.missing_skills,
+              match_explanation: m.match_explanation,
+              // Prefer the source URL from the recommendation if the job row
+              // somehow lost it (older crawls).
+              url_source: job.url_source || m.url_source,
+            } as Job;
+          } catch {
+            return null;
+          }
+        }),
+      );
+      const valid = hydrated.filter((j): j is Job => j !== null);
+      if (valid.length === 0) return false;
+
+      setJobs(valid);
+      setTotal(valid.length);
+      setGlobalTotal(valid.length);
+      setHasMore(false);
+      setPage(1);
+      setRecommendationSource(mode);
+      setRecommendedMode(true);
+      return true;
+    } catch (err) {
+      console.error("Failed to load CV recommendations:", err);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Initial load — wait for auth state, then prefer CV recommendations.
+  useEffect(() => {
+    // Load favorites once.
     const savedFavorites = localStorage.getItem("favorite_job_ids");
     if (savedFavorites) {
       try {
@@ -106,20 +187,64 @@ export default function JobsPage() {
         console.error("Failed to parse favorite job IDs:", error);
       }
     }
-  }, []); // Empty dependency array ensures this only runs once on mount
 
-  // Handle search
+    // Show the AI-analysis promo banner unless the user has dismissed it.
+    try {
+      const dismissed = localStorage.getItem(AI_FEATURE_DISMISS_KEY);
+      if (!dismissed) setShowAiPromo(true);
+    } catch {
+      setShowAiPromo(true);
+    }
+  }, []);
+
+  const handleDismissAiPromo = () => {
+    setShowAiPromo(false);
+    try {
+      localStorage.setItem(AI_FEATURE_DISMISS_KEY, "1");
+    } catch {
+      /* localStorage may be unavailable (private mode) */
+    }
+  };
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (!isAuthenticated) {
+      loadJobs(filters, 1);
+      return;
+    }
+    (async () => {
+      const ok = await loadRecommendations();
+      if (!ok) await loadJobs(filters, 1);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoading, isAuthenticated]);
+
+  // Handle search — always switches to all-jobs mode (recommendations are
+  // a fixed ranked list and don't honor free-text search).
   const handleSearch = (query: string) => {
     setSearchQuery(query);
     const newFilters = { ...filters, search: query };
     setFilters(newFilters);
     loadJobs(newFilters);
+    if (query && query.trim().length > 0) {
+      behaviorAPI.trackSearch({
+        keyword: query,
+        scope: "job",
+        filter_snapshot: newFilters as unknown as Record<string, unknown>,
+      });
+    }
   };
 
-  // Handle filter changes
+  // Handle filter changes — same: switch out of recommendation mode.
   const handleFiltersChange = (newFilters: JobFilters) => {
     setFilters(newFilters);
     loadJobs(newFilters);
+    behaviorAPI.trackEvent({
+      event_category: "engagement",
+      event_action: "filter_change",
+      event_label: "jobs_list",
+      metadata_json: newFilters as unknown as Record<string, unknown>,
+    });
   };
 
   // Reset filters
@@ -128,6 +253,11 @@ export default function JobsPage() {
     setFilters(resetFilters);
     setSearchQuery("");
     loadJobs(resetFilters);
+  };
+
+  // "Xem tất cả việc làm" button when in recommendation mode.
+  const handleShowAllJobs = () => {
+    loadJobs(filters, 1);
   };
 
   // Load more jobs
@@ -306,6 +436,97 @@ export default function JobsPage() {
 
           {/* Main Content */}
           <div className="flex-1">
+            <AnimatePresence>
+              {showAiPromo && (
+                <motion.div
+                  key="ai-promo"
+                  initial={{ opacity: 0, y: -12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -12 }}
+                  transition={{ duration: 0.25 }}
+                  className="relative mb-4 overflow-hidden rounded-xl border border-indigo-200 bg-gradient-to-r from-indigo-50 via-fuchsia-50 to-pink-50 px-5 py-4 shadow-sm"
+                >
+                  {/* Soft animated sparkle backdrop */}
+                  <motion.span
+                    aria-hidden
+                    className="pointer-events-none absolute -top-6 -right-6 text-fuchsia-200"
+                    animate={{ rotate: [0, 10, -10, 0], scale: [1, 1.06, 1] }}
+                    transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+                  >
+                    <Sparkles className="h-24 w-24" strokeWidth={1.2} />
+                  </motion.span>
+
+                  <div className="relative flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
+                    <div className="flex items-start gap-3 flex-1">
+                      <motion.div
+                        animate={{ rotate: [0, 8, -8, 0] }}
+                        transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                        className="shrink-0 mt-0.5 p-2 rounded-lg bg-gradient-to-br from-indigo-500 to-fuchsia-500 shadow-md"
+                      >
+                        <Wand2 className="h-5 w-5 text-white" />
+                      </motion.div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="text-sm sm:text-base font-bold text-gray-900">
+                            Mới: Phân tích độ phù hợp công việc bằng AI
+                          </h3>
+                          <span className="text-[10px] font-extrabold tracking-wider text-rose-700 bg-yellow-300 ring-1 ring-rose-300 rounded-sm px-1.5 py-0.5">
+                            MỚI
+                          </span>
+                        </div>
+                        <p className="mt-1 text-xs sm:text-sm text-gray-700 leading-relaxed">
+                          AI sẽ đối chiếu CV của bạn với từng tin tuyển dụng,
+                          cho điểm phù hợp, chỉ ra kỹ năng bạn{" "}
+                          <span className="font-semibold text-emerald-700">
+                            đã có
+                          </span>{" "}
+                          và{" "}
+                          <span className="font-semibold text-amber-700">
+                            còn thiếu
+                          </span>
+                          , kèm gợi ý cải thiện — chỉ cần bấm nút{" "}
+                          <span className="inline-flex items-center gap-1 font-semibold text-fuchsia-700">
+                            <Sparkles className="h-3.5 w-3.5" />
+                            Phân tích
+                          </span>{" "}
+                          ở mỗi tin.
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={handleDismissAiPromo}
+                      className="self-start sm:self-center shrink-0 p-1.5 text-gray-400 hover:text-gray-700 hover:bg-white/60 rounded-md transition-colors cursor-pointer"
+                      title="Đóng thông báo"
+                      aria-label="Đóng thông báo"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+            {recommendedMode && (
+              <div className="mb-4 flex items-center justify-between gap-4 px-4 py-3 rounded-lg border border-emerald-200 bg-emerald-50">
+                <div className="flex items-center gap-2 text-sm text-emerald-900">
+                  <Sparkles className="h-4 w-4 text-emerald-600 flex-shrink-0" />
+                  <span>
+                    Đang gợi ý {jobs.length} việc làm phù hợp với{" "}
+                    {recommendationSource === "profile"
+                      ? "CV trực tuyến"
+                      : recommendationSource === "file"
+                        ? "CV đã tải lên"
+                        : "CV"}{" "}
+                    của bạn.
+                  </span>
+                </div>
+                <button
+                  onClick={handleShowAllJobs}
+                  className="text-sm font-medium text-emerald-700 hover:text-emerald-900 hover:underline whitespace-nowrap cursor-pointer"
+                >
+                  Xem tất cả việc làm
+                </button>
+              </div>
+            )}
             <JobList
               jobs={jobs}
               loading={loading}

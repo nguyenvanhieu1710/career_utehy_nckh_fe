@@ -31,7 +31,6 @@ export const mapJobMongoToJob = (jobMongo: JobMongo): Job => {
     company: {
       id: jobMongo.company_id || "",
       name: jobMongo.company_name || "Công ty ẩn danh",
-      logo: (jobMongo.company_logo as string) || undefined,
       location: jobMongo.location, // Using job location as fallback for company location
     },
     location: jobMongo.location || "Việt Nam",

@@ -119,6 +119,7 @@ class Logger {
 
     console.error(`🚨 [CRITICAL]${this.config.prefix} ${message}`, errorInfo);
 
+    
     // TODO: Send to error tracking service immediately
     // this.sendToErrorTracking(errorInfo, { priority: 'high' });
   }

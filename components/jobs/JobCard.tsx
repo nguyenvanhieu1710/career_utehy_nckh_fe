@@ -10,6 +10,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { Job } from "@/types/job";
+import { AnalyzeMatchButton } from "./AnalyzeMatchButton";
 
 interface JobCardProps {
   job: Job;
@@ -90,9 +91,9 @@ export const JobCard = ({
         <div className="flex items-start gap-4">
           {/* Company Logo */}
           <div className="w-16 h-16 bg-gradient-to-br from-green-50 to-green-100 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:from-green-100 group-hover:to-green-200 transition-colors">
-            {job.company.logo ? (
+            {job.image_url ? (
               <img
-                src={job.company.logo}
+                src={job.image_url}
                 alt={`${job.company.name} logo`}
                 className="w-12 h-12 object-contain rounded"
                 onError={(e) => {
@@ -101,12 +102,11 @@ export const JobCard = ({
                   target.nextElementSibling?.classList.remove("hidden");
                 }}
               />
-            ) : null}
-            <Briefcase
-              className={`h-8 w-8 text-green-600 ${
-                job.company.logo ? "hidden" : ""
-              }`}
-            />
+            ) : <Briefcase
+              className={`h-8 w-8 text-green-600 ${job.image_url ? "hidden" : ""
+                }`}
+            />}
+
           </div>
 
           {/* Job Info */}
@@ -172,7 +172,7 @@ export const JobCard = ({
 
                 {/* Skills */}
                 <div className="flex flex-wrap gap-2 mb-3">
-                  {job.skills.slice(0, 4).map((skill) => (
+                  {(Array.isArray(job.skills) ? job.skills : []).map((skill) => (
                     <span
                       key={skill}
                       className="bg-gray-50 text-gray-700 text-xs font-medium px-2 py-1 rounded-full border border-gray-200 hover:bg-gray-100 transition-colors"
@@ -180,12 +180,27 @@ export const JobCard = ({
                       {skill}
                     </span>
                   ))}
-                  {job.skills.length > 4 && (
+                  {job?.skills?.length > 4 && (
                     <span className="text-gray-500 text-xs font-medium px-2 py-1">
                       +{job.skills.length - 4} kỹ năng khác
                     </span>
                   )}
                 </div>
+
+                {/* Source URL — direct link to original posting */}
+                {job.url_source && (
+                  <a
+                    href={job.url_source}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="inline-flex items-center gap-1 text-xs text-green-700 hover:text-green-900 hover:underline mb-2 max-w-full"
+                    title={job.url_source}
+                  >
+                    <ExternalLink className="h-3 w-3 flex-shrink-0" />
+                    <span className="truncate">Mở tin gốc</span>
+                  </a>
+                )}
               </div>
 
               {/* Right Side - Salary & Actions */}
@@ -198,7 +213,14 @@ export const JobCard = ({
                 </div>
 
                 {/* Actions */}
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col items-stretch gap-2">
+                  {/* AI analysis CTA — most prominent action */}
+                  <AnalyzeMatchButton
+                    jobId={job.id}
+                    size="sm"
+                    className="self-end"
+                  />
+
                   <button
                     onClick={handleApplyClick}
                     className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm font-medium min-w-[100px] flex items-center justify-center gap-1 cursor-pointer"
@@ -209,11 +231,10 @@ export const JobCard = ({
 
                   <button
                     onClick={handleFavoriteClick}
-                    className={`border rounded-lg px-4 py-2 text-sm font-medium transition-colors cursor-pointer flex items-center justify-center gap-1 ${
-                      isFavorited
+                    className={`border rounded-lg px-4 py-2 text-sm font-medium transition-colors cursor-pointer flex items-center justify-center gap-1 ${isFavorited
                         ? "border-red-200 text-red-600 bg-red-50 hover:bg-red-100"
                         : "border-gray-300 text-gray-700 bg-white hover:bg-gray-50"
-                    }`}
+                      }`}
                   >
                     <Heart
                       className={`h-4 w-4 ${isFavorited ? "fill-current" : ""}`}

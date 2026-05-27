@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { Users, Target, Heart, BookOpen } from "lucide-react";
+import { Users, Target, Heart, BookOpen, FileText } from "lucide-react";
 import SectionTitle from "@/components/common/SectionTitle";
 
 // Framer Motion variants used across the page
@@ -324,17 +324,17 @@ export default function AboutUs() {
         <div className="container mx-auto px-4">
           <div className="grid md:grid-cols-3 gap-12 max-w-4xl mx-auto">
             <StatCard
-              icon="📋"
+              icon={<FileText className="w-8 h-8 text-white-800" />}
               number="+4.700.000"
               label="Số lượng tin tuyển dụng"
             />
             <StatCard
-              icon="👥"
+              icon={<Users className="w-8 h-8 text-white-800" />}
               number="+2.400.000"
               label="Số lượng người dùng trên nền tảng"
             />
             <StatCard
-              icon="✓"
+              icon={<Target className="w-8 h-8 text-white-800" />}
               number="+851.000"
               label="Người tìm được việc ở trên Career"
             />

@@ -20,6 +20,8 @@ export interface JobGetSchema extends GetSchema {
   work_arrangement?: string;
   experience_level?: string;
   remote_allowed?: boolean;
+  category_id?: string;
+  category_slug?: string;
 }
 
 export interface Job {
@@ -28,9 +30,9 @@ export interface Job {
   company: {
     id: string;
     name: string;
-    logo?: string;
     location?: string;
   };
+  image_url?: string | null;
   location: string;
   other_locations?: string[];
   salary?: string;
@@ -53,6 +55,16 @@ export interface Job {
   url_source?: string;
   job_level?: string;
   years_of_experience?: number;
+
+  // Optional recommendation fields — populated when the listing comes from
+  // the CV-based matching service. Absent for the regular all-jobs listing.
+  compatibility_score?: number;
+  matched_skills?: string[];
+  missing_skills?: string[];
+  match_explanation?: string;
+
+  // Industry tagging (admin-managed via the scrape-by-URL modal).
+  category_id?: string | null;
 }
 
 export interface JobFilters {

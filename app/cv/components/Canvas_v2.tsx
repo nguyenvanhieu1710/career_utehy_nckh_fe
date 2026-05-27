@@ -56,6 +56,12 @@ export interface CVState {
     titleStyle?: string;
     subtitleStyle?: string;
     primaryColor: string;
+    // The original primary that the template was painted with. Background
+    // shapes whose fill/stroke/icon matches this value get retinted to the
+    // current `primaryColor` at draw time. Without this, "Change Color" only
+    // moves things drawn ad-hoc (resize handles, header underline, bullets)
+    // and the big template rectangles stay their original color.
+    originalTemplatePrimary?: string;
     imageURL?: string;
     imageState: ImageState;
     sections: Section[];
@@ -97,6 +103,8 @@ interface CVCanvasProps {
     sections?: Section[];
     onSectionDrag?: (data: { id: string; x: number; y: number }) => void;
     primaryColor?: string;
+    /** See `CVState.originalTemplatePrimary`. */
+    originalTemplatePrimary?: string;
     isIcon?: boolean;
     defaultZoom?: number;
     canvasRef?: React.RefObject<HTMLCanvasElement | null>;
@@ -200,11 +208,41 @@ export const getFullCVState = (
     sections: Section[], projectName: string,
     titleStyle?: string, subtitleStyle?: string,
     backgroundElements?: ShapeElement[],
+    originalTemplatePrimary?: string,
 ): CVState => ({
     cvTitle, cvSubTitle, titleStyle, subtitleStyle, primaryColor, imageURL, imageState,
+    originalTemplatePrimary,
     sections: sections.map(s => ({ ...s, items: JSON.parse(JSON.stringify(s.items)) })),
     projectName, backgroundElements,
 });
+
+// ─── Color helpers ────────────────────────────────────────────────────────────
+// Compare two CSS colors, ignoring case and trailing alpha "ff". Used to spot
+// template shapes that should follow the CV's primary color.
+const _normaliseColor = (c: string | undefined | null): string | null => {
+    if (!c) return null;
+    let s = c.trim().toLowerCase();
+    if (s.startsWith("#") && (s.length === 9 || s.length === 5) && s.endsWith("ff")) {
+        // Drop fully-opaque alpha byte so #1d7057ff matches #1d7057.
+        s = s.slice(0, s.length - 2);
+    }
+    return s;
+};
+
+/** Return `next` if `value` matches the template's original primary; else
+ *  return `value` unchanged. Use this everywhere we draw a template shape so
+ *  the user's chosen color flows through to the rects. */
+const themedColor = (
+    value: string | undefined,
+    originalPrimary: string | undefined,
+    next: string,
+): string | undefined => {
+    if (!value) return value;
+    const v = _normaliseColor(value);
+    const o = _normaliseColor(originalPrimary);
+    if (o && v === o) return next;
+    return value;
+};
 
 // ─── Round rect helper ────────────────────────────────────────────────────────
 const roundRect = (ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) => {
@@ -265,24 +303,30 @@ export const generatePDFFromState = (state: CVState): void => {
     // White base
     ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, A4_W, A4_H);
 
-    // Background elements (template shapes)
+    // Background elements (template shapes) — fills that match the original
+    // template primary are remapped to the current `state.primaryColor`.
+    const tintFill = (c: string | undefined) => themedColor(c, state.originalTemplatePrimary, state.primaryColor);
     const els = [...(state.backgroundElements || [])].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
     for (const el of els) {
         ctx.save();
         ctx.globalAlpha = el.opacity ?? 1;
         if (el.type === "rect") {
             roundRect(ctx, el.x, el.y, el.width, el.height, el.borderRadius || 0);
-            if (el.fill) { ctx.fillStyle = el.fill; ctx.fill(); }
-            if (el.stroke && (el.strokeWidth || 0) > 0) { ctx.strokeStyle = el.stroke; ctx.lineWidth = el.strokeWidth!; ctx.stroke(); }
+            const fill = tintFill(el.fill);
+            const stroke = tintFill(el.stroke);
+            if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+            if (stroke && (el.strokeWidth || 0) > 0) { ctx.strokeStyle = stroke; ctx.lineWidth = el.strokeWidth!; ctx.stroke(); }
         } else if (el.type === "circle") {
             ctx.beginPath(); ctx.ellipse(el.x + el.width / 2, el.y + el.height / 2, el.width / 2, el.height / 2, 0, 0, Math.PI * 2);
-            if (el.fill) { ctx.fillStyle = el.fill; ctx.fill(); }
-            if (el.stroke && (el.strokeWidth || 0) > 0) { ctx.strokeStyle = el.stroke; ctx.lineWidth = el.strokeWidth!; ctx.stroke(); }
+            const fill = tintFill(el.fill);
+            const stroke = tintFill(el.stroke);
+            if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+            if (stroke && (el.strokeWidth || 0) > 0) { ctx.strokeStyle = stroke; ctx.lineWidth = el.strokeWidth!; ctx.stroke(); }
         } else if (el.type === "line") {
             ctx.beginPath(); ctx.moveTo(el.x, el.y + el.height / 2); ctx.lineTo(el.x + el.width, el.y + el.height / 2);
-            ctx.strokeStyle = el.fill || "#000"; ctx.lineWidth = el.strokeWidth || 2; ctx.stroke();
+            ctx.strokeStyle = tintFill(el.fill) || "#000"; ctx.lineWidth = el.strokeWidth || 2; ctx.stroke();
         } else if (el.type === "icon" && el.iconChar) {
-            ctx.font = "28px serif"; ctx.fillStyle = el.iconColor || "#333";
+            ctx.font = "28px serif"; ctx.fillStyle = tintFill(el.iconColor) || "#333";
             ctx.textAlign = "center"; ctx.textBaseline = "middle";
             ctx.fillText(el.iconChar, el.x + el.width / 2, el.y + el.height / 2);
         }
@@ -307,7 +351,7 @@ export const generatePDFFromState = (state: CVState): void => {
             if (isSidebar) {
                 ctx.fillStyle = "rgba(255,255,255,0.15)";
                 ctx.beginPath(); (ctx as any).roundRect(sx + 8, sy, sw - 16, 24, 5); ctx.fill();
-                ctx.fillStyle = "rgba(255,255,255,0.95)"; ctx.font = "bold 11px Arial";
+                ctx.fillStyle = sec.titleColor || "rgba(255,255,255,0.95)"; ctx.font = "bold 11px Arial";
                 ctx.textAlign = "left"; ctx.fillText(sec.title.toUpperCase(), sx + 18, sy + 15);
                 let iy = sy + 34;
                 sec.items.forEach(item => {
@@ -323,7 +367,7 @@ export const generatePDFFromState = (state: CVState): void => {
             } else {
                 ctx.fillStyle = state.primaryColor;
                 ctx.beginPath(); ctx.arc(sx + 6, sy + 11, 4, 0, Math.PI * 2); ctx.fill();
-                ctx.fillStyle = "#111827"; ctx.font = "bold 13px Arial";
+                ctx.fillStyle = sec.titleColor || "#111827"; ctx.font = "bold 13px Arial";
                 ctx.textAlign = "left"; ctx.fillText(sec.title.toUpperCase(), sx + 18, sy + 15);
                 ctx.fillStyle = "rgba(0,0,0,0.08)"; ctx.fillRect(sx, sy + 22, sw, 1);
                 ctx.fillStyle = state.primaryColor; ctx.fillRect(sx, sy + 22, 32, 2);
@@ -368,6 +412,7 @@ export const generatePDFFromState = (state: CVState): void => {
 // ═══════════════════════════════════════════════════════════════════════════════
 export default function CVCanvas({
     primaryColor = "#1d7057",
+    originalTemplatePrimary,
     imageURL,
     cvTitle = "",
     cvSubTitle = "",
@@ -507,7 +552,7 @@ export default function CVCanvas({
         const container = containerRef.current;
         if (container) { canvas.width = container.clientWidth; canvas.height = container.clientHeight; }
         drawCanvas(ctx, canvas.width, canvas.height);
-    }, [primaryColor, zoom, pan, cvTitle, cvSubTitle, titleStyle, subtitleStyle, sections, hoveredSection,
+    }, [primaryColor, originalTemplatePrimary, zoom, pan, cvTitle, cvSubTitle, titleStyle, subtitleStyle, sections, hoveredSection,
         sectionLayouts, hoveredHandle, imageState, loadedImage, hoveredImage,
         hoveredImageHandle, editingOverlay, backgroundElements]);
 
@@ -584,6 +629,11 @@ export default function CVCanvas({
         const { centerX: cx, centerY: cy } = b;
         const sorted = [...backgroundElements].sort((a, b2) => (a.zIndex || 0) - (b2.zIndex || 0));
 
+        // Any template color (fill / stroke / iconColor) that matches the
+        // template's ORIGINAL primary follows the user's current pick. Other
+        // accent colors (white text bars, gray dividers, etc.) are preserved.
+        const tint = (c: string | undefined) => themedColor(c, originalTemplatePrimary, primaryColor);
+
         for (const el of sorted) {
             ctx.save();
             ctx.globalAlpha = el.opacity ?? 1;
@@ -592,31 +642,37 @@ export default function CVCanvas({
             if (el.type === "rect") {
                 const r = el.borderRadius || 0;
                 roundRect(ctx, ex, ey, el.width, el.height, r);
-                if (el.fill) { ctx.fillStyle = el.fill; ctx.fill(); }
-                if (el.stroke && (el.strokeWidth || 0) > 0) { ctx.strokeStyle = el.stroke; ctx.lineWidth = el.strokeWidth!; ctx.stroke(); }
+                const fill = tint(el.fill);
+                const stroke = tint(el.stroke);
+                if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+                if (stroke && (el.strokeWidth || 0) > 0) { ctx.strokeStyle = stroke; ctx.lineWidth = el.strokeWidth!; ctx.stroke(); }
 
             } else if (el.type === "circle") {
                 ctx.beginPath();
                 ctx.ellipse(ex + el.width / 2, ey + el.height / 2, el.width / 2, el.height / 2, 0, 0, Math.PI * 2);
-                if (el.fill) { ctx.fillStyle = el.fill; ctx.fill(); }
-                if (el.stroke && (el.strokeWidth || 0) > 0) { ctx.strokeStyle = el.stroke; ctx.lineWidth = el.strokeWidth!; ctx.stroke(); }
+                const fill = tint(el.fill);
+                const stroke = tint(el.stroke);
+                if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+                if (stroke && (el.strokeWidth || 0) > 0) { ctx.strokeStyle = stroke; ctx.lineWidth = el.strokeWidth!; ctx.stroke(); }
 
             } else if (el.type === "line") {
                 ctx.beginPath();
                 ctx.moveTo(ex, ey + el.height / 2);
                 ctx.lineTo(ex + el.width, ey + el.height / 2);
-                ctx.strokeStyle = el.fill || "#000"; ctx.lineWidth = el.strokeWidth || 2; ctx.stroke();
+                ctx.strokeStyle = tint(el.fill) || "#000"; ctx.lineWidth = el.strokeWidth || 2; ctx.stroke();
 
             } else if (el.type === "icon") {
                 if (el.iconSrc) {
-                    // SVG icon — tinted
+                    // SVG icon — tinted. Falls back to current primary if the
+                    // template didn't specify an icon color.
                     const cached = imgCache.current.get(el.iconSrc);
                     if (cached) {
                         const off = document.createElement("canvas");
                         off.width = el.width; off.height = el.height;
                         const octx = off.getContext("2d")!;
                         octx.drawImage(cached, 0, 0, el.width, el.height);
-                        const hex = (el.iconColor || primaryColor).replace("#", "");
+                        const iconColor = tint(el.iconColor) || primaryColor;
+                        const hex = iconColor.replace("#", "");
                         const tr = parseInt(hex.slice(0, 2), 16), tg = parseInt(hex.slice(2, 4), 16), tb = parseInt(hex.slice(4, 6), 16);
                         const imgData = octx.getImageData(0, 0, el.width, el.height);
                         const d = imgData.data;
@@ -626,7 +682,7 @@ export default function CVCanvas({
                     }
                 } else if (el.iconChar) {
                     // Emoji / char fallback
-                    ctx.font = "28px serif"; ctx.fillStyle = el.iconColor || primaryColor;
+                    ctx.font = "28px serif"; ctx.fillStyle = tint(el.iconColor) || primaryColor;
                     ctx.textAlign = "center"; ctx.textBaseline = "middle";
                     ctx.fillText(el.iconChar, ex + el.width / 2, ey + el.height / 2);
                 }
@@ -764,19 +820,22 @@ export default function CVCanvas({
         }
 
         // ── Sections ───────────────────────────────────────────────────────
-        const drawSidebarHeader = (title: string, sx: number, sy: number, width: number) => {
+        // A per-section `titleColor` overrides the default — white-ish on the
+        // sidebar (which is painted over a dark theme rect), dark gray on the
+        // right column (which is on the white paper).
+        const drawSidebarHeader = (title: string, sx: number, sy: number, width: number, titleColor?: string) => {
             ctx.fillStyle = "rgba(255,255,255,0.15)";
             ctx.beginPath(); (ctx as any).roundRect(sx + 8, sy, width - 16, 24, 5); ctx.fill();
-            ctx.fillStyle = "rgba(255,255,255,0.95)";
+            ctx.fillStyle = titleColor || "rgba(255,255,255,0.95)";
             ctx.font = "bold 11px Arial";
             ctx.textAlign = "left";
             ctx.fillText(title.toUpperCase(), sx + 18, sy + 15);
         };
 
-        const drawRightHeader = (title: string, sx: number, sy: number, width: number) => {
+        const drawRightHeader = (title: string, sx: number, sy: number, width: number, titleColor?: string) => {
             ctx.fillStyle = primaryColor;
             ctx.beginPath(); ctx.arc(sx + 6, sy + 11, 4, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = "#111827"; ctx.font = "bold 13px Arial";
+            ctx.fillStyle = titleColor || "#111827"; ctx.font = "bold 13px Arial";
             ctx.textAlign = "left";
             ctx.fillText(title.toUpperCase(), sx + 18, sy + 15);
             ctx.fillStyle = "rgba(0,0,0,0.08)"; ctx.fillRect(sx, sy + 22, width, 1);
@@ -806,7 +865,7 @@ export default function CVCanvas({
             const isSidebarSection = layout.x < SIDEBAR_W - 10;
 
             if (isSidebarSection) {
-                drawSidebarHeader(section.title, sx, sy, layout.width);
+                drawSidebarHeader(section.title, sx, sy, layout.width, section.titleColor);
                 let itemY = sy + 34;
                 section.items.forEach((item, itemIdx) => {
                     const isEditingThis = editingOverlay?.sectionIndex === index && editingOverlay.itemPath.length === 1 && editingOverlay.itemPath[0] === itemIdx;
@@ -829,7 +888,7 @@ export default function CVCanvas({
                     });
                 });
             } else {
-                drawRightHeader(section.title, sx, sy, layout.width);
+                drawRightHeader(section.title, sx, sy, layout.width, section.titleColor);
                 let itemY = sy + 42;
                 section.items.forEach((item, itemIdx) => {
                     const isEditingThis = editingOverlay?.sectionIndex === index && editingOverlay.itemPath.length === 1 && editingOverlay.itemPath[0] === itemIdx;

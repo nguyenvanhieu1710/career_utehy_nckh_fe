@@ -6,6 +6,7 @@ import {
   Users,
   ChevronDown,
   Loader2,
+  ArrowRight,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
@@ -18,8 +19,14 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import Link from "next/link";
 import { publicAPI, SystemStats } from "@/services/public";
 import { adminAPI, DashboardChartData } from "@/services/admin";
+import { jobAPI } from "@/services/job";
+import { userAPI } from "@/services/user";
+import { Job } from "@/types/job";
+import { User } from "@/types/user";
+import BehaviorAnalyticsSection from "@/components/admin/BehaviorAnalyticsSection";
 
 // Stats configuration with icons and colors
 const statsConfig = [
@@ -49,6 +56,12 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [chartLoading, setChartLoading] = useState(true);
   const [days, setDays] = useState(7);
+  
+  // New states for lists
+  const [recentJobs, setRecentJobs] = useState<Job[]>([]);
+  const [newUsers, setNewUsers] = useState<User[]>([]);
+  const [pendingJobs, setPendingJobs] = useState<Job[]>([]);
+  const [listLoading, setListLoading] = useState(false);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -83,6 +96,48 @@ export default function DashboardPage() {
     };
     fetchChartData();
   }, [days]);
+
+  // Fetch recent jobs, new users, and pending jobs
+  useEffect(() => {
+    const fetchLists = async () => {
+      setListLoading(true);
+      try {
+        // Fetch recent approved jobs (sorted by date descending)
+        const jobsRes = await jobAPI.getJobs({
+          status: "approved",
+          page: 1,
+          row: 5,
+        });
+        if (jobsRes.data) {
+          setRecentJobs(jobsRes.data);
+        }
+
+        // Fetch recent registered users
+        const usersRes = await userAPI.getUsers({
+          page: 1,
+          row: 5,
+        });
+        if (usersRes.data?.data) {
+          setNewUsers(usersRes.data.data);
+        }
+
+        // Fetch pending jobs waiting for approval
+        const pendingRes = await jobAPI.getJobsByStatus("pending", {
+          page: 1,
+          row: 5,
+        });
+        if (pendingRes.data) {
+          setPendingJobs(pendingRes.data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch dashboard lists:", error);
+      } finally {
+        setListLoading(false);
+      }
+    };
+
+    fetchLists();
+  }, []);
 
   return (
     <div className="p-2">
@@ -208,6 +263,198 @@ export default function DashboardPage() {
               />
             </LineChart>
           </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Behavior analytics — Big Data overview */}
+      <div className="mt-8">
+        <BehaviorAnalyticsSection mode="overview" />
+      </div>
+
+      {/* Lists Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
+        {/* Recent Jobs */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-gray-800">
+              Công việc mới đăng
+            </h2>
+            <Link
+              href="/admin/job-management"
+              className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1"
+            >
+              Xem tất cả
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+
+          <div className="space-y-3">
+            {listLoading ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+              </div>
+            ) : recentJobs.length > 0 ? (
+              recentJobs.map((job) => (
+                <div
+                  key={job.id}
+                  className="p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <p className="font-medium text-gray-800 line-clamp-1">
+                        {job.title}
+                      </p>
+                      <p className="text-sm text-gray-600">{job.company.name}</p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {job.location}
+                      </p>
+                    </div>
+                    <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded ml-2 flex-shrink-0">
+                      {job.job_type}
+                    </span>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="text-center text-gray-500 py-8">
+                Chưa có công việc mới
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* New Users */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-gray-800">
+              Thành viên mới
+            </h2>
+            <Link
+              href="/admin/user-management"
+              className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1"
+            >
+              Xem tất cả
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+
+          <div className="space-y-3">
+            {listLoading ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+              </div>
+            ) : newUsers.length > 0 ? (
+              newUsers.map((user) => (
+                <div
+                  key={user.id}
+                  className="p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-purple-200 flex items-center justify-center flex-shrink-0">
+                      <span className="text-sm font-semibold text-purple-700">
+                        {user.fullname?.charAt(0).toUpperCase() || "U"}
+                      </span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-gray-800 truncate">
+                        {user.fullname || user.email}
+                      </p>
+                      <p className="text-xs text-gray-500 truncate">
+                        {user.email}
+                      </p>
+                    </div>
+                    <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded flex-shrink-0">
+                      {user.roles && user.roles.length > 0 ? "Member" : "User"}
+                    </span>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="text-center text-gray-500 py-8">
+                Chưa có thành viên mới
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Pending Jobs */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mt-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-gray-800">
+            Công việc chờ duyệt
+          </h2>
+          <Link
+            href="/admin/job-management"
+            className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1"
+          >
+            Quản lý
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-200">
+                <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                  Tiêu đề
+                </th>
+                <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                  Công ty
+                </th>
+                <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                  Địa điểm
+                </th>
+                <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                  Loại
+                </th>
+                <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                  Trạng thái
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {listLoading ? (
+                <tr>
+                  <td colSpan={5} className="text-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-blue-600 mx-auto" />
+                  </td>
+                </tr>
+              ) : pendingJobs.length > 0 ? (
+                pendingJobs.map((job) => (
+                  <tr
+                    key={job.id}
+                    className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                  >
+                    <td className="py-3 px-4 font-medium text-gray-800 max-w-xs truncate">
+                      {job.title}
+                    </td>
+                    <td className="py-3 px-4 text-gray-600">
+                      {job.company.name}
+                    </td>
+                    <td className="py-3 px-4 text-gray-600">{job.location}</td>
+                    <td className="py-3 px-4">
+                      <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                        {job.job_type}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded">
+                        Chờ duyệt
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={5} className="text-center py-8 text-gray-500">
+                    Không có công việc chờ duyệt
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Filters } from "@/components/admin/Filters";
 import { Column, Table } from "@/components/admin/Table";
 import { Pagination } from "@/components/admin/Pagination";
@@ -14,6 +15,7 @@ import { DeleteConfirmationDialog } from "@/components/admin/DeleteConfirmationD
 import { NotificationDialog } from "@/components/admin/NotificationDialog";
 import { CrawlDetailDialog } from "@/components/admin/CrawlDetailDialog";
 import { CrawlHistoryDialog } from "@/components/admin/CrawlHistoryDialog";
+import { ScrapeUrlDialog } from "@/components/admin/ScrapeUrlDialog";
 import { useDataSources } from "@/hooks/useDataSources";
 import { DataSource } from "@/types/data-source";
 import { CrawlHistory } from "@/types/crawl-history";
@@ -24,24 +26,61 @@ import {
   getDataSourceStatusColor,
 } from "@/utils/crawl-helpers";
 import { schedulerAPI } from "@/services/scheduler";
+import { dataSourceAPI } from "@/services/dataSource";
 import { Switch } from "@/components/ui/switch";
+import {
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  PolarAngleAxis,
+} from "recharts";
+import { Loader2, X } from "lucide-react";
 
 export default function DataManagementPage() {
+  const router = useRouter();
   // Dialog states
   const [selectedDataSource, setSelectedDataSource] =
     useState<DataSource | null>(null);
-  const [selectedCrawlHistory, setSelectedCrawlHistory] =
-    useState<CrawlHistory | null>(null);
+  const [selectedCrawlHistory] = useState<CrawlHistory | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isCrawlDetailOpen, setIsCrawlDetailOpen] = useState(false);
   const [isCrawlHistoryOpen, setIsCrawlHistoryOpen] = useState(false);
+  const [isScrapeUrlOpen, setIsScrapeUrlOpen] = useState(false);
+  const [prefillUrl, setPrefillUrl] = useState<string>("");
+  const [prefillCategoryId, setPrefillCategoryId] = useState<string>("");
+  const [scrapingId, setScrapingId] = useState<string | null>(null);
   const [dialogState, setDialogState] = useState<DialogState>({
     isOpen: false,
     title: "",
     message: "",
     type: "success",
   });
+
+  // Chart states
+  const [chartData, setChartData] = useState<any[]>([]);
+  const [chartType, setChartType] = useState<"bar" | "line">("bar");
+  const [chartsLoading, setChartsLoading] = useState(false);
+  const COLORS = [
+    "#3B82F6",
+    "#10B981",
+    "#F59E0B",
+    "#EF4444",
+    "#8B5CF6",
+    "#EC4899",
+    "#14B8A6",
+    "#F97316",
+  ];
 
   // Data sources hook
   const {
@@ -58,6 +97,48 @@ export default function DataManagementPage() {
     updateDataSource,
     deleteDataSource,
   } = useDataSources();
+
+  // Load chart data when dataSources change
+  useEffect(() => {
+    const loadChartData = async () => {
+      if (dataSources.length === 0) {
+        setChartData([]);
+        return;
+      }
+
+      setChartsLoading(true);
+      try {
+        // Fetch statistics for each data source
+        const statsPromises = dataSources.map((source) =>
+          dataSourceAPI.getDataSourceStatistics(source.id).catch(() => null)
+        );
+        const statsResults = await Promise.all(statsPromises);
+
+        // Process data for charts
+        const processedData = dataSources
+          .map((source, index) => {
+            const stats = statsResults[index]?.data;
+            return {
+              name: source.name,
+              total_jobs: stats?.total_jobs || 0,
+              jobs_last_7_days: stats?.jobs_last_7_days || 0,
+              jobs_last_30_days: stats?.jobs_last_30_days || 0,
+              success_rate: stats?.success_rate || 0,
+              id: source.id,
+            };
+          })
+          .sort((a, b) => b.total_jobs - a.total_jobs);
+
+        setChartData(processedData);
+      } catch (error) {
+        console.error("Failed to load chart data:", error);
+      } finally {
+        setChartsLoading(false);
+      }
+    };
+
+    loadChartData();
+  }, [dataSources]);
 
   // Handlers
   const handleAddClick = () => {
@@ -78,6 +159,79 @@ export default function DataManagementPage() {
   const handleViewHistory = (dataSource: DataSource) => {
     setSelectedDataSource(dataSource);
     setIsCrawlHistoryOpen(true);
+  };
+
+  // Open the scrape-by-URL modal for this source.
+  const handleScrape = (dataSource: DataSource) => {
+    setSelectedDataSource(dataSource);
+    setPrefillUrl("");
+    setPrefillCategoryId("");
+    setIsScrapeUrlOpen(true);
+  };
+
+  // Actually run the scrape after the user submits the modal.
+  const handleScrapeUrlSubmit = async ({
+    url,
+    category_id,
+  }: {
+    url: string;
+    category_id: string;
+  }) => {
+    if (!selectedDataSource) return;
+    setScrapingId(selectedDataSource.id);
+    try {
+      const response = await dataSourceAPI.scrapeUrl(selectedDataSource.id, {
+        url,
+        category_id,
+      });
+      const result = response.data?.data;
+
+      const methodLabel: Record<string, string> = {
+        api: "API nhà cung cấp",
+        extraction: "Dịch vụ trích xuất",
+        selector: "Selector scraper",
+        mixed: "Kết hợp",
+        noop: "Không có nguồn nào chạy",
+      };
+
+      if (!result) {
+        setDialogState({
+          isOpen: true,
+          title: "Cào dữ liệu hoàn tất",
+          message: "Đã chạy xong nhưng không có dữ liệu trả về.",
+          type: "info",
+        });
+      } else if (result.fetched === 0) {
+        setDialogState({
+          isOpen: true,
+          title: "Không có dữ liệu mới",
+          message: `Phương thức: ${methodLabel[result.method] ?? result.method}. Không tìm thấy dữ liệu nào để lưu.`,
+          type: "info",
+        });
+      } else {
+        setDialogState({
+          isOpen: true,
+          title: `Cào ${selectedDataSource.name} thành công`,
+          message: `Phương thức: ${methodLabel[result.method] ?? result.method}. Lấy ${result.fetched} mục — thêm mới ${result.inserted}, trùng lặp bỏ qua ${result.skipped_duplicate}, lỗi ${result.failed}.`,
+          type: result.failed > 0 ? "info" : "success",
+        });
+      }
+
+      setIsScrapeUrlOpen(false);
+      refreshData();
+    } catch (error: any) {
+      setDialogState({
+        isOpen: true,
+        title: "Cào dữ liệu thất bại",
+        message:
+          error?.response?.data?.detail ||
+          error?.message ||
+          "Không thể cào dữ liệu lúc này.",
+        type: "error",
+      });
+    } finally {
+      setScrapingId(null);
+    }
   };
 
   const handleToggleCrawl = async (dataSource: DataSource) => {
@@ -145,6 +299,8 @@ export default function DataManagementPage() {
         crawl_frequency: data.crawl_frequency || "daily",
         crawl_enabled: data.crawl_enabled !== false,
         crawler_payload: data.crawler_payload,
+        api_service: !!data.api_service,
+        api_service_config: data.api_service_config ?? null,
       };
 
       await createDataSource(apiData);
@@ -178,6 +334,8 @@ export default function DataManagementPage() {
         crawl_frequency: data.crawl_frequency,
         crawl_enabled: data.crawl_enabled,
         crawler_payload: data.crawler_payload,
+        api_service: !!data.api_service,
+        api_service_config: data.api_service_config ?? null,
       };
 
       await updateDataSource(selectedDataSource.id, apiData);
@@ -245,14 +403,73 @@ export default function DataManagementPage() {
       ),
     },
     {
-      label: "URL",
-      render: (dataSource) => (
-        <div className="max-w-xs">
-          <div title={dataSource.base_url || ""}>
-            {dataSource.base_url || "N/A"}
+      label: "URLs",
+      render: (dataSource) => {
+        const history = dataSource.crawl_urls || [];
+        return (
+          <div className="max-w-sm space-y-1.5">
+            {dataSource.base_url && (
+              <div
+                className="text-xs text-gray-500 truncate"
+                title={dataSource.base_url}
+              >
+                {dataSource.base_url}
+              </div>
+            )}
+            {history.length > 0 ? (
+              <div className="flex flex-wrap gap-1">
+                {history.slice(0, 5).map((entry) => (
+                  <span
+                    key={entry.url}
+                    className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 text-amber-800 text-[11px] px-2 py-0.5 hover:bg-amber-100 transition-colors"
+                    title={entry.url}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedDataSource(dataSource);
+                        setPrefillUrl(entry.url);
+                        setPrefillCategoryId(entry.category_id || "");
+                        setIsScrapeUrlOpen(true);
+                      }}
+                      className="max-w-[180px] truncate text-left cursor-pointer"
+                    >
+                      {entry.url}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          await dataSourceAPI.deleteCrawlUrl(
+                            dataSource.id,
+                            entry.url,
+                          );
+                          refreshData();
+                        } catch (e) {
+                          /* ignore */
+                        }
+                      }}
+                      className="text-gray-400 hover:text-red-600"
+                      title="Xóa khỏi lịch sử"
+                    >
+                      <X size={11} />
+                    </button>
+                  </span>
+                ))}
+                {history.length > 5 && (
+                  <span className="inline-flex items-center text-[11px] text-gray-500 px-1.5">
+                    +{history.length - 5}
+                  </span>
+                )}
+              </div>
+            ) : (
+              <div className="text-[11px] text-gray-400">
+                Chưa có URL đã cào
+              </div>
+            )}
           </div>
-        </div>
-      ),
+        );
+      },
     },
     {
       label: "Trạng thái",
@@ -290,6 +507,21 @@ export default function DataManagementPage() {
       label: "Hành động",
       render: (dataSource) => (
         <div className="flex gap-2">
+          <ActionButtons
+            type="view"
+            permission="data_source.read"
+            title="Xem chi tiết"
+            onClick={() =>
+              router.push(`/admin/data-management/${dataSource.id}`)
+            }
+          />
+          <ActionButtons
+            type="scrape"
+            permission="data_source.crawl"
+            title="Cào dữ liệu ngay"
+            loading={scrapingId === dataSource.id}
+            onClick={() => handleScrape(dataSource)}
+          />
           <ActionButtons
             type="history"
             permission="crawl_history.view"
@@ -338,6 +570,195 @@ export default function DataManagementPage() {
         <AddButton permission="data_source.create" onClick={handleAddClick} />
       </div>
 
+      {/* Charts Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        {/* Bar/Line Chart - Conversion Toggle */}
+        <div className="bg-white rounded-lg shadow-sm border p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-gray-800">
+              Số lượng việc làm theo nguồn
+            </h2>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setChartType("bar")}
+                className={`px-3 py-1 text-sm rounded-md transition-colors ${
+                  chartType === "bar"
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
+              >
+                Cột
+              </button>
+              <button
+                onClick={() => setChartType("line")}
+                className={`px-3 py-1 text-sm rounded-md transition-colors ${
+                  chartType === "line"
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
+              >
+                Đường
+              </button>
+            </div>
+          </div>
+
+          <div className="h-80 w-full relative">
+            {chartsLoading ? (
+              <div className="absolute inset-0 flex items-center justify-center bg-white/50 rounded-lg">
+                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+              </div>
+            ) : chartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                {chartType === "bar" ? (
+                  <BarChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis
+                      dataKey="name"
+                      tick={{ fill: "#6b7280", fontSize: 12 }}
+                      angle={-45}
+                      textAnchor="end"
+                      height={80}
+                    />
+                    <YAxis
+                      tick={{ fill: "#6b7280", fontSize: 12 }}
+                      label={{ value: "Số lượng", angle: -90, position: "insideLeft" }}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "white",
+                        border: "1px solid #e5e7eb",
+                        borderRadius: "0.5rem",
+                      }}
+                    />
+                    <Legend />
+                    <Bar
+                      dataKey="total_jobs"
+                      fill="#3B82F6"
+                      name="Tổng việc làm"
+                    />
+                    <Bar
+                      dataKey="jobs_last_7_days"
+                      fill="#10B981"
+                      name="7 ngày gần nhất"
+                    />
+                    <Bar
+                      dataKey="jobs_last_30_days"
+                      fill="#F59E0B"
+                      name="30 ngày gần nhất"
+                    />
+                  </BarChart>
+                ) : (
+                  <LineChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis
+                      dataKey="name"
+                      tick={{ fill: "#6b7280", fontSize: 12 }}
+                      angle={-45}
+                      textAnchor="end"
+                      height={80}
+                    />
+                    <YAxis
+                      tick={{ fill: "#6b7280", fontSize: 12 }}
+                      label={{ value: "Số lượng", angle: -90, position: "insideLeft" }}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "white",
+                        border: "1px solid #e5e7eb",
+                        borderRadius: "0.5rem",
+                      }}
+                    />
+                    <Legend />
+                    <Line
+                      type="monotone"
+                      dataKey="total_jobs"
+                      stroke="#3B82F6"
+                      strokeWidth={2}
+                      dot={{ r: 4 }}
+                      activeDot={{ r: 6 }}
+                      name="Tổng việc làm"
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="jobs_last_7_days"
+                      stroke="#10B981"
+                      strokeWidth={2}
+                      dot={{ r: 4 }}
+                      activeDot={{ r: 6 }}
+                      name="7 ngày gần nhất"
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="jobs_last_30_days"
+                      stroke="#F59E0B"
+                      strokeWidth={2}
+                      dot={{ r: 4 }}
+                      activeDot={{ r: 6 }}
+                      name="30 ngày gần nhất"
+                    />
+                  </LineChart>
+                )}
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-full text-gray-500">
+                Không có dữ liệu biểu đồ
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Pie Chart - Data Source Distribution */}
+        <div className="bg-white rounded-lg shadow-sm border p-6">
+          <h2 className="text-lg font-semibold text-gray-800 mb-4">
+            Phân bố việc làm theo nguồn
+          </h2>
+
+          <div className="h-80 w-full relative">
+            {chartsLoading ? (
+              <div className="absolute inset-0 flex items-center justify-center bg-white/50 rounded-lg">
+                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+              </div>
+            ) : chartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={chartData}
+                    dataKey="total_jobs"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={100}
+                    label={({ name, percent }) => {
+                      const percentage = percent ? (percent * 100).toFixed(0) : "0";
+                      return `${name} ${percentage}%`;
+                    }}
+                  >
+                    {chartData.map((entry, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={COLORS[index % COLORS.length]}
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    formatter={(value: number) => value.toLocaleString()}
+                    contentStyle={{
+                      backgroundColor: "white",
+                      border: "1px solid #e5e7eb",
+                      borderRadius: "0.5rem",
+                    }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-full text-gray-500">
+                Không có dữ liệu biểu đồ
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* Filter */}
       <Filters
         status={filters.status || "all"}
@@ -376,6 +797,9 @@ export default function DataManagementPage() {
                 crawl_frequency: selectedDataSource.crawl_frequency || "daily",
                 crawl_enabled: selectedDataSource.crawl_enabled ?? true,
                 crawler_payload: selectedDataSource.crawler_payload,
+                api_service: selectedDataSource.api_service ?? false,
+                api_service_config:
+                  selectedDataSource.api_service_config ?? null,
               }
             : undefined
         }
@@ -394,6 +818,18 @@ export default function DataManagementPage() {
         onConfirm={handleDeleteDataSource}
         title="Xác nhận xóa nguồn dữ liệu"
         description={`Bạn có chắc chắn muốn xóa nguồn dữ liệu ${selectedDataSource?.name}? Hành động này không thể hoàn tác.`}
+      />
+
+      {/* Scrape-by-URL Dialog */}
+      <ScrapeUrlDialog
+        open={isScrapeUrlOpen}
+        onOpenChange={setIsScrapeUrlOpen}
+        dataSource={selectedDataSource}
+        submitting={scrapingId === selectedDataSource?.id}
+        initialUrl={prefillUrl}
+        initialCategoryId={prefillCategoryId}
+        onHistoryChange={() => refreshData()}
+        onSubmit={handleScrapeUrlSubmit}
       />
 
       {/* Crawl Detail Dialog */}

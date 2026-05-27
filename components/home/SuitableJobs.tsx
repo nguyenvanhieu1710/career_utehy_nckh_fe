@@ -10,7 +10,6 @@ import SectionTitle from "../common/SectionTitle";
 import { useAuth } from "@/hooks/useAuth";
 import { LoginRequired } from "@/components/auth/LoginRequired";
 import { cvAPI } from "@/services/cv";
-import { jobAPI } from "@/services/job";
 import { Loader2, AlertCircle, FileText } from "lucide-react";
 import Link from "next/link";
 
@@ -33,6 +32,12 @@ interface JobItemProps {
     loc_score: number;
     exp_score: number;
   };
+}
+
+const DEFAULT_LOGO = "/logo/default-company.png";
+function pickLogo(rawLogo: string | null | undefined): string {
+  if (!rawLogo) return DEFAULT_LOGO;
+  return rawLogo;
 }
 
 const JobItem = ({
@@ -292,6 +297,59 @@ export default function SuitableJobs() {
   const [recommendationSource, setRecommendationSource] = useState<
     "profile" | "file" | "none"
   >("none");
+  // True when the user has CVs but hasn't picked one as the applied/primary
+  // CV. The recommendation pipeline can still fall back to "most recent",
+  // but we want to nudge them to pick one explicitly.
+  const [hasNoPrimaryCv, setHasNoPrimaryCv] = useState(false);
+  // True when we couldn't show enough CV-based matches and fell back to a
+  // generic "hot jobs" list (most-recently-posted approved jobs).
+  const [showingHotJobs, setShowingHotJobs] = useState(false);
+
+  const HOT_JOBS_THRESHOLD = 3;
+
+  const mapMatchToCard = (rec: any) => ({
+    id: rec.job_id,
+    logo: pickLogo(rec.image_url),
+    title: rec.job_title,
+    company: rec.company,
+    location: rec.location || rec.location_city,
+    compatibility: Math.round(rec.compatibility_score || 0),
+    experience_required: rec.experience_required || "Chưa cập nhật",
+    matched_skills: rec.matched_skills,
+    missing_skills: rec.missing_skills,
+    explanation: rec.match_explanation,
+    url_source: rec.url_source,
+    scores: rec.scores || {
+      sim_title: 0,
+      sim_tech: 0,
+      sim_mota: 0,
+      loc_score: 0,
+      exp_score: 0,
+    },
+  });
+
+  /** Pull "hot jobs" (most-recent approved) and render them as if they
+   * were matches. Used when the matcher returns fewer than the threshold. */
+  const loadHotJobs = async (cacheKey: string) => {
+    try {
+      const res = await cvAPI.getHotJobs(10);
+      const matches: any[] = res.data?.matches || [];
+      const cards = matches.map(mapMatchToCard);
+      setJobs(cards);
+      setShowingHotJobs(true);
+      sessionStorage.setItem(
+        cacheKey,
+        JSON.stringify({
+          jobs: cards,
+          mode: "hot",
+          noCv: false,
+          showingHotJobs: true,
+        }),
+      );
+    } catch (err) {
+      console.error("Failed to load hot jobs:", err);
+    }
+  };
 
   const fetchRecommendations = async (forceRefresh = false) => {
     if (!isAuthenticated) return;
@@ -307,6 +365,7 @@ export default function SuitableJobs() {
           setJobs(parsed.jobs);
           setRecommendationSource(parsed.mode || "none");
           setNoCv(parsed.noCv);
+          setShowingHotJobs(!!parsed.showingHotJobs);
           return; // Skip API call if we have cache
         } catch (e) {
           console.error("Cache parsing error", e);
@@ -317,80 +376,54 @@ export default function SuitableJobs() {
     setLoading(true);
     setError(null);
     setNoCv(false);
+    setShowingHotJobs(false);
 
     try {
       const res = await cvAPI.getAutoRecommendations(10);
-      // console.log("Recommend API Response:", res.data); // Added log for debugging
 
-      if (res.data?.success) {
-        const { matches, mode } = res.data;
-        setRecommendationSource(mode || "none");
+      // The local matcher now always returns success=true (or success=false
+      // on internal error). Network/auth errors fall through to catch.
+      const payload = res.data || {};
+      const matches: any[] = Array.isArray(payload.matches)
+        ? payload.matches
+        : [];
+      const mode = payload.mode || "none";
+      setRecommendationSource(mode);
 
-        if (matches && matches.length > 0) {
-          const mappedJobs = matches.map((rec: any) => ({
-            id: rec.job_id,
-            logo: "/logo/default-company.png",
-            title: rec.job_title,
-            company: rec.company,
-            location: rec.location || rec.location_city,
-            compatibility: Math.round(rec.compatibility_score),
-            experience_required: rec.experience_required || "Chưa cập nhật",
-            matched_skills: rec.matched_skills,
-            missing_skills: rec.missing_skills,
-            explanation: rec.match_explanation,
-            url_source: rec.url_source,
-            scores: rec.scores || {
-              sim_title: 0,
-              sim_tech: 0,
-              sim_mota: 0,
-              loc_score: 0,
-              exp_score: 0,
-            },
-          }));
-          setJobs(mappedJobs);
-
-          // Save to cache
-          sessionStorage.setItem(
-            cacheKey,
-            JSON.stringify({
-              jobs: mappedJobs,
-              mode: mode || "none",
-              noCv: false,
-            }),
-          );
-        } else if (mode === "none") {
-          setNoCv(true);
-          const fallbackRes = await jobAPI.getJobs({ page: 1, row: 10 });
-          if (fallbackRes?.data) {
-            const fallbackJobs = fallbackRes.data.map((j: any) => ({
-              id: j.id,
-              logo: "/logo/default-company.png",
-              title: j.title,
-              company: j.company?.name || "Đang cập nhật",
-              location: j.location,
-              compatibility: 0,
-              experience_required: j.years_of_experience
-                ? `${j.years_of_experience} năm`
-                : "Chưa cập nhật",
-              url_source: j.url_source,
-            }));
-            setJobs(fallbackJobs);
-
-            // Save fallback to cache
-            sessionStorage.setItem(
-              cacheKey,
-              JSON.stringify({
-                jobs: fallbackJobs,
-                mode: "none",
-                noCv: true,
-              }),
-            );
-          }
-        }
+      // Branch 1: no CV at all → set noCv banner + show hot jobs as content.
+      if (mode === "none") {
+        setNoCv(true);
+        await loadHotJobs(cacheKey);
+        return;
       }
+
+      // Branch 2: matcher returned enough relevant jobs → show them.
+      if (matches.length >= HOT_JOBS_THRESHOLD) {
+        const cards = matches.map(mapMatchToCard);
+        setJobs(cards);
+        setShowingHotJobs(false);
+        sessionStorage.setItem(
+          cacheKey,
+          JSON.stringify({
+            jobs: cards,
+            mode,
+            noCv: false,
+            showingHotJobs: false,
+          }),
+        );
+        return;
+      }
+
+      // Branch 3: matcher had a CV but few/zero matches → fall back to hot.
+      await loadHotJobs(cacheKey);
     } catch (err) {
       console.error("Failed to fetch recommendations:", err);
-      setError("Không thể kết nối với hệ thống AI lúc này.");
+      // Network failure: still try hot jobs so the section isn't empty.
+      try {
+        await loadHotJobs(cacheKey);
+      } catch {
+        setError("Không thể kết nối với hệ thống lúc này.");
+      }
     } finally {
       setLoading(false);
     }
@@ -398,6 +431,18 @@ export default function SuitableJobs() {
 
   useEffect(() => {
     fetchRecommendations();
+    // Check primary-CV status independently — the warning should appear even
+    // if recommendations succeed via the "most recent" fallback.
+    if (isAuthenticated) {
+      cvAPI
+        .getPrimary()
+        .then((res) => {
+          setHasNoPrimaryCv(!res.data?.cv);
+        })
+        .catch(() => {
+          // Non-fatal — just don't show the banner.
+        });
+    }
   }, [isAuthenticated]);
 
   const containerVariants = {
@@ -445,9 +490,13 @@ export default function SuitableJobs() {
   return (
     <section className="py-16 px-7">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-        <SectionTitle title="CÔNG VIỆC PHÙ HỢP VỚI BẠN" />
+        <SectionTitle
+          title={
+            showingHotJobs ? "VIỆC LÀM HOT" : "CÔNG VIỆC PHÙ HỢP VỚI BẠN"
+          }
+        />
 
-        {recommendationSource !== "none" && (
+        {!showingHotJobs && recommendationSource !== "none" && (
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -463,7 +512,52 @@ export default function SuitableJobs() {
             </span>
           </motion.div>
         )}
+
+        {showingHotJobs && (
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="flex items-center gap-2 px-4 py-2 bg-orange-50 border border-orange-200 rounded-full"
+          >
+            <span className="text-xs font-bold text-orange-700 uppercase tracking-wider">
+              🔥 Việc làm mới đăng
+            </span>
+          </motion.div>
+        )}
       </div>
+
+      {/* Warning when user has CVs but hasn't picked a primary one. The
+          recommendation pipeline still works (falls back to most recent) but
+          a stable explicit pick gives more consistent results. */}
+      {!noCv && hasNoPrimaryCv && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-amber-50 border border-amber-200 rounded-2xl p-6 mb-8 flex flex-col md:flex-row items-center justify-between gap-6"
+        >
+          <div className="flex items-center gap-4">
+            <div className="bg-white p-3 rounded-xl shadow-sm shrink-0">
+              <AlertCircle className="h-6 w-6 text-amber-600" />
+            </div>
+            <div>
+              <h4 className="font-bold text-gray-900">
+                Bạn chưa chọn CV đại diện
+              </h4>
+              <p className="text-sm text-gray-600">
+                Hãy chọn một CV làm đại diện để hệ thống đọc thông tin và gợi
+                ý việc làm phù hợp ổn định nhất. Tạm thời chúng tôi đang dùng
+                CV cập nhật gần đây nhất.
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/cv"
+            className="bg-amber-600 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-amber-700 transition-all shadow-md text-sm whitespace-nowrap"
+          >
+            Chọn CV đại diện
+          </Link>
+        </motion.div>
+      )}
 
       {noCv && (
         <motion.div
@@ -507,6 +601,7 @@ export default function SuitableJobs() {
             job_id={job.id}
             {...job}
             index={index}
+            logo={job.logo}
           />
         ))}
       </motion.div>

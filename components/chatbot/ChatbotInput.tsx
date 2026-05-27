@@ -5,12 +5,13 @@ import { Send } from "lucide-react";
 import { useChatbot } from "@/contexts/ChatbotContext";
 
 export function ChatbotInput() {
-  const { sendMessage, isTyping } = useChatbot();
+  const { sendMessage, isTyping, isWaiting } = useChatbot();
+  const busy = isTyping || isWaiting;
   const [input, setInput] = useState("");
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    if (input.trim() && !isTyping) {
+    if (input.trim() && !busy) {
       sendMessage(input.trim());
       setInput("");
     }
@@ -35,7 +36,7 @@ export function ChatbotInput() {
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Nhập câu hỏi của bạn..."
-          disabled={isTyping}
+          disabled={busy}
           className="flex-1 px-4 py-2 border border-gray-300 rounded-full 
                      focus:outline-none focus:ring-2 focus:ring-green-500 
                      focus:border-transparent disabled:bg-gray-100 
@@ -43,7 +44,7 @@ export function ChatbotInput() {
         />
         <button
           type="submit"
-          disabled={!input.trim() || isTyping}
+          disabled={!input.trim() || busy}
           className="bg-green-500 hover:bg-green-600 text-white p-2 rounded-full
                      disabled:opacity-50 disabled:cursor-not-allowed 
                      transition-colors duration-200 flex-shrink-0 cursor-pointer"

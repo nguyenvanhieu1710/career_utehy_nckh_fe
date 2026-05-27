@@ -12,6 +12,7 @@ import { jobAPI } from "@/services/job";
 import { Job } from "@/types/job";
 import { DialogState } from "@/types/dialog";
 import { logger } from "@/lib/logger";
+import Link from "next/link";
 
 export default function JobManagementPage() {
   const [loading, setLoading] = useState(true);
@@ -32,7 +33,7 @@ export default function JobManagementPage() {
   const [locationFilter, setLocationFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
   const [page, setPage] = useState(1);
-  const [limit] = useState(5);
+  const [limit] = useState(7);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
 
@@ -194,26 +195,41 @@ export default function JobManagementPage() {
     {
       label: "Tiêu đề",
       render: (job) => (
-        <div>
-          <div className="font-medium">{job.title || "N/A"}</div>
-          {job.skills && job.skills.length > 0 && (
-            <div className="text-xs text-gray-500 mt-1">
-              {job.skills.slice(0, 3).join(", ")}
-              {job.skills.length > 3 && ` +${job.skills.length - 3}`}
-            </div>
-          )}
-        </div>
+        <Link href={job.url_source || "#"} target="_blank" rel="noopener noreferrer" className="text-blue-600">
+          <div className="text-sm">
+            <div className="font-medium">{job.title || "N/A"}</div>
+            {job.skills && job.skills.length > 0 && (
+              <div className="text-xs text-gray-500 mt-1">
+                {(() => {
+                  const skills = Array.isArray(job.skills)
+                    ? job.skills
+                    : typeof job.skills === "string"
+                      ? [job.skills]
+                      : [];
+
+                  return skills.length > 0 ? (
+                    <div className="text-xs text-gray-500 mt-1">
+                      {skills.slice(0, 3).join(", ")}
+                      {skills.length > 3 && ` +${skills.length - 3}`}
+                    </div>
+                  ) : null;
+                })()}
+                {job.skills.length > 3 && ` +${job.skills.length - 3}`}
+              </div>
+            )}
+          </div>
+        </Link>
       ),
     },
     {
       label: "Công ty",
       render: (job) => (
-        <div className="font-medium">{job.company?.name || "---"}</div>
+        <div className="font-medium text-sm">{job.company?.name || "---"}</div>
       ),
     },
     {
       label: "Địa điểm",
-      render: (job) => job.location || "---",
+      render: (job) => <div className="text-sm">{job.location || "---"}</div>,
     },
     {
       label: "Loại / Hình thức",
@@ -232,7 +248,7 @@ export default function JobManagementPage() {
     {
       label: "Hành động",
       render: (job) => (
-        <div className="flex gap-2">
+        <div className="flex gap-2 text-sm">
           <ActionButtons
             type="view"
             permission="job.view"
@@ -339,7 +355,7 @@ export default function JobManagementPage() {
 
       {/* Job Detail Dialog */}
       {isDetailDialogOpen && selectedJob && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-[rgba(0,0,0,0.5)] flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex justify-between items-start mb-4">
@@ -407,7 +423,7 @@ export default function JobManagementPage() {
                   <div>
                     <p className="text-sm text-gray-500 mb-2">Kỹ năng</p>
                     <div className="flex flex-wrap gap-2">
-                      {selectedJob.skills.map((skill, idx) => (
+                      {(Array.isArray(selectedJob.skills) ? selectedJob.skills : [selectedJob.skills]).map((skill, idx) => (
                         <span
                           key={idx}
                           className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"

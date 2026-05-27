@@ -1,4 +1,5 @@
 import api from "@/cores/api";
+import { config } from "@/lib/config";
 
 export interface UpdateScheduleRequest {
   frequency?: string;
@@ -43,7 +44,11 @@ export const schedulerAPI = {
 
   // Trigger crawl immediately
   triggerCrawl: async (sourceId: string): Promise<any> => {
-    const response = await api.post(`/data-sources/${sourceId}/trigger-crawl`);
+    const response = await api.post(
+      `/data-sources/${sourceId}/trigger-crawl`,
+      undefined,
+      { timeout: config.api.scrapeTimeout },
+    );
     return response.data;
   },
 

@@ -12,6 +12,7 @@ import {
   Key,
   Text,
   UserSquare,
+  Bot,
 } from "lucide-react";
 import { useState } from "react";
 import Link from "next/link";
@@ -45,6 +46,7 @@ const menuItems = [
   { href: "/admin/user-management", label: "Quản lý tài khoản", icon: Users },
   { href: "/admin/permission-management", label: "Quyền / Vai trò", icon: Key },
   { href: "/admin/cv-templates", label: "Quản lý mẫu CV", icon: UserSquare },
+  { href: "/admin/chatbot-management", label: "Quản lý chatbot (RAG)", icon: Bot },
 ];
 
 export function Sidebar() {

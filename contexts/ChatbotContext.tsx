@@ -1,97 +1,113 @@
 "use client";
 
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { ChatMessage, ChatbotContextType } from "@/types/chatbot";
-import { chatAPI } from "@/services/chatbot";
+import { chatbotAPI } from "@/services/chatbot";
 import { logger } from "@/lib/logger";
 
 const ChatbotContext = createContext<ChatbotContextType | null>(null);
+
+// Persist session id across page navigations so the user keeps their
+// conversation when they reopen the widget.
+const SESSION_STORAGE_KEY = "chatbot.session_id";
 
 export function ChatbotProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isTyping, setIsTyping] = useState(false);
-  const [isWaiting, setIsWaiting] = useState(false); // New state for waiting
+  const [isWaiting, setIsWaiting] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const stored = window.sessionStorage.getItem(SESSION_STORAGE_KEY);
+    if (stored) setSessionId(stored);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (sessionId) {
+      window.sessionStorage.setItem(SESSION_STORAGE_KEY, sessionId);
+    } else {
+      window.sessionStorage.removeItem(SESSION_STORAGE_KEY);
+    }
+  }, [sessionId]);
 
   const toggleChat = () => {
     setIsOpen((prev) => {
       const newIsOpen = !prev;
-      // Clear unread count when opening chat
-      if (newIsOpen) {
-        setUnreadCount(0);
-      }
+      if (newIsOpen) setUnreadCount(0);
       return newIsOpen;
     });
   };
 
   const sendMessage = async (content: string) => {
-    if (!content.trim()) return;
+    const text = content.trim();
+    if (!text) return;
 
-    // Add user message
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
       role: "user",
-      content: content.trim(),
+      content: text,
       timestamp: new Date(),
     };
     setMessages((prev) => [...prev, userMessage]);
 
-    // Create bot message placeholder
     const botMessageId = (Date.now() + 1).toString();
-    const botMessage: ChatMessage = {
+    const botPlaceholder: ChatMessage = {
       id: botMessageId,
       role: "assistant",
       content: "",
       timestamp: new Date(),
     };
-    setMessages((prev) => [...prev, botMessage]);
+    setMessages((prev) => [...prev, botPlaceholder]);
 
-    // Set waiting state (shows ... dots)
     setIsWaiting(true);
     setIsTyping(false);
 
     try {
-      let isFirstChunk = true;
-      for await (const chunk of chatAPI.sendMessageStream(content)) {
-        // On first chunk, switch from waiting to typing
-        if (isFirstChunk) {
-          setIsWaiting(false);
-          setIsTyping(true);
-          isFirstChunk = false;
-        }
-
-        setMessages((prev) => {
-          return prev.map((msg) => {
-            if (msg.id === botMessageId) {
-              return {
-                ...msg,
-                content: msg.content + chunk,
-              };
-            }
-            return msg;
-          });
-        });
-      }
-    } catch (error) {
-      logger.error("Failed to send message", error);
-
-      setMessages((prev) => {
-        return prev.map((msg) => {
-          if (msg.id === botMessageId) {
-            return {
-              ...msg,
-              content: "Xin lỗi, đã có lỗi xảy ra. Vui lòng thử lại sau.",
-            };
-          }
-          return msg;
-        });
+      const response = await chatbotAPI.ask({
+        question: text,
+        session_id: sessionId ?? undefined,
       });
+      const data = response.data;
+
+      // Remember session id assigned by the server on the first turn.
+      if (data?.session_id && data.session_id !== sessionId) {
+        setSessionId(data.session_id);
+      }
+
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === botMessageId
+            ? {
+                ...msg,
+                content: data.answer || "",
+                sources: data.sources || [],
+                note: data.note,
+                grounded: data.grounded,
+                timestamp: new Date(),
+              }
+            : msg,
+        ),
+      );
+    } catch (error: any) {
+      logger.error("Failed to send chatbot message", error);
+      const detail =
+        error?.response?.data?.detail ||
+        error?.message ||
+        "Xin lỗi, đã có lỗi xảy ra. Vui lòng thử lại sau.";
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === botMessageId
+            ? { ...msg, content: detail, note: "request_error" }
+            : msg,
+        ),
+      );
     } finally {
       setIsWaiting(false);
       setIsTyping(false);
-
-      // Increment unread count if chat is closed
       if (!isOpen) {
         setUnreadCount((prev) => prev + 1);
       }
@@ -103,6 +119,7 @@ export function ChatbotProvider({ children }: { children: ReactNode }) {
     setUnreadCount(0);
     setIsWaiting(false);
     setIsTyping(false);
+    setSessionId(null);
   };
 
   return (
@@ -113,6 +130,7 @@ export function ChatbotProvider({ children }: { children: ReactNode }) {
         isTyping,
         isWaiting,
         unreadCount,
+        sessionId,
         toggleChat,
         sendMessage,
         clearMessages,

@@ -5,6 +5,12 @@ export interface Category extends BaseModel {
   name: string;
   parent_id?: string;
   description?: string;
+  // Slug + job_count are derived server-side from the categories table.
+  // `title` is a backwards-compatibility alias for `name` consumed by code
+  // that came from the slug-based cache shape.
+  slug?: string;
+  title?: string;
+  job_count?: number;
 }
 
 export interface CategoryCreate {

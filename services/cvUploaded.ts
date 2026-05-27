@@ -29,4 +29,9 @@ export const cvUploadedAPI = {
     clearCvCache();
     return api.delete(`/cv-uploaded/${id}`);
   },
+
+  setPrimary: (id: string) => {
+    clearCvCache();
+    return api.post(`/cv-uploaded/set-primary/${id}`);
+  },
 };

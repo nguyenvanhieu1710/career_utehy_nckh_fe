@@ -40,6 +40,16 @@ api.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
 
+    // Stamp every request with the behavior-tracking session id so the
+    // backend can attribute server-side analytics writes to the same
+    // logical session (job views, CV evaluations, etc.).
+    if (typeof window !== "undefined") {
+      const sid = window.localStorage.getItem("career_utehy_session_id");
+      if (sid && !config.headers["x-session-id"]) {
+        config.headers["x-session-id"] = sid;
+      }
+    }
+
     // Store start time for performance tracking
     (config as any).metadata = { startTime: performance.now() };
 
@@ -186,11 +196,16 @@ api.interceptors.response.use(
         });
       }
     } else if (error.request) {
-      // Network errors - critical
-      apiLogger.critical(`[${timestamp}] 🚨 Network error - no response received after ${duration.toFixed(2)}ms`, error, {
-        url: error.config?.url,
-        method: error.config?.method,
-      });
+      // No response received. In dev this is almost always "the backend on
+      // that port isn't running yet" — not a critical event. Log as warn
+      // and put the URL in the message so the user can see *which* service
+      // failed without expanding the error object.
+      const reqUrl = error.config?.url || "?";
+      const reqMethod = (error.config?.method || "?").toUpperCase();
+      const baseURL = error.config?.baseURL || "";
+      apiLogger.warn(
+        `[${timestamp}] ⚠ No response from ${reqMethod} ${baseURL}${reqUrl} (${duration.toFixed(0)}ms) — is the backend running?`,
+      );
     } else {
       // Other errors
       apiLogger.error(`[${timestamp}] ❌ Request error`, error);

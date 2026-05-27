@@ -1,10 +1,11 @@
 // components/common/JobCard.tsx
 "use client";
-import Image from "next/image";
 import { Heart, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { useState } from "react";
+
+const DEFAULT_LOGO = "/logo/default-company.png";
 
 interface JobCardProps {
   logo: string;
@@ -25,6 +26,7 @@ export default function JobCard({
 }: JobCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [isHeartFilled, setIsHeartFilled] = useState(false);
+  const [logoSrc, setLogoSrc] = useState(logo || DEFAULT_LOGO);
 
   const handleHeartClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -83,12 +85,16 @@ export default function JobCard({
                 }}
                 transition={{ duration: 0.3 }}
               />
-              <Image
-                src={logo}
+              {/* Plain <img> rather than next/image because company logos come
+                  from arbitrary external CDNs (TopCV, ITViec, …) that we
+                  can't pre-whitelist in next.config.ts. */}
+              <img
+                src={logoSrc}
                 alt={company}
-                fill
-                className="object-contain rounded-lg relative z-10"
-                sizes="(max-width: 768px) 25vw, 100px"
+                onError={() => {
+                  if (logoSrc !== DEFAULT_LOGO) setLogoSrc(DEFAULT_LOGO);
+                }}
+                className="absolute inset-0 w-full h-full object-contain rounded-lg z-10"
               />
             </motion.div>
           </div>
