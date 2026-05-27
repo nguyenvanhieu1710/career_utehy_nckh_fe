@@ -20,6 +20,13 @@ export const config = {
     timeout: 60000, // 60 seconds for LLM responses
   },
 
+  // Job Recommendation Service Configuration
+  recommendation: {
+    baseUrl:
+      process.env.NEXT_PUBLIC_RECOMMENDATION_API_BASE_URL || "http://127.0.0.1:8000",
+    timeout: 30000, // 30 seconds
+  },
+
   // File Upload Configuration
   upload: {
     maxSize: 5 * 1024 * 1024, // 5MB

@@ -20,10 +20,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import Button from "@/components/ui/Button";
+import { getUploadsUrl } from "@/lib/config";
+import { publicAPI } from "@/services/public";
+
 
 type TitleId = "job" | "studient" | "company";
 
-const studentAvatars = [
+const INITIAL_STUDENT_AVATARS = [
   "/avatars/avatar-1.jpeg",
   "/avatars/avatar-2.jpg",
   "/avatars/avatar-3.jpg",
@@ -31,6 +34,7 @@ const studentAvatars = [
   "/avatars/avatar-5.jpg",
   "/avatars/avatar-6.jpg",
 ];
+
 
 // Search data
 const searchData = {
@@ -119,15 +123,20 @@ const heroTitles: {
   },
 ];
 
+// Fallback data when API is unavailable
+const FALLBACK_STATS: Record<TitleId, number> = {
+  job: 24043,
+  studient: 92395,
+  company: 2357,
+};
+
 export function HeroSearch() {
   const router = useRouter();
   const MAX_QUERY_LENGTH = 255;
   const [titleDataIndex, setTitleDataIndex] = useState(0);
-  const [titleAmountData] = useState<Record<TitleId, number>>({
-    job: 24043,
-    studient: 92395,
-    company: 2357,
-  });
+  const [titleAmountData, setTitleAmountData] = useState<Record<TitleId, number>>(FALLBACK_STATS);
+  const [studentAvatars, setStudentAvatars] = useState<string[]>(INITIAL_STUDENT_AVATARS);
+
 
   // Search states
   const [searchQuery, setSearchQuery] = useState("");
@@ -158,7 +167,42 @@ export function HeroSearch() {
     [],
   );
 
-  // --- Auto change title every 3s ---
+  // --- Fetch stats from API ---
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Fetch stats
+        const statsJson = await publicAPI.getStats();
+        if (statsJson?.status === "success" && statsJson?.data) {
+          const { user_count, job_count, company_count } = statsJson.data;
+          setTitleAmountData({
+            studient: user_count ?? FALLBACK_STATS.studient,
+            job: job_count ?? FALLBACK_STATS.job,
+            company: company_count ?? FALLBACK_STATS.company,
+          });
+        }
+
+        // Fetch student avatars
+        const avatarJson = await publicAPI.getFeaturedStudents();
+        if (avatarJson?.status === "success" && Array.isArray(avatarJson?.data)) {
+          const urls = avatarJson.data
+            .filter((u: any) => u.avatar_url)
+            .map((u: any) => getUploadsUrl(u.avatar_url))
+            .slice(0, 6);
+
+          if (urls.length > 0) {
+            setStudentAvatars(urls);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch public data:", error);
+      }
+    };
+    fetchData();
+  }, []);
+
+
+  // --- Auto change title every 5s ---
   useEffect(() => {
     const interval = setInterval(() => {
       setTitleDataIndex((prev) => {

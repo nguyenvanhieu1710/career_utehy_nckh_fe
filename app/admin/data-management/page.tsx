@@ -6,10 +6,14 @@ import { Column, Table } from "@/components/admin/Table";
 import { Pagination } from "@/components/admin/Pagination";
 import { ActionButtons } from "@/components/admin/ActionButtons";
 import { AddButton } from "@/components/admin/AddButton";
-import { DataSourceDialog } from "@/components/admin/DataSourceDialog";
+import {
+  DataSourceDialog,
+  DataSourceDialogData,
+} from "@/components/admin/DataSourceDialog";
 import { DeleteConfirmationDialog } from "@/components/admin/DeleteConfirmationDialog";
 import { NotificationDialog } from "@/components/admin/NotificationDialog";
 import { CrawlDetailDialog } from "@/components/admin/CrawlDetailDialog";
+import { CrawlHistoryDialog } from "@/components/admin/CrawlHistoryDialog";
 import { useDataSources } from "@/hooks/useDataSources";
 import { DataSource } from "@/types/data-source";
 import { CrawlHistory } from "@/types/crawl-history";
@@ -22,20 +26,6 @@ import {
 import { schedulerAPI } from "@/services/scheduler";
 import { Switch } from "@/components/ui/switch";
 
-interface DataSourceDialogData {
-  name?: string;
-  base_url?: string;
-  status?: "active" | "inactive";
-  description?: string;
-  timePeriod?: string;
-  startDate?: string;
-  endDate?: string;
-  isActive?: boolean;
-  // Crawl config fields
-  crawl_frequency?: string;
-  crawl_enabled?: boolean;
-}
-
 export default function DataManagementPage() {
   // Dialog states
   const [selectedDataSource, setSelectedDataSource] =
@@ -45,6 +35,7 @@ export default function DataManagementPage() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isCrawlDetailOpen, setIsCrawlDetailOpen] = useState(false);
+  const [isCrawlHistoryOpen, setIsCrawlHistoryOpen] = useState(false);
   const [dialogState, setDialogState] = useState<DialogState>({
     isOpen: false,
     title: "",
@@ -85,26 +76,8 @@ export default function DataManagementPage() {
   };
 
   const handleViewHistory = (dataSource: DataSource) => {
-    // TODO: Fetch crawl history for this data source
-    // For now, just open the dialog with mock data
-    setSelectedCrawlHistory({
-      id: "mock-1",
-      source_id: dataSource.id,
-      source_name: dataSource.name,
-      status: "completed",
-      started_at: new Date().toISOString(),
-      completed_at: new Date().toISOString(),
-      duration_seconds: 120,
-      total_jobs_found: 150,
-      jobs_created: 100,
-      jobs_updated: 45,
-      jobs_failed: 5,
-      jobs_skipped: 0,
-      success_rate: 96.7,
-      error_count: 5,
-      crawler_version: "1.0.0",
-    });
-    setIsCrawlDetailOpen(true);
+    setSelectedDataSource(dataSource);
+    setIsCrawlHistoryOpen(true);
   };
 
   const handleToggleCrawl = async (dataSource: DataSource) => {
@@ -140,21 +113,15 @@ export default function DataManagementPage() {
       // Step 4: If enabling, trigger crawl in background (don't wait)
       if (newStatus === "enabled") {
         schedulerAPI.triggerCrawl(dataSource.id).catch((error) => {
-          // If crawl fails, revert the switch and show error
-          schedulerAPI
-            .updateSchedule(dataSource.id, {
-              status: "disabled",
-              frequency: dataSource.crawl_frequency || "daily",
-            })
-            .then(() => {
-              setDialogState({
-                isOpen: true,
-                title: "Lỗi khi crawl",
-                message: `Không thể crawl ${dataSource.name}: ${error.message}. Đã tắt cron job.`,
-                type: "error",
-              });
-              refreshData();
-            });
+          console.error("Background crawl trigger failed:", error);
+          // We don't disable the cron job anymore because a trigger failure
+          // might be transient or just a timeout, while the scheduler is still valid.
+          setDialogState({
+            isOpen: true,
+            title: "Thông tin",
+            message: `Không thể kích hoạt crawl ngay lập tức: ${error.message}`,
+            type: "info",
+          });
         });
       }
     } catch (error: any) {
@@ -177,6 +144,7 @@ export default function DataManagementPage() {
         status: data.isActive ? "active" : "inactive",
         crawl_frequency: data.crawl_frequency || "daily",
         crawl_enabled: data.crawl_enabled !== false,
+        crawler_payload: data.crawler_payload,
       };
 
       await createDataSource(apiData);
@@ -209,6 +177,7 @@ export default function DataManagementPage() {
         status: data.isActive ? "active" : "inactive",
         crawl_frequency: data.crawl_frequency,
         crawl_enabled: data.crawl_enabled,
+        crawler_payload: data.crawler_payload,
       };
 
       await updateDataSource(selectedDataSource.id, apiData);
@@ -401,13 +370,12 @@ export default function DataManagementPage() {
         initialData={
           selectedDataSource
             ? {
-                name: selectedDataSource.name,
-                description: selectedDataSource.description,
+                ...selectedDataSource,
                 base_url: selectedDataSource.base_url || "",
                 isActive: selectedDataSource.status === "active",
-                // TODO: Load crawl config from API
-                crawl_frequency: "daily",
-                crawl_enabled: true,
+                crawl_frequency: selectedDataSource.crawl_frequency || "daily",
+                crawl_enabled: selectedDataSource.crawl_enabled ?? true,
+                crawler_payload: selectedDataSource.crawler_payload,
               }
             : undefined
         }
@@ -433,6 +401,14 @@ export default function DataManagementPage() {
         open={isCrawlDetailOpen}
         onOpenChange={setIsCrawlDetailOpen}
         crawlHistory={selectedCrawlHistory}
+      />
+
+      {/* Crawl History Dialog (List) */}
+      <CrawlHistoryDialog
+        open={isCrawlHistoryOpen}
+        onOpenChange={setIsCrawlHistoryOpen}
+        sourceId={selectedDataSource?.id}
+        sourceName={selectedDataSource?.name}
       />
 
       {/* Notification Dialog */}

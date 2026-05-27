@@ -13,10 +13,11 @@ export interface DataSource extends BaseModel {
   recent_records?: number;
   success_rate?: number;
 
-  // Crawler config info (moved from crawler_configs table)
-  crawl_frequency?: string; // 'hourly' | 'daily' | 'weekly'
-  crawl_enabled?: boolean; // true if crawling is enabled
-  next_run_at?: string; // Next scheduled crawl time (from crawl_history)
+  // Crawler config info
+  crawl_frequency?: string; 
+  crawl_enabled?: boolean; 
+  next_run_at?: string; 
+  crawler_payload?: any;
 
   // Relationships
   jobs?: Job[];
@@ -31,6 +32,7 @@ export interface DataSourceCreate {
   // Crawler config fields
   crawl_frequency?: "hourly" | "daily" | "weekly";
   crawl_enabled?: boolean;
+  crawler_payload?: any;
 }
 
 export type DataSourceUpdate = Partial<DataSourceCreate>;

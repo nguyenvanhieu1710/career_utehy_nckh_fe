@@ -1,10 +1,10 @@
 import api from "@/cores/api";
-import { GetSchema } from "@/types/base";
-import { Job, JobCreate, JobUpdate } from "@/types/job";
+import { GetSchema, PaginatedResponse } from "@/types/base";
+import { Job, JobCreate, JobUpdate, JobGetSchema } from "@/types/job";
 
 export const jobAPI = {
   // Get all jobs with pagination and search
-  getJobs: async (filters: GetSchema) => {
+  getJobs: async (filters: JobGetSchema) => {
     const response = await api.post("/job/get-jobs", filters);
     return response.data;
   },
